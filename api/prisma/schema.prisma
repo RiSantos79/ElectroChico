@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EnergyClass {
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+}
+
+enum StockStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+}
+
+enum ProductBadge {
+  PROMO
+  NOVO
+  MAIS_VENDIDO
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Category {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  name           String
+  subcategories  String[]
+  products       Product[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Product {
+  id           String        @id @default(cuid())
+  slug         String        @unique
+  name         String
+  brand        String
+  category     Category      @relation(fields: [categoryId], references: [id])
+  categoryId   String
+  price        Decimal       @db.Decimal(10, 2)
+  oldPrice     Decimal?      @db.Decimal(10, 2)
+  energyClass  EnergyClass
+  rating       Float         @default(0)
+  reviews      Int           @default(0)
+  stock        StockStatus   @default(IN_STOCK)
+  badge        ProductBadge?
+  color        String
+  description  String
+  specs        Json
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([categoryId])
+  @@index([brand])
+}

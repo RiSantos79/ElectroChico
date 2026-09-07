@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --surface: #f4f6f8;
+  --surface-raised: #ffffff;
+  --foreground: #10151a;
+  --muted: #5b6572;
+  --border: #e2e6ea;
+  --accent: #0060df;
+  --accent-foreground: #ffffff;
+  --success: #1a8f4c;
+  --danger: #d63838;
+}
+
+.dark {
+  --background: #0b0e11;
+  --surface: #12161b;
+  --surface-raised: #171c22;
+  --foreground: #f3f5f7;
+  --muted: #9aa4b2;
+  --border: #232a32;
+  --accent: #2f8fff;
+  --accent-foreground: #051225;
+  --success: #34c77b;
+  --danger: #ff5c5c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+@utility input-field {
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-foreground);
+}
+.input-field::placeholder {
+  color: var(--color-muted);
+}
+.input-field:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
