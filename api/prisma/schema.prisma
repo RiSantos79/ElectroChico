@@ -17,12 +17,6 @@ enum EnergyClass {
   G
 }
 
-enum StockStatus {
-  IN_STOCK
-  LOW_STOCK
-  OUT_OF_STOCK
-}
-
 enum ProductBadge {
   PROMO
   NOVO
@@ -57,8 +51,10 @@ model Product {
   oldPrice     Decimal?      @db.Decimal(10, 2)
   energyClass  EnergyClass
   rating       Float         @default(0)
-  reviews      Int           @default(0)
-  stock        StockStatus   @default(IN_STOCK)
+  reviewCount  Int           @default(0)
+  reviews      Review[]
+  images       String[]      @default([])
+  stockQuantity Int          @default(0)
   badge        ProductBadge?
   color        String
   description  String
@@ -68,4 +64,16 @@ model Product {
 
   @@index([categoryId])
   @@index([brand])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId   String
+  authorName  String
+  rating      Int
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
 }

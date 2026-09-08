@@ -2,12 +2,6 @@ import type { Category, EnergyClass, Product } from "@/data/catalog";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3333";
 
-const stockMap = {
-  IN_STOCK: "in-stock",
-  LOW_STOCK: "low-stock",
-  OUT_OF_STOCK: "out-of-stock",
-} as const;
-
 const badgeMap = {
   PROMO: "promo",
   NOVO: "novo",
@@ -24,13 +18,20 @@ type ApiProduct = {
   oldPrice: string | null;
   energyClass: EnergyClass;
   rating: number;
-  reviews: number;
-  stock: keyof typeof stockMap;
+  reviewCount: number;
+  images: string[];
+  stockQuantity: number;
   badge: keyof typeof badgeMap | null;
   color: string;
   description: string;
   specs: { label: string; value: string }[];
 };
+
+// As imagens vêm da API como caminhos relativos (ex. "/uploads/x.png") —
+// tornam-se absolutas aqui para o browser as conseguir carregar diretamente.
+function absoluteMediaUrl(path: string) {
+  return path.startsWith("http") ? path : `${API_URL}${path}`;
+}
 
 function mapProduct(p: ApiProduct): Product {
   return {
@@ -43,10 +44,11 @@ function mapProduct(p: ApiProduct): Product {
     oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
     energyClass: p.energyClass,
     rating: p.rating,
-    reviews: p.reviews,
-    stock: stockMap[p.stock],
+    reviews: p.reviewCount,
+    stockQuantity: p.stockQuantity,
     badge: p.badge ? badgeMap[p.badge] : undefined,
     color: p.color,
+    images: p.images.map(absoluteMediaUrl),
     description: p.description,
     specs: p.specs,
   };
@@ -84,9 +86,34 @@ export async function getCategoriesAdmin(): Promise<AdminCategory[]> {
   return apiFetch<AdminCategory[]>("/categories");
 }
 
+// --- Avaliações ---
+// Só de leitura + criação pública — a média/contagem são sempre calculadas
+// pela API a partir destas linhas, nunca definidas manualmente.
+
+export type Review = {
+  id: string;
+  authorName: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+};
+
+export async function getReviews(productId: string): Promise<Review[]> {
+  return apiFetch<Review[]>(`/products/${productId}/reviews`);
+}
+
+export function submitReview(productId: string, data: { authorName: string; rating: number; comment?: string }) {
+  return apiFetch(`/products/${productId}/reviews`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
 // --- Admin (backoffice) ---
 // Usa diretamente os valores de enum da API (IN_STOCK, PROMO, ...) em vez de os
 // converter, para não precisar de um mapeador de ida-e-volta só para o backoffice.
+// rating/reviewCount não aparecem aqui de propósito — vêm sempre de avaliações reais.
 
 export type AdminProduct = Omit<ApiProduct, "category"> & { categoryId: string };
 
@@ -98,11 +125,10 @@ export type AdminProductInput = {
   price: number;
   oldPrice?: number;
   energyClass: EnergyClass;
-  rating: number;
-  reviews: number;
-  stock: keyof typeof stockMap;
+  stockQuantity: number;
   badge?: keyof typeof badgeMap;
   color: string;
+  images: string[];
   description: string;
   specs: { label: string; value: string }[];
 };
@@ -125,4 +151,17 @@ export function updateProduct(id: string, data: Partial<AdminProductInput>, toke
 
 export function deleteProduct(id: string, token: string) {
   return apiFetch(`/products/${id}`, { method: "DELETE", headers: authHeaders(token) });
+}
+
+export async function uploadImage(file: File, token: string): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${API_URL}/uploads`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!res.ok) throw new Error(`Falha no upload (${res.status})`);
+  const { url } = await res.json();
+  return url as string;
 }

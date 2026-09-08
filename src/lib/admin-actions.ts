@@ -2,7 +2,13 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createProduct, deleteProduct, updateProduct, type AdminProductInput } from "@/lib/api";
+import {
+  createProduct,
+  deleteProduct,
+  updateProduct,
+  uploadImage,
+  type AdminProductInput,
+} from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 
 async function requireToken() {
@@ -22,9 +28,18 @@ function parseSpecs(text: string) {
     });
 }
 
-function formToInput(formData: FormData): AdminProductInput {
+async function formToInput(formData: FormData, token: string): Promise<AdminProductInput> {
   const oldPrice = formData.get("oldPrice");
   const badge = formData.get("badge");
+
+  const existingImages = String(formData.get("existingImages") || "")
+    .split(",")
+    .filter(Boolean);
+  const imagesToRemove = new Set(formData.getAll("removeImages").map(String));
+  const keptImages = existingImages.filter((url) => !imagesToRemove.has(url));
+
+  const newFiles = formData.getAll("newImages").filter((f): f is File => f instanceof File && f.size > 0);
+  const uploadedUrls = await Promise.all(newFiles.map((file) => uploadImage(file, token)));
 
   return {
     slug: String(formData.get("slug")),
@@ -34,11 +49,10 @@ function formToInput(formData: FormData): AdminProductInput {
     price: Number(formData.get("price")),
     oldPrice: oldPrice ? Number(oldPrice) : undefined,
     energyClass: String(formData.get("energyClass")) as AdminProductInput["energyClass"],
-    rating: Number(formData.get("rating") || 0),
-    reviews: Number(formData.get("reviews") || 0),
-    stock: String(formData.get("stock")) as AdminProductInput["stock"],
+    stockQuantity: Number(formData.get("stockQuantity") || 0),
     badge: badge ? (String(badge) as AdminProductInput["badge"]) : undefined,
     color: String(formData.get("color") || "#1f2937"),
+    images: [...keptImages, ...uploadedUrls],
     description: String(formData.get("description")),
     specs: parseSpecs(String(formData.get("specs") || "")),
   };
@@ -46,7 +60,7 @@ function formToInput(formData: FormData): AdminProductInput {
 
 export async function createProductAction(formData: FormData) {
   const token = await requireToken();
-  await createProduct(formToInput(formData), token);
+  await createProduct(await formToInput(formData, token), token);
   revalidatePath("/admin/produtos");
   revalidatePath("/catalogo");
   redirect("/admin/produtos");
@@ -54,7 +68,7 @@ export async function createProductAction(formData: FormData) {
 
 export async function updateProductAction(id: string, formData: FormData) {
   const token = await requireToken();
-  await updateProduct(id, formToInput(formData), token);
+  await updateProduct(id, await formToInput(formData, token), token);
   revalidatePath("/admin/produtos");
   revalidatePath("/catalogo");
   redirect("/admin/produtos");

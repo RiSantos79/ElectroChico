@@ -1,4 +1,4 @@
-import { EnergyClass, ProductBadge, StockStatus } from '../../generated/prisma/client.js';
+import { EnergyClass, ProductBadge } from '../../generated/prisma/client.js';
 import {
   IsArray,
   IsEnum,
@@ -44,19 +44,9 @@ export class CreateProductDto {
   @IsEnum(EnergyClass)
   energyClass!: EnergyClass;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  rating?: number;
-
-  @IsOptional()
   @IsInt()
   @Min(0)
-  reviews?: number;
-
-  @IsOptional()
-  @IsEnum(StockStatus)
-  stock?: StockStatus;
+  stockQuantity!: number;
 
   @IsOptional()
   @IsEnum(ProductBadge)
@@ -72,4 +62,9 @@ export class CreateProductDto {
   @ValidateNested({ each: true })
   @Type(() => SpecDto)
   specs!: SpecDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[];
 }

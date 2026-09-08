@@ -1,12 +1,26 @@
 export function ProductMedia({
   color,
   name,
+  image,
   className = "",
 }: {
   color: string;
   name: string;
+  image?: string;
   className?: string;
 }) {
+  if (image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={image}
+        alt={name}
+        loading="lazy"
+        className={`rounded-xl border border-border bg-surface object-cover ${className}`}
+      />
+    );
+  }
+
   return (
     <div
       className={`flex items-center justify-center rounded-xl border border-border bg-surface p-6 ${className}`}

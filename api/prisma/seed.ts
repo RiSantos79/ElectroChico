@@ -58,9 +58,7 @@ const products = [
     price: 549.99,
     oldPrice: 649.99,
     energyClass: 'D' as const,
-    rating: 4.6,
-    reviews: 128,
-    stock: 'IN_STOCK' as const,
+    stockQuantity: 18,
     badge: 'PROMO' as const,
     color: '#1f2937',
     description: 'Frigorífico combinado com tecnologia No Frost, All-Around Cooling e compressor Digital Inverter com 10 anos de garantia.',
@@ -79,9 +77,7 @@ const products = [
     category: 'eletrodomesticos',
     price: 469.0,
     energyClass: 'B' as const,
-    rating: 4.8,
-    reviews: 94,
-    stock: 'IN_STOCK' as const,
+    stockQuantity: 24,
     badge: 'MAIS_VENDIDO' as const,
     color: '#334155',
     description: 'Motor EcoSilence Drive, sistema i-DOS para dosagem automática de detergente e programa AntiStain de 60 minutos.',
@@ -100,9 +96,7 @@ const products = [
     price: 1399.0,
     oldPrice: 1599.0,
     energyClass: 'F' as const,
-    rating: 4.9,
-    reviews: 211,
-    stock: 'LOW_STOCK' as const,
+    stockQuantity: 4,
     badge: 'PROMO' as const,
     color: '#0f172a',
     description: 'Painel OLED evo com processador α9 Gen7 AI, 144Hz para gaming, Dolby Vision IQ e webOS 24.',
@@ -120,9 +114,7 @@ const products = [
     category: 'eletrodomesticos',
     price: 899.0,
     energyClass: 'A' as const,
-    rating: 4.7,
-    reviews: 63,
-    stock: 'IN_STOCK' as const,
+    stockQuantity: 12,
     color: '#1e293b',
     description: 'Bomba de calor com purificador de ar integrado, controlo por app e funcionamento ultrassilencioso.',
     specs: [
@@ -139,9 +131,7 @@ const products = [
     price: 549.0,
     oldPrice: 699.0,
     energyClass: 'A' as const,
-    rating: 4.5,
-    reviews: 152,
-    stock: 'IN_STOCK' as const,
+    stockQuantity: 7,
     badge: 'NOVO' as const,
     color: '#111827',
     description: 'Sonic Mopping com 3000 vibrações por minuto, sucção de 6000 Pa e navegação LiDAR de precisão.',
@@ -158,9 +148,7 @@ const products = [
     category: 'eletrodomesticos',
     price: 379.0,
     energyClass: 'A' as const,
-    rating: 4.6,
-    reviews: 87,
-    stock: 'IN_STOCK' as const,
+    stockQuantity: 15,
     color: '#0b0e11',
     description: 'Moinho de café integrado com 13 níveis de moagem, sistema LatteCrema e ecrã intuitivo.',
     specs: [
@@ -176,9 +164,7 @@ const products = [
     category: 'eletrodomesticos',
     price: 259.0,
     energyClass: 'C' as const,
-    rating: 4.4,
-    reviews: 41,
-    stock: 'IN_STOCK' as const,
+    stockQuantity: 2,
     color: '#1f2937',
     description: 'Termoacumulador vertical com resistência blindada e isolamento térmico reforçado.',
     specs: [
@@ -195,9 +181,7 @@ const products = [
     price: 649.0,
     oldPrice: 749.0,
     energyClass: 'A' as const,
-    rating: 4.8,
-    reviews: 76,
-    stock: 'IN_STOCK' as const,
+    stockQuantity: 9,
     badge: 'PROMO' as const,
     color: '#0f172a',
     description: 'Indução com combinZone, PowerBoost e controlo touchSlider para precisão total.',
@@ -208,6 +192,40 @@ const products = [
     ],
   },
 ];
+
+// Avaliações de exemplo — simulam o que os clientes vão escrever na loja.
+// A média (rating) e a contagem (reviewCount) do produto são sempre calculadas
+// a partir destas linhas, nunca escritas à mão.
+const demoReviews: Record<string, { authorName: string; rating: number; comment: string }[]> = {
+  'frigorifico-samsung-rb34-combinado': [
+    { authorName: 'Marta S.', rating: 5, comment: 'Silencioso e com muito espaço. Recomendo.' },
+    { authorName: 'João P.', rating: 4, comment: 'Bom frigorífico, entrega rápida.' },
+  ],
+  'maquina-lavar-roupa-bosch-serie-6': [
+    { authorName: 'Ana R.', rating: 5, comment: 'Lava muito bem e gasta pouca água.' },
+    { authorName: 'Carlos M.', rating: 5, comment: 'Excelente relação qualidade/preço.' },
+  ],
+  'tv-lg-oled-55-c4': [
+    { authorName: 'Rui F.', rating: 5, comment: 'Imagem incrível, superou as expectativas.' },
+    { authorName: 'Sofia L.', rating: 5, comment: 'Perfeita para gaming, sem lag nenhum.' },
+  ],
+  'ar-condicionado-daikin-perfera-2-5cv': [
+    { authorName: 'Pedro A.', rating: 5, comment: 'Instalação fácil e muito silencioso.' },
+  ],
+  'robo-aspirador-roborock-s8': [
+    { authorName: 'Beatriz N.', rating: 4, comment: 'Ótimo, só falha em tapetes muito altos.' },
+    { authorName: 'Tiago C.', rating: 5, comment: 'Mudou a minha rotina de limpeza.' },
+  ],
+  'maquina-cafe-delonghi-magnifica': [
+    { authorName: 'Inês V.', rating: 5, comment: 'Café perfeito todos os dias.' },
+  ],
+  'termoacumulador-bosch-tronic-100l': [
+    { authorName: 'Miguel T.', rating: 4, comment: 'Cumpre bem, instalação por conta própria fácil.' },
+  ],
+  'placa-inducao-siemens-iq700': [
+    { authorName: 'Cláudia B.', rating: 5, comment: 'Aquece rapidíssimo e é fácil de limpar.' },
+  ],
+};
 
 async function main() {
   for (const c of categories) {
@@ -221,11 +239,24 @@ async function main() {
   for (const p of products) {
     const { category, ...data } = p;
     const categoryRecord = await prisma.category.findUniqueOrThrow({ where: { slug: category } });
-    await prisma.product.upsert({
+    const product = await prisma.product.upsert({
       where: { slug: p.slug },
       update: { ...data, categoryId: categoryRecord.id },
       create: { ...data, categoryId: categoryRecord.id },
     });
+
+    const reviews = demoReviews[p.slug] ?? [];
+    const existing = await prisma.review.count({ where: { productId: product.id } });
+    if (reviews.length > 0 && existing === 0) {
+      await prisma.review.createMany({
+        data: reviews.map((r) => ({ ...r, productId: product.id })),
+      });
+      const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { rating: Math.round(avg * 10) / 10, reviewCount: reviews.length },
+      });
+    }
   }
 
   if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getProducts } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { deleteProductAction } from "@/lib/admin-actions";
+import { StockBar } from "@/components/stock-bar";
 
 export const metadata = { title: "Produtos — Backoffice" };
 
@@ -39,7 +40,9 @@ export default async function AdminProductsPage() {
                 <td className="px-4 py-3 text-muted">{product.brand}</td>
                 <td className="px-4 py-3 text-muted">{product.category}</td>
                 <td className="px-4 py-3 text-foreground">{formatPrice(product.price)}</td>
-                <td className="px-4 py-3 text-muted">{product.stock}</td>
+                <td className="px-4 py-3">
+                  <StockBar quantity={product.stockQuantity} className="w-32" />
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-3">
                     <Link

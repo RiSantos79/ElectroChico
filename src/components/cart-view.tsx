@@ -42,7 +42,12 @@ export function CartView({ products }: { products: Product[] }) {
               key={product.slug}
               className="flex gap-4 rounded-xl border border-border bg-surface-raised p-4"
             >
-              <ProductMedia color={product.color} name={product.name} className="size-24 shrink-0" />
+              <ProductMedia
+                color={product.color}
+                name={product.name}
+                image={product.images[0]}
+                className="size-24 shrink-0"
+              />
               <div className="flex flex-1 flex-col">
                 <Link href={`/produto/${product.slug}`} className="font-medium text-foreground hover:text-accent">
                   {product.name}
@@ -52,7 +57,7 @@ export function CartView({ products }: { products: Product[] }) {
                   <div className="flex items-center rounded-full border border-border">
                     <button
                       type="button"
-                      onClick={() => setQty(product.slug, line.qty - 1)}
+                      onClick={() => setQty(product.slug, line.qty - 1, product.stockQuantity)}
                       className="flex size-8 items-center justify-center text-lg"
                       aria-label="Diminuir quantidade"
                     >
@@ -61,8 +66,9 @@ export function CartView({ products }: { products: Product[] }) {
                     <span className="w-8 text-center text-sm">{line.qty}</span>
                     <button
                       type="button"
-                      onClick={() => setQty(product.slug, line.qty + 1)}
-                      className="flex size-8 items-center justify-center text-lg"
+                      disabled={line.qty >= product.stockQuantity}
+                      onClick={() => setQty(product.slug, line.qty + 1, product.stockQuantity)}
+                      className="flex size-8 items-center justify-center text-lg disabled:cursor-not-allowed disabled:opacity-30"
                       aria-label="Aumentar quantidade"
                     >
                       +
@@ -76,6 +82,9 @@ export function CartView({ products }: { products: Product[] }) {
                     Remover
                   </button>
                 </div>
+                {line.qty >= product.stockQuantity && (
+                  <p className="mt-1 text-xs text-danger">Só há {product.stockQuantity} em stock</p>
+                )}
               </div>
               <span className="font-semibold text-foreground">{formatPrice(product.price * line.qty)}</span>
             </li>

@@ -17,9 +17,10 @@ export type Product = {
   energyClass: EnergyClass;
   rating: number;
   reviews: number;
-  stock: "in-stock" | "low-stock" | "out-of-stock";
+  stockQuantity: number;
   badge?: "promo" | "novo" | "mais-vendido";
   color: string;
+  images: string[];
   description: string;
   specs: { label: string; value: string }[];
 };
