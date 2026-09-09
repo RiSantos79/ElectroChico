@@ -7,6 +7,7 @@ import { Footer } from "@/components/footer";
 import { CartProvider } from "@/lib/cart-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
 import { getCategories } from "@/lib/api";
+import { CookieConsent } from "@/components/cookie-consent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +41,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <Header categories={categories} />
               <main className="flex-1">{children}</main>
               <Footer />
+              <CookieConsent />
             </CartProvider>
           </FavoritesProvider>
         </ThemeProvider>

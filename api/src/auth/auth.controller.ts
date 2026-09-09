@@ -1,6 +1,8 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
+import { RateLimit } from '../common/rate-limit.guard.js';
 
 @Controller('auth')
 export class AuthController {
@@ -8,7 +10,8 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.email, dto.password);
+  @UseGuards(RateLimit({ windowMs: 60_000, max: 5 }))
+  login(@Body() dto: LoginDto, @Req() req: Request) {
+    return this.authService.login(dto.email, dto.password, req.ip);
   }
 }

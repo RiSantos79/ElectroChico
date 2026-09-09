@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   findAll(params: { categorySlug?: string; brand?: string }) {
     return this.prisma.product.findMany({
@@ -37,21 +41,23 @@ export class ProductsService {
     return product;
   }
 
-  create(dto: CreateProductDto) {
+  async create(dto: CreateProductDto, actorEmail?: string) {
     const { categoryId, specs, ...rest } = dto;
-    return this.prisma.product.create({
+    const product = await this.prisma.product.create({
       data: {
         ...rest,
         specs: specs as unknown as Prisma.InputJsonValue,
         category: { connect: { id: categoryId } },
       },
     });
+    await this.audit.log('PRODUCT_CREATE', { entity: 'Product', entityId: product.id, actor: actorEmail });
+    return product;
   }
 
-  async update(id: string, dto: UpdateProductDto) {
+  async update(id: string, dto: UpdateProductDto, actorEmail?: string) {
     await this.ensureExists(id);
     const { categoryId, specs, ...rest } = dto;
-    return this.prisma.product.update({
+    const product = await this.prisma.product.update({
       where: { id },
       data: {
         ...rest,
@@ -59,11 +65,14 @@ export class ProductsService {
         category: categoryId ? { connect: { id: categoryId } } : undefined,
       },
     });
+    await this.audit.log('PRODUCT_UPDATE', { entity: 'Product', entityId: id, actor: actorEmail });
+    return product;
   }
 
-  async remove(id: string) {
+  async remove(id: string, actorEmail?: string) {
     await this.ensureExists(id);
     await this.prisma.product.delete({ where: { id } });
+    await this.audit.log('PRODUCT_DELETE', { entity: 'Product', entityId: id, actor: actorEmail });
   }
 
   private async ensureExists(id: string) {

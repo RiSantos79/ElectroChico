@@ -56,7 +56,17 @@ function mapProduct(p: ApiProduct): Product {
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, { cache: "no-store", ...init });
-  if (!res.ok) throw new Error(`API ${path} respondeu ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text();
+    let message = `API ${path} respondeu ${res.status}`;
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed?.message) message = Array.isArray(parsed.message) ? parsed.message.join(", ") : parsed.message;
+    } catch {
+      // corpo não era JSON — mantém a mensagem genérica
+    }
+    throw new Error(message);
+  }
   const text = await res.text();
   return text ? JSON.parse(text) : (undefined as T);
 }
@@ -151,6 +161,64 @@ export function updateProduct(id: string, data: Partial<AdminProductInput>, toke
 
 export function deleteProduct(id: string, token: string) {
   return apiFetch(`/products/${id}`, { method: "DELETE", headers: authHeaders(token) });
+}
+
+export type AuditLog = {
+  id: string;
+  action: string;
+  entity: string | null;
+  entityId: string | null;
+  actor: string | null;
+  ip: string | null;
+  createdAt: string;
+};
+
+export async function getAuditLogs(token: string): Promise<AuditLog[]> {
+  return apiFetch<AuditLog[]>("/audit-logs", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+// --- Encomendas ---
+
+export type CreateOrderInput = {
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  street: string;
+  streetNumber: string;
+  floor?: string;
+  postalCode: string;
+  city: string;
+  items: { productId: string; quantity: number }[];
+};
+
+export function createOrder(input: CreateOrderInput): Promise<{ orderId: string; checkoutUrl: string }> {
+  return apiFetch("/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export type Order = {
+  id: string;
+  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+  customerName: string;
+  customerEmail: string;
+  total: string;
+  createdAt: string;
+  items: { id: string; productName: string; unitPrice: string; quantity: number }[];
+};
+
+export async function getOrder(id: string): Promise<Order | null> {
+  try {
+    return await apiFetch<Order>(`/orders/${encodeURIComponent(id)}`);
+  } catch {
+    return null;
+  }
+}
+
+export function getOrdersAdmin(token: string): Promise<Order[]> {
+  return apiFetch<Order[]>("/orders", { headers: { Authorization: `Bearer ${token}` } });
 }
 
 export async function uploadImage(file: File, token: string): Promise<string> {

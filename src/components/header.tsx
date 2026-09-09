@@ -12,16 +12,17 @@ export function Header({ categories }: { categories: Category[] }) {
           Electro<span className="text-accent">Chico</span>
         </Link>
 
-        <div className="mx-auto hidden max-w-xl flex-1 md:block">
+        <form action="/catalogo" className="mx-auto hidden max-w-xl flex-1 md:block">
           <label className="relative block">
             <span className="sr-only">Pesquisar produtos</span>
             <input
               type="search"
+              name="q"
               placeholder="Pesquisar produtos, marcas e categorias..."
               className="w-full rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none"
             />
           </label>
-        </div>
+        </form>
 
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />

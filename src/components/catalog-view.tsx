@@ -1,33 +1,68 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/product-card";
 import { energyClasses, type Product } from "@/data/catalog";
+import { matchesSearch } from "@/lib/search";
+import { PriceRangeSlider } from "@/components/price-range-slider";
 
 type SortOption = "relevancia" | "preco-asc" | "preco-desc";
 
-export function CatalogView({ title, products }: { title: string; products: Product[] }) {
+export function CatalogView({
+  title,
+  products,
+  initialQuery = "",
+}: {
+  title: string;
+  products: Product[];
+  initialQuery?: string;
+}) {
+  const [query, setQuery] = useState(initialQuery);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedEnergy, setSelectedEnergy] = useState<string[]>([]);
   const [onlyPromo, setOnlyPromo] = useState(false);
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [sort, setSort] = useState<SortOption>("relevancia");
 
   const availableBrands = useMemo(
     () => Array.from(new Set(products.map((p) => p.brand))).sort(),
     [products],
   );
-
-  const filtered = useMemo(() => {
+  // Tudo exceto o preço — é a partir desta lista que a barra de preço
+  // calcula o mínimo/máximo, para refletir só os resultados da pesquisa
+  // e dos outros filtros ativos, não o catálogo inteiro.
+  const preRangeFiltered = useMemo(() => {
     let list = products;
+    if (query.trim()) list = list.filter((p) => matchesSearch(p, query));
     if (selectedBrands.length > 0) list = list.filter((p) => selectedBrands.includes(p.brand));
     if (selectedEnergy.length > 0) list = list.filter((p) => selectedEnergy.includes(p.energyClass));
     if (onlyPromo) list = list.filter((p) => p.badge === "promo");
+    if (onlyAvailable) list = list.filter((p) => p.stockQuantity > 0);
+    return list;
+  }, [products, query, selectedBrands, selectedEnergy, onlyPromo, onlyAvailable]);
+
+  const priceBounds = useMemo(() => {
+    if (preRangeFiltered.length === 0) return { min: 0, max: 0 };
+    const prices = preRangeFiltered.map((p) => p.price);
+    return { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) };
+  }, [preRangeFiltered]);
+
+  const [priceRange, setPriceRange] = useState<[number, number]>(() => [priceBounds.min, priceBounds.max]);
+
+  // Sempre que a pesquisa/outros filtros mudam o intervalo disponível,
+  // a barra reajusta-se automaticamente ao novo mínimo/máximo.
+  useEffect(() => {
+    setPriceRange([priceBounds.min, priceBounds.max]);
+  }, [priceBounds.min, priceBounds.max]);
+
+  const filtered = useMemo(() => {
+    let list = preRangeFiltered.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
     if (sort === "preco-asc") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "preco-desc") list = [...list].sort((a, b) => b.price - a.price);
 
     return list;
-  }, [products, selectedBrands, selectedEnergy, onlyPromo, sort]);
+  }, [preRangeFiltered, priceRange, sort]);
 
   function toggle(list: string[], setList: (v: string[]) => void, value: string) {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -53,6 +88,16 @@ export function CatalogView({ title, products }: { title: string; products: Prod
                 </label>
               ))}
             </div>
+          </div>
+
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-foreground">Preço</h2>
+            <PriceRangeSlider
+              min={priceBounds.min}
+              max={priceBounds.max}
+              value={priceRange}
+              onChange={setPriceRange}
+            />
           </div>
 
           <div>
@@ -84,20 +129,39 @@ export function CatalogView({ title, products }: { title: string; products: Prod
             />
             Só promoções
           </label>
+
+          <label className="flex items-center gap-2 text-sm text-muted">
+            <input
+              type="checkbox"
+              checked={onlyAvailable}
+              onChange={(e) => setOnlyAvailable(e.target.checked)}
+              className="size-4 accent-accent"
+            />
+            Só disponíveis
+          </label>
         </aside>
 
         <div>
-          <div className="mb-4 flex items-center justify-between">
-            <span className="text-sm text-muted">{filtered.length} produtos</span>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortOption)}
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-            >
-              <option value="relevancia">Relevância</option>
-              <option value="preco-asc">Preço: mais baixo</option>
-              <option value="preco-desc">Preço: mais alto</option>
-            </select>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Pesquisar nesta lista..."
+              className="input-field w-full sm:max-w-xs"
+            />
+            <div className="flex items-center justify-between gap-3 sm:justify-end">
+              <span className="whitespace-nowrap text-sm text-muted">{filtered.length} produtos</span>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortOption)}
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              >
+                <option value="relevancia">Relevância</option>
+                <option value="preco-asc">Preço: mais baixo</option>
+                <option value="preco-desc">Preço: mais alto</option>
+              </select>
+            </div>
           </div>
 
           {filtered.length === 0 ? (

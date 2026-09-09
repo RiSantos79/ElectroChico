@@ -2,21 +2,28 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly audit: AuditService,
   ) {}
 
-  async login(email: string, password: string) {
+  async login(email: string, password: string, ip?: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     // Verifica sempre um hash (mesmo que dummy) para não revelar por timing se o email existe.
     const hash = user?.passwordHash ?? DUMMY_HASH;
     const valid = await argon2.verify(hash, password).catch(() => false);
-    if (!user || !valid) throw new UnauthorizedException('Credenciais inválidas');
 
+    if (!user || !valid) {
+      await this.audit.log('LOGIN_FAILED', { actor: email, ip });
+      throw new UnauthorizedException('Credenciais inválidas');
+    }
+
+    await this.audit.log('LOGIN_SUCCESS', { actor: email, ip });
     const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email });
     return { accessToken };
   }
