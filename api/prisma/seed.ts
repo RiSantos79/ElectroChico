@@ -47,6 +47,11 @@ const categories = [
     name: 'Mobilidade',
     subcategories: ['Smartphones', 'Smartwatch/Wearables', 'Trotinetes', 'Acessórios Telemóvel'],
   },
+  {
+    slug: 'cartoes-presente',
+    name: 'Cartões Presente',
+    subcategories: [],
+  },
 ];
 
 const products = [
@@ -190,6 +195,42 @@ const products = [
       { label: 'Largura', value: '80 cm' },
       { label: 'Classe energética', value: 'A' },
     ],
+  },
+  {
+    slug: 'cartao-presente-electrochico-25',
+    name: 'Cartão Presente ElectroChico (25 EUROS)',
+    brand: 'ElectroChico',
+    category: 'cartoes-presente',
+    price: 25.0,
+    energyClass: 'A' as const,
+    stockQuantity: 999,
+    color: '#7c3aed',
+    description: 'Cartão presente digital ElectroChico no valor de 25€, sem prazo de validade, para gastar em qualquer artigo da loja.',
+    specs: [{ label: 'Validade', value: 'Sem prazo' }],
+  },
+  {
+    slug: 'cartao-presente-electrochico-50',
+    name: 'Cartão Presente ElectroChico (50 EUROS)',
+    brand: 'ElectroChico',
+    category: 'cartoes-presente',
+    price: 50.0,
+    energyClass: 'A' as const,
+    stockQuantity: 999,
+    color: '#7c3aed',
+    description: 'Cartão presente digital ElectroChico no valor de 50€, sem prazo de validade, para gastar em qualquer artigo da loja.',
+    specs: [{ label: 'Validade', value: 'Sem prazo' }],
+  },
+  {
+    slug: 'cartao-presente-electrochico-100',
+    name: 'Cartão Presente ElectroChico (100 EUROS)',
+    brand: 'ElectroChico',
+    category: 'cartoes-presente',
+    price: 100.0,
+    energyClass: 'A' as const,
+    stockQuantity: 999,
+    color: '#7c3aed',
+    description: 'Cartão presente digital ElectroChico no valor de 100€, sem prazo de validade, para gastar em qualquer artigo da loja.',
+    specs: [{ label: 'Validade', value: 'Sem prazo' }],
   },
 ];
 

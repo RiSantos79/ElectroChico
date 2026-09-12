@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { useFavorites } from "@/lib/favorites-context";
 import { formatPrice } from "@/lib/format";
+import { AccountMenu } from "@/components/account-menu";
 
-export function HeaderIcons() {
+export function HeaderIcons({ customerName }: { customerName?: string | null }) {
   const { count, total } = useCart();
   const { slugs } = useFavorites();
 
@@ -25,16 +26,7 @@ export function HeaderIcons() {
           </span>
         )}
       </Link>
-      <Link
-        href="/conta"
-        aria-label="A minha conta"
-        className="flex size-9 items-center justify-center rounded-full border border-border hover:bg-surface"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-4.5">
-          <circle cx="12" cy="8" r="3.2" />
-          <path d="M5 20c1.6-3.6 4.2-5.4 7-5.4S17.4 16.4 19 20" strokeLinecap="round" />
-        </svg>
-      </Link>
+      <AccountMenu customerName={customerName} />
       <Link
         href="/carrinho"
         aria-label="Carrinho"

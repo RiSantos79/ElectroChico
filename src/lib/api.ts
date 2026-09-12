@@ -284,6 +284,55 @@ export function changePassword(currentPassword: string, newPassword: string, tok
   });
 }
 
+// --- Sugestões / Mensagens / RMA ---
+
+export type ContactType = "SUGGESTION" | "MESSAGE" | "RMA";
+
+export type ContactMessage = {
+  id: string;
+  type: ContactType;
+  name: string;
+  email: string;
+  phone: string | null;
+  subject: string | null;
+  body: string;
+  orderId: string | null;
+  productName: string | null;
+  status: string;
+  createdAt: string;
+};
+
+export type ContactMessageInput = {
+  type: ContactType;
+  name: string;
+  email: string;
+  phone?: string;
+  subject?: string;
+  body: string;
+  orderId?: string;
+  productName?: string;
+};
+
+export function createContactMessage(data: ContactMessageInput, customerToken?: string) {
+  return apiFetch("/contact", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(customerToken ? { Authorization: `Bearer ${customerToken}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+}
+
+export function getMyContactMessages(type: ContactType, token: string): Promise<ContactMessage[]> {
+  return apiFetch<ContactMessage[]>(`/contact/me?type=${type}`, { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function getAdminContactMessages(token: string, type?: ContactType): Promise<ContactMessage[]> {
+  const query = type ? `?type=${type}` : "";
+  return apiFetch<ContactMessage[]>(`/contact${query}`, { headers: { Authorization: `Bearer ${token}` } });
+}
+
 export async function uploadImage(file: File, token: string): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);

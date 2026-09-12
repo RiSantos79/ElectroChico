@@ -37,6 +37,7 @@ model User {
   createdAt    DateTime @default(now())
   orders       Order[]
   addresses    Address[]
+  contactMessages ContactMessage[]
 }
 
 model Address {
@@ -145,6 +146,31 @@ model OrderItem {
   quantity    Int
 
   @@index([orderId])
+}
+
+enum ContactType {
+  SUGGESTION
+  MESSAGE
+  RMA
+}
+
+model ContactMessage {
+  id          String      @id @default(cuid())
+  type        ContactType
+  customer    User?       @relation(fields: [customerId], references: [id])
+  customerId  String?
+  name        String
+  email       String
+  phone       String?
+  subject     String?
+  body        String
+  orderId     String?
+  productName String?
+  status      String      @default("OPEN")
+  createdAt   DateTime    @default(now())
+
+  @@index([customerId])
+  @@index([type])
 }
 
 model AuditLog {

@@ -47,7 +47,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const categories = await getCategories().catch(() => []);
 
   const customerToken = await getCustomerSessionToken();
-  const customerId = customerToken ? (decodeJwt<{ sub: string }>(customerToken).sub ?? null) : null;
+  const customerPayload = customerToken
+    ? decodeJwt<{ sub: string; name?: string | null; email: string }>(customerToken)
+    : null;
+  const customerId = customerPayload?.sub ?? null;
 
   return (
     <html
@@ -59,7 +62,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <FavoritesProvider key={`fav-${customerId ?? "guest"}`} customerKey={customerId}>
             <CartProvider key={`cart-${customerId ?? "guest"}`} customerKey={customerId}>
-              <Header categories={categories} />
+              <Header
+                categories={categories}
+                customerName={customerPayload ? (customerPayload.name ?? customerPayload.email) : null}
+              />
               <main className="flex-1">{children}</main>
               <Footer />
               <CookieConsent />

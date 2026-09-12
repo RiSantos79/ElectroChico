@@ -4,7 +4,13 @@ import { MegaMenu } from "@/components/mega-menu";
 import { HeaderIcons } from "@/components/header-icons";
 import type { Category } from "@/data/catalog";
 
-export function Header({ categories }: { categories: Category[] }) {
+export function Header({
+  categories,
+  customerName,
+}: {
+  categories: Category[];
+  customerName?: string | null;
+}) {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
       <div className="flex items-center gap-4 px-6 py-3 lg:px-10">
@@ -26,7 +32,7 @@ export function Header({ categories }: { categories: Category[] }) {
 
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
-          <HeaderIcons />
+          <HeaderIcons customerName={customerName} />
         </div>
       </div>
       <MegaMenu categories={categories} />
