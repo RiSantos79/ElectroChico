@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminContactMessages, type ContactType } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
+import { replyMessageAction } from "@/lib/admin-contact-actions";
 
 export const metadata = { title: "Mensagens — Backoffice" };
 
@@ -50,45 +51,59 @@ export default async function AdminMessagesPage({
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-surface text-muted">
-            <tr>
-              <th className="px-4 py-3 font-medium">Data</th>
-              <th className="px-4 py-3 font-medium">Tipo</th>
-              <th className="px-4 py-3 font-medium">De</th>
-              <th className="px-4 py-3 font-medium">Assunto / Artigo</th>
-              <th className="px-4 py-3 font-medium">Mensagem</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {messages.map((m) => (
-              <tr key={m.id}>
-                <td className="whitespace-nowrap px-4 py-3 text-muted">
-                  {new Date(m.createdAt).toLocaleString("pt-PT")}
-                </td>
-                <td className="px-4 py-3 text-muted">{typeLabel[m.type]}</td>
-                <td className="px-4 py-3">
-                  <div className="font-medium text-foreground">{m.name}</div>
-                  <div className="text-xs text-muted">{m.email}</div>
-                </td>
-                <td className="px-4 py-3 text-muted">
-                  {m.subject || m.productName || "—"}
-                  {m.orderId && <div className="text-xs">Encomenda: {m.orderId}</div>}
-                </td>
-                <td className="max-w-xs px-4 py-3 text-muted">{m.body}</td>
-              </tr>
-            ))}
-            {messages.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted">
-                  Ainda não há mensagens.
-                </td>
-              </tr>
+      <ul className="space-y-3">
+        {messages.map((m) => (
+          <li key={m.id} className="rounded-xl border border-border bg-surface-raised p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <div>
+                <span className="font-medium text-foreground">{m.name}</span>{" "}
+                <span className="text-muted">({m.email})</span>
+              </div>
+              <span className="text-xs text-muted">{new Date(m.createdAt).toLocaleString("pt-PT")}</span>
+            </div>
+            <div className="mt-1 text-xs font-medium text-accent">
+              {typeLabel[m.type]}
+              {(m.subject || m.productName) && ` — ${m.subject || m.productName}`}
+              {m.orderId && ` — Encomenda: ${m.orderId}`}
+            </div>
+            <p className="mt-2 text-sm text-muted">{m.body}</p>
+
+            {m.reply && (
+              <div className="mt-3 rounded-lg border border-border bg-surface p-3 text-sm">
+                <div className="mb-1 text-xs font-medium text-success">
+                  Respondido em {m.repliedAt ? new Date(m.repliedAt).toLocaleString("pt-PT") : ""}
+                </div>
+                <p className="text-foreground">{m.reply}</p>
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
+
+            <details className="mt-3">
+              <summary className="cursor-pointer text-sm font-medium text-accent hover:underline">
+                {m.reply ? "Editar resposta" : "Responder"}
+              </summary>
+              <form action={replyMessageAction.bind(null, m.id)} className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <textarea
+                  name="reply"
+                  required
+                  defaultValue={m.reply ?? ""}
+                  rows={2}
+                  placeholder="Escreva a sua resposta..."
+                  className="input-field w-full flex-1 resize-none"
+                />
+                <button
+                  type="submit"
+                  className="shrink-0 rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-foreground hover:opacity-90"
+                >
+                  Enviar
+                </button>
+              </form>
+            </details>
+          </li>
+        ))}
+        {messages.length === 0 && (
+          <li className="rounded-xl border border-border p-8 text-center text-muted">Ainda não há mensagens.</li>
+        )}
+      </ul>
     </div>
   );
 }

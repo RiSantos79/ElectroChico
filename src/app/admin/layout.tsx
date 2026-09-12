@@ -21,6 +21,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin/mensagens" className="text-sm text-muted hover:text-foreground">
             Mensagens
           </Link>
+          <Link href="/admin/cartoes-presente" className="text-sm text-muted hover:text-foreground">
+            Cartões Presente
+          </Link>
         </div>
         <form action={logoutAction}>
           <button type="submit" className="text-sm text-muted hover:text-foreground">

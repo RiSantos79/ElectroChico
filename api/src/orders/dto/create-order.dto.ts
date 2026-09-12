@@ -8,6 +8,14 @@ class OrderItemDto {
   @IsInt()
   @Min(1)
   quantity!: number;
+
+  @IsOptional()
+  @IsEmail()
+  recipientEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  giftMessage?: string;
 }
 
 export class CreateOrderDto {

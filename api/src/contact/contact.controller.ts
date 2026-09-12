@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { ContactService } from './contact.service.js';
 import { CreateContactMessageDto } from './dto/create-contact-message.dto.js';
+import { ReplyContactMessageDto } from './dto/reply-contact-message.dto.js';
 import { ContactType } from '../generated/prisma/client.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { AdminGuard } from '../auth/admin.guard.js';
@@ -42,5 +43,11 @@ export class ContactController {
   @Get()
   findAll(@Query('type') type?: ContactType) {
     return this.contactService.findAll(type);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Patch(':id/reply')
+  reply(@Param('id') id: string, @Body() dto: ReplyContactMessageDto) {
+    return this.contactService.reply(id, dto);
   }
 }

@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
+import { GIFT_CARD_CATEGORY_SLUG, generateGiftCardCode } from '../common/gift-cards.js';
 
 @Injectable()
 export class OrdersService {
@@ -33,6 +34,8 @@ export class OrdersService {
         productName: product.name,
         unitPrice: product.price,
         quantity: item.quantity,
+        recipientEmail: item.recipientEmail,
+        giftMessage: item.giftMessage,
       };
     });
 
@@ -102,6 +105,12 @@ export class OrdersService {
     if (!order || order.status === 'PAID') return;
 
     await this.prisma.order.update({ where: { id: orderId }, data: { status: 'PAID' } });
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: order.items.map((i) => i.productId) } },
+      include: { category: true },
+    });
+
     // ponytail: decremento direto, sem lock — em alto volume concorrente podia
     // ficar negativo; para o volume atual não é um problema real.
     for (const item of order.items) {
@@ -109,12 +118,47 @@ export class OrdersService {
         where: { id: item.productId },
         data: { stockQuantity: { decrement: item.quantity } },
       });
+
+      const product = products.find((p) => p.id === item.productId);
+      if (product?.category.slug === GIFT_CARD_CATEGORY_SLUG) {
+        await this.createGiftCard(order, item);
+      }
     }
     await this.audit.log('ORDER_PAID', { entity: 'Order', entityId: orderId });
   }
 
+  // Um cartão presente vale sempre o preço unitário do artigo, multiplicado
+  // pela quantidade — só se gera UM código por linha da encomenda, não um
+  // por unidade, porque o formulário de checkout só recolhe um destinatário
+  // por linha (comprar 2 do mesmo cartão para pessoas diferentes exige duas
+  // linhas separadas no carrinho).
+  private async createGiftCard(
+    order: { id: string; customerEmail: string },
+    item: { id: string; unitPrice: unknown; quantity: number; recipientEmail: string | null; giftMessage: string | null },
+  ) {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        await this.prisma.giftCard.create({
+          data: {
+            code: generateGiftCardCode(),
+            value: (Number(item.unitPrice) * item.quantity).toFixed(2),
+            orderId: order.id,
+            orderItemId: item.id,
+            buyerEmail: order.customerEmail,
+            recipientEmail: item.recipientEmail,
+            message: item.giftMessage,
+          },
+        });
+        return;
+      } catch {
+        // colisão de código (extremamente rara) — tenta gerar outro
+      }
+    }
+    throw new BadRequestException('Não foi possível gerar o código do cartão presente.');
+  }
+
   async findById(id: string) {
-    const order = await this.prisma.order.findUnique({ where: { id }, include: { items: true } });
+    const order = await this.prisma.order.findUnique({ where: { id }, include: { items: true, giftCards: true } });
     if (!order) throw new NotFoundException(`Encomenda "${id}" não encontrada`);
     return order;
   }

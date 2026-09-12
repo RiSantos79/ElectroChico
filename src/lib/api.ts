@@ -188,7 +188,7 @@ export type CreateOrderInput = {
   floor?: string;
   postalCode: string;
   city: string;
-  items: { productId: string; quantity: number }[];
+  items: { productId: string; quantity: number; recipientEmail?: string; giftMessage?: string }[];
 };
 
 export function createOrder(
@@ -213,6 +213,7 @@ export type Order = {
   total: string;
   createdAt: string;
   items: { id: string; productName: string; unitPrice: string; quantity: number }[];
+  giftCards?: { code: string; value: string; recipientEmail: string | null; message: string | null }[];
 };
 
 export async function getOrder(id: string): Promise<Order | null> {
@@ -299,6 +300,8 @@ export type ContactMessage = {
   orderId: string | null;
   productName: string | null;
   status: string;
+  reply: string | null;
+  repliedAt: string | null;
   createdAt: string;
 };
 
@@ -333,6 +336,10 @@ export function getAdminContactMessages(token: string, type?: ContactType): Prom
   return apiFetch<ContactMessage[]>(`/contact${query}`, { headers: { Authorization: `Bearer ${token}` } });
 }
 
+export function replyContactMessage(id: string, reply: string, token: string) {
+  return apiFetch(`/contact/${id}/reply`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify({ reply }) });
+}
+
 export async function uploadImage(file: File, token: string): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
@@ -344,4 +351,36 @@ export async function uploadImage(file: File, token: string): Promise<string> {
   if (!res.ok) throw new Error(`Falha no upload (${res.status})`);
   const { url } = await res.json();
   return url as string;
+}
+
+// --- Cartões presente (admin) ---
+
+export type GiftCard = {
+  id: string;
+  code: string;
+  value: string;
+  status: "ACTIVE" | "REDEEMED";
+  buyerEmail: string;
+  recipientEmail: string | null;
+  message: string | null;
+  redeemedAt: string | null;
+  redeemedBy: string | null;
+  createdAt: string;
+};
+
+export async function getGiftCard(code: string, token: string): Promise<GiftCard | null> {
+  try {
+    return await apiFetch<GiftCard>(`/gift-cards/${encodeURIComponent(code)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    return null;
+  }
+}
+
+export function redeemGiftCard(code: string, token: string): Promise<GiftCard> {
+  return apiFetch<GiftCard>(`/gift-cards/${encodeURIComponent(code)}/redeem`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }

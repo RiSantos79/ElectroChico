@@ -5,31 +5,26 @@ import { revalidatePath } from "next/cache";
 import { createContactMessage, type ContactMessageInput } from "@/lib/api";
 import { getCustomerSessionToken } from "@/lib/customer-session";
 
-export async function sendSuggestionAction(_prevState: string | null, formData: FormData): Promise<string | null> {
-  try {
-    await createContactMessage({
-      type: "SUGGESTION",
-      name: String(formData.get("name") || ""),
-      email: String(formData.get("email") || ""),
-      phone: String(formData.get("phone") || "") || undefined,
-      subject: String(formData.get("subject") || "") || undefined,
-      body: String(formData.get("body") || ""),
-    });
-  } catch (e) {
-    return e instanceof Error ? e.message : "Não foi possível enviar a sugestão.";
-  }
-  return "ok";
-}
+const pathByType: Record<"MESSAGE" | "SUGGESTION", string> = {
+  MESSAGE: "/conta/mensagens",
+  SUGGESTION: "/sugestoes",
+};
 
-export async function sendMessageAction(_prevState: string | null, formData: FormData): Promise<string | null> {
+// Sugestões e Mensagens são o mesmo formulário (assunto + corpo, cliente
+// autenticado) — só muda o tipo gravado e para onde a página revalida.
+export async function sendContactThreadAction(
+  type: "MESSAGE" | "SUGGESTION",
+  _prevState: string | null,
+  formData: FormData,
+): Promise<string | null> {
   const token = await getCustomerSessionToken();
-  if (!token) return "Tem de iniciar sessão para enviar uma mensagem.";
+  if (!token) return "Tem de iniciar sessão para continuar.";
   const { name, email } = decodeJwt<{ name?: string | null; email: string }>(token);
 
   try {
     await createContactMessage(
       {
-        type: "MESSAGE",
+        type,
         name: name || email,
         email,
         subject: String(formData.get("subject") || "") || undefined,
@@ -38,9 +33,9 @@ export async function sendMessageAction(_prevState: string | null, formData: For
       token,
     );
   } catch (e) {
-    return e instanceof Error ? e.message : "Não foi possível enviar a mensagem.";
+    return e instanceof Error ? e.message : "Não foi possível enviar.";
   }
-  revalidatePath("/conta/mensagens");
+  revalidatePath(pathByType[type]);
   return "ok";
 }
 

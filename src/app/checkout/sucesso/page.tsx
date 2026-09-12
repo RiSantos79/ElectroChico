@@ -1,4 +1,5 @@
 import Link from "next/link";
+import QRCode from "qrcode";
 import { getOrder } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { ClearCartOnMount } from "@/components/clear-cart-on-mount";
@@ -10,6 +11,11 @@ export default async function CheckoutSuccessPage({
 }) {
   const { order: orderId } = await searchParams;
   const order = orderId ? await getOrder(orderId) : null;
+
+  const giftCards = order?.giftCards ?? [];
+  const giftCardQrCodes = await Promise.all(
+    giftCards.map((gc) => QRCode.toDataURL(gc.code, { margin: 1, width: 160 })),
+  );
 
   return (
     <div className="mx-auto max-w-lg px-6 py-16 text-center lg:px-10">
@@ -38,6 +44,27 @@ export default async function CheckoutSuccessPage({
             <span>Total</span>
             <span>{formatPrice(Number(order.total))}</span>
           </div>
+        </div>
+      )}
+
+      {giftCards.length > 0 && (
+        <div className="mt-6 space-y-4 text-left">
+          <h2 className="text-lg font-semibold text-foreground">Os seus cartões presente</h2>
+          <p className="text-xs text-muted">
+            O envio automático por email ainda não está ativo — guarde ou reencaminhe este código a quem quiser
+            oferecer.
+          </p>
+          {giftCards.map((gc, i) => (
+            <div key={gc.code} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={giftCardQrCodes[i]} alt={`QR do cartão ${gc.code}`} className="size-24 shrink-0 rounded-lg" />
+              <div className="text-sm">
+                <p className="font-mono text-base font-semibold tracking-wide text-foreground">{gc.code}</p>
+                <p className="text-muted">Valor: {formatPrice(Number(gc.value))}</p>
+                {gc.recipientEmail && <p className="text-muted">Para: {gc.recipientEmail}</p>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

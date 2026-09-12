@@ -6,6 +6,7 @@ import { useCart, type CartLine } from "@/lib/cart-context";
 import type { Product } from "@/data/catalog";
 import { formatPrice } from "@/lib/format";
 import { createOrderAction } from "@/lib/order-actions";
+import { GIFT_CARD_CATEGORY_SLUG } from "@/lib/gift-cards";
 import { BankIcon, CardIcon, EnvelopeIcon, HomeIcon, MapPinIcon, PhoneIcon, UserIcon } from "@/components/checkout-icons";
 
 function PayPalBadge() {
@@ -58,6 +59,7 @@ export function CheckoutView({ products }: { products: Product[] }) {
     .map((line) => ({ line, product: products.find((p) => p.slug === line.slug) }))
     .filter((entry): entry is { line: CartLine; product: Product } => Boolean(entry.product));
   const subtotal = items.reduce((sum, { line, product }) => sum + product.price * line.qty, 0);
+  const giftCardItems = items.filter(({ product }) => product.category === GIFT_CARD_CATEGORY_SLUG);
 
   if (items.length === 0) {
     return (
@@ -89,7 +91,16 @@ export function CheckoutView({ products }: { products: Product[] }) {
       floor: String(formData.get("floor") || "") || undefined,
       postalCode: `${formData.get("postalCode4") || ""}-${formData.get("postalCode3") || ""}`,
       city: String(formData.get("city") || ""),
-      items: items.map(({ line, product }) => ({ productId: product.id, quantity: line.qty })),
+      items: items.map(({ line, product }) => ({
+        productId: product.id,
+        quantity: line.qty,
+        ...(product.category === GIFT_CARD_CATEGORY_SLUG
+          ? {
+              recipientEmail: String(formData.get(`recipientEmail-${product.slug}`) || "") || undefined,
+              giftMessage: String(formData.get(`giftMessage-${product.slug}`) || "") || undefined,
+            }
+          : {}),
+      })),
     });
 
     if (result.error) {
@@ -98,6 +109,7 @@ export function CheckoutView({ products }: { products: Product[] }) {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/immutability -- navegação de browser, não mutação de estado React
     if (result.checkoutUrl) window.location.href = result.checkoutUrl;
   }
 
@@ -151,6 +163,38 @@ export function CheckoutView({ products }: { products: Product[] }) {
               </FieldWithIcon>
             </div>
           </section>
+
+          {giftCardItems.length > 0 && (
+            <section className="rounded-xl border border-border bg-surface-raised p-6">
+              <h2 className="mb-1 text-lg font-semibold text-foreground">Cartões presente</h2>
+              <p className="mb-4 text-xs text-muted">
+                Indique para quem é cada cartão. O código fica disponível na página de confirmação da encomenda,
+                para reencaminhar a quem quiser.
+              </p>
+              <div className="space-y-4">
+                {giftCardItems.map(({ product }) => (
+                  <div key={product.slug} className="rounded-lg border border-border p-4">
+                    <p className="mb-2 text-sm font-medium text-foreground">{product.name}</p>
+                    <FieldWithIcon icon={<EnvelopeIcon />} className="mb-2">
+                      <input
+                        required
+                        type="email"
+                        name={`recipientEmail-${product.slug}`}
+                        placeholder="Email de quem vai receber o presente"
+                        className="input-field w-full pl-10"
+                      />
+                    </FieldWithIcon>
+                    <textarea
+                      name={`giftMessage-${product.slug}`}
+                      placeholder="Mensagem (opcional)"
+                      rows={2}
+                      className="input-field w-full resize-none"
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="rounded-xl border border-border bg-surface-raised p-6">
             <h2 className="mb-1 text-lg font-semibold text-foreground">Método de pagamento</h2>

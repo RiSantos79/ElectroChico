@@ -130,6 +130,7 @@ model Order {
   total           Decimal     @db.Decimal(10, 2)
   stripeSessionId String?     @unique
   items           OrderItem[]
+  giftCards       GiftCard[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -137,13 +138,40 @@ model Order {
 }
 
 model OrderItem {
-  id          String  @id @default(cuid())
-  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderId     String
-  productId   String
-  productName String
-  unitPrice   Decimal @db.Decimal(10, 2)
-  quantity    Int
+  id             String    @id @default(cuid())
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId        String
+  productId      String
+  productName    String
+  unitPrice      Decimal   @db.Decimal(10, 2)
+  quantity       Int
+  recipientEmail String?
+  giftMessage    String?
+  giftCard       GiftCard?
+
+  @@index([orderId])
+}
+
+enum GiftCardStatus {
+  ACTIVE
+  REDEEMED
+}
+
+model GiftCard {
+  id             String         @id @default(cuid())
+  code           String         @unique
+  value          Decimal        @db.Decimal(10, 2)
+  status         GiftCardStatus @default(ACTIVE)
+  order          Order          @relation(fields: [orderId], references: [id])
+  orderId        String
+  orderItem      OrderItem      @relation(fields: [orderItemId], references: [id])
+  orderItemId    String         @unique
+  buyerEmail     String
+  recipientEmail String?
+  message        String?
+  redeemedAt     DateTime?
+  redeemedBy     String?
+  createdAt      DateTime       @default(now())
 
   @@index([orderId])
 }
@@ -167,6 +195,8 @@ model ContactMessage {
   orderId     String?
   productName String?
   status      String      @default("OPEN")
+  reply       String?
+  repliedAt   DateTime?
   createdAt   DateTime    @default(now())
 
   @@index([customerId])

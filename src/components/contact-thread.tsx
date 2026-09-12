@@ -2,20 +2,30 @@
 
 import { useActionState } from "react";
 import type { ContactMessage } from "@/lib/api";
-import { sendMessageAction } from "@/lib/contact-actions";
+import { sendContactThreadAction } from "@/lib/contact-actions";
 
-export function AccountMessages({ messages }: { messages: ContactMessage[] }) {
-  const [result, formAction] = useActionState(sendMessageAction, null);
+export function ContactThread({
+  type,
+  formTitle,
+  historyTitle,
+  messages,
+}: {
+  type: "MESSAGE" | "SUGGESTION";
+  formTitle: string;
+  historyTitle: string;
+  messages: ContactMessage[];
+}) {
+  const [result, formAction] = useActionState(sendContactThreadAction.bind(null, type), null);
 
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-border bg-surface-raised p-6">
-        <h2 className="mb-4 text-lg font-semibold text-foreground">Enviar mensagem</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">{formTitle}</h2>
         <form action={formAction} className="space-y-4">
           <input name="subject" placeholder="Assunto" className="input-field w-full" />
-          <textarea required name="body" rows={4} placeholder="A sua mensagem" className="input-field w-full resize-none" />
+          <textarea required name="body" rows={4} placeholder="Escreva aqui" className="input-field w-full resize-none" />
           {result && result !== "ok" && <p className="text-sm text-danger">{result}</p>}
-          {result === "ok" && <p className="text-sm text-success">Mensagem enviada com sucesso.</p>}
+          {result === "ok" && <p className="text-sm text-success">Enviado com sucesso.</p>}
           <button
             type="submit"
             className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-90"
@@ -26,9 +36,9 @@ export function AccountMessages({ messages }: { messages: ContactMessage[] }) {
       </div>
 
       <div className="rounded-xl border border-border bg-surface-raised p-6">
-        <h2 className="mb-4 text-lg font-semibold text-foreground">Histórico</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">{historyTitle}</h2>
         {messages.length === 0 ? (
-          <p className="text-sm text-muted">Ainda não enviou nenhuma mensagem.</p>
+          <p className="text-sm text-muted">Ainda não há nada por aqui.</p>
         ) : (
           <ul className="space-y-3">
             {messages.map((m) => (
@@ -38,6 +48,12 @@ export function AccountMessages({ messages }: { messages: ContactMessage[] }) {
                   <span className="text-xs text-muted">{new Date(m.createdAt).toLocaleString("pt-PT")}</span>
                 </div>
                 <p className="mt-1 text-muted">{m.body}</p>
+                {m.reply && (
+                  <div className="mt-3 rounded-lg border border-border bg-surface p-3">
+                    <div className="mb-1 text-xs font-medium text-success">Resposta da loja</div>
+                    <p className="text-foreground">{m.reply}</p>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
