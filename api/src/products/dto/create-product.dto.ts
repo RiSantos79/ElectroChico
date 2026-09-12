@@ -9,7 +9,8 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+import { slugify } from '../../common/slugify.js';
 
 class SpecDto {
   @IsString()
@@ -21,6 +22,7 @@ class SpecDto {
 
 export class CreateProductDto {
   @IsString()
+  @Transform(({ value }) => (typeof value === 'string' ? slugify(value) : value))
   slug!: string;
 
   @IsString()
