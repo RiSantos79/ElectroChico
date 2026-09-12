@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { decodeJwt } from "jose";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
@@ -7,6 +8,7 @@ import { Footer } from "@/components/footer";
 import { CartProvider } from "@/lib/cart-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
 import { getCategories } from "@/lib/api";
+import { getCustomerSessionToken } from "@/lib/customer-session";
 import { CookieConsent } from "@/components/cookie-consent";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 
@@ -44,6 +46,9 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const categories = await getCategories().catch(() => []);
 
+  const customerToken = await getCustomerSessionToken();
+  const customerId = customerToken ? (decodeJwt<{ sub: string }>(customerToken).sub ?? null) : null;
+
   return (
     <html
       lang="pt"
@@ -52,8 +57,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <FavoritesProvider>
-            <CartProvider>
+          <FavoritesProvider key={`fav-${customerId ?? "guest"}`} customerKey={customerId}>
+            <CartProvider key={`cart-${customerId ?? "guest"}`} customerKey={customerId}>
               <Header categories={categories} />
               <main className="flex-1">{children}</main>
               <Footer />

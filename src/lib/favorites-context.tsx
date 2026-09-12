@@ -9,30 +9,43 @@ type FavoritesContextValue = {
 };
 
 const FavoritesContext = createContext<FavoritesContextValue | null>(null);
-const STORAGE_KEY = "electrochico:favorites";
+const STORAGE_KEY_PREFIX = "electrochico:favorites";
 
-export function FavoritesProvider({ children }: { children: ReactNode }) {
+// Mesma lógica do CartProvider: sem segmentar por cliente, todas as contas
+// na mesma máquina partilhavam os mesmos favoritos. O layout monta este
+// provider com key={customerKey}, por isso remonta de raiz ao trocar de conta.
+export function FavoritesProvider({
+  children,
+  customerKey,
+}: {
+  children: ReactNode;
+  customerKey?: string | null;
+}) {
   const [slugs, setSlugs] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const storageKey = `${STORAGE_KEY_PREFIX}:${customerKey ?? "guest"}`;
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey);
+      // Deliberado: ver nota equivalente em cart-context.tsx.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setSlugs(JSON.parse(raw));
     } catch {
       // ponytail: localStorage pode falhar em modo privado — ignora e arranca vazio
     }
     setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(slugs));
+      localStorage.setItem(storageKey, JSON.stringify(slugs));
     } catch {
       // ver nota acima
     }
-  }, [slugs, hydrated]);
+  }, [slugs, hydrated, storageKey]);
 
   function toggle(slug: string) {
     setSlugs((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]));

@@ -19,30 +19,41 @@ type CartContextValue = {
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
-const STORAGE_KEY = "electrochico:cart";
+const STORAGE_KEY_PREFIX = "electrochico:cart";
 
-export function CartProvider({ children }: { children: ReactNode }) {
+// customerKey identifica de quem é o carrinho (id do cliente, ou "guest" sem
+// sessão) — sem isto, todas as contas na mesma máquina partilhavam o mesmo
+// carrinho, porque a chave do localStorage era sempre a mesma. O layout monta
+// este provider com key={customerKey}, por isso o componente remonta de
+// raiz (e este efeito só corre uma vez) sempre que a conta muda.
+export function CartProvider({ children, customerKey }: { children: ReactNode; customerKey?: string | null }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const storageKey = `${STORAGE_KEY_PREFIX}:${customerKey ?? "guest"}`;
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey);
+      // Deliberado: ler no efeito (não num initializer do useState) evita que o
+      // primeiro render do cliente já divirja do HTML do servidor (SSR não tem
+      // localStorage) — o "hydrated" cobre esse instante em branco.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setLines(JSON.parse(raw));
     } catch {
       // ponytail: localStorage pode falhar em modo privado — ignora e arranca vazio
     }
     setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
+      localStorage.setItem(storageKey, JSON.stringify(lines));
     } catch {
       // ver nota acima
     }
-  }, [lines, hydrated]);
+  }, [lines, hydrated, storageKey]);
 
   // Nunca deixa a quantidade no carrinho passar do stock disponível — é aqui
   // que TODAS as formas de alterar quantidade (botão "Adicionar", stepper do

@@ -231,6 +231,59 @@ export function getMyOrders(token: string): Promise<Order[]> {
   return apiFetch<Order[]>("/orders/me", { headers: { Authorization: `Bearer ${token}` } });
 }
 
+// --- Conta de cliente ---
+
+export type Address = {
+  id: string;
+  label: string | null;
+  street: string;
+  streetNumber: string;
+  floor: string | null;
+  postalCode: string;
+  city: string;
+  phone: string | null;
+  isDefault: boolean;
+};
+
+export type AddressInput = {
+  label?: string;
+  street: string;
+  streetNumber: string;
+  floor?: string;
+  postalCode: string;
+  city: string;
+  phone?: string;
+  isDefault?: boolean;
+};
+
+export function getMyAddresses(token: string): Promise<Address[]> {
+  return apiFetch<Address[]>("/addresses/me", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function createAddress(data: AddressInput, token: string) {
+  return apiFetch("/addresses", { method: "POST", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function updateAddress(id: string, data: AddressInput, token: string) {
+  return apiFetch(`/addresses/${id}`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function deleteAddress(id: string, token: string) {
+  return apiFetch(`/addresses/${id}`, { method: "DELETE", headers: authHeaders(token) });
+}
+
+export function updateProfile(name: string, token: string): Promise<{ accessToken: string }> {
+  return apiFetch("/auth/me", { method: "PATCH", headers: authHeaders(token), body: JSON.stringify({ name }) });
+}
+
+export function changePassword(currentPassword: string, newPassword: string, token: string) {
+  return apiFetch("/auth/change-password", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
 export async function uploadImage(file: File, token: string): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
