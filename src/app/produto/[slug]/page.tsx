@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { formatPrice } from "@/lib/format";
 import { getProductBySlug, getProducts, getReviews } from "@/lib/api";
@@ -6,6 +7,29 @@ import { ProductCard } from "@/components/product-card";
 import { ProductActions } from "@/components/product-actions";
 import { ReviewForm } from "@/components/review-form";
 import { ProductStockBar } from "@/components/product-stock-bar";
+import { SITE_URL } from "@/lib/site";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProductBySlug(slug);
+  if (!product) return {};
+
+  const description = product.description.slice(0, 160);
+  return {
+    title: product.name,
+    description,
+    alternates: { canonical: `/produto/${product.slug}` },
+    openGraph: {
+      title: product.name,
+      description,
+      images: product.images[0] ? [{ url: product.images[0] }] : undefined,
+    },
+  };
+}
 
 export default async function ProductPage({
   params,
@@ -20,8 +44,33 @@ export default async function ProductPage({
   const related = categoryProducts.filter((p) => p.slug !== slug);
   const reviews = await getReviews(product.id);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    image: product.images,
+    sku: product.slug,
+    brand: { "@type": "Brand", name: product.brand },
+    offers: {
+      "@type": "Offer",
+      url: `${SITE_URL}/produto/${product.slug}`,
+      priceCurrency: "EUR",
+      price: product.price,
+      availability: product.stockQuantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    },
+    ...(product.reviews > 0 && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: product.rating,
+        reviewCount: product.reviews,
+      },
+    }),
+  };
+
   return (
     <div className="px-6 py-8 lg:px-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="grid gap-10 md:grid-cols-2">
         <ProductGallery images={product.images} color={product.color} name={product.name} />
 

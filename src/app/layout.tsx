@@ -8,6 +8,7 @@ import { CartProvider } from "@/lib/cart-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
 import { getCategories } from "@/lib/api";
 import { CookieConsent } from "@/components/cookie-consent";
+import { SITE_URL, SITE_NAME } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,10 +20,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const description =
+  "Loja online de eletrodomésticos, televisões, climatização e pequenos domésticos com os melhores preços e entrega rápida.";
+
 export const metadata: Metadata = {
-  title: "ElectroChico — Eletrodomésticos, TV e Climatização",
-  description:
-    "Loja online de eletrodomésticos, televisões, climatização e pequenos domésticos com os melhores preços e entrega rápida.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME} — Eletrodomésticos, TV e Climatização`, template: `%s — ${SITE_NAME}` },
+  description,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — Eletrodomésticos, TV e Climatização`,
+    description,
+    locale: "pt_PT",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — Eletrodomésticos, TV e Climatização`,
+    description,
+  },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
