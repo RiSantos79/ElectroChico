@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { useFavorites } from "@/lib/favorites-context";
+import { formatPrice } from "@/lib/format";
 
 export function HeaderIcons() {
-  const { count } = useCart();
+  const { count, total } = useCart();
   const { slugs } = useFavorites();
 
   return (
@@ -44,7 +45,9 @@ export function HeaderIcons() {
           <circle cx="9.5" cy="20" r="1.3" />
           <circle cx="17.5" cy="20" r="1.3" />
         </svg>
-        <span>{count}</span>
+        <span>
+          {count} {count === 1 ? "artigo" : "artigos"} · {formatPrice(total)}
+        </span>
       </Link>
     </div>
   );

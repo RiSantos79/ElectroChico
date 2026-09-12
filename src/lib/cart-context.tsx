@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Product } from "@/data/catalog";
 
-export type CartLine = { slug: string; qty: number };
+export type CartLine = { slug: string; qty: number; price: number };
 export type AddItemResult = { addedQty: number; limited: boolean };
 
 type CartContextValue = {
@@ -13,6 +13,7 @@ type CartContextValue = {
   setQty: (slug: string, qty: number, maxQty?: number) => boolean;
   clear: () => void;
   count: number;
+  total: number;
   getCartQty: (slug: string) => number;
   hydrated: boolean;
 };
@@ -59,9 +60,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       if (addedQty <= 0) return prev;
       if (existing) {
-        return prev.map((l) => (l.slug === product.slug ? { ...l, qty: l.qty + addedQty } : l));
+        return prev.map((l) =>
+          l.slug === product.slug ? { ...l, qty: l.qty + addedQty, price: product.price } : l,
+        );
       }
-      return [...prev, { slug: product.slug, qty: addedQty }];
+      return [...prev, { slug: product.slug, qty: addedQty, price: product.price }];
     });
 
     return { addedQty, limited };
@@ -90,9 +93,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }
 
   const count = lines.reduce((sum, l) => sum + l.qty, 0);
+  const total = lines.reduce((sum, l) => sum + (l.price ?? 0) * l.qty, 0);
 
   return (
-    <CartContext.Provider value={{ lines, addItem, removeItem, setQty, clear, count, getCartQty, hydrated }}>
+    <CartContext.Provider
+      value={{ lines, addItem, removeItem, setQty, clear, count, total, getCartQty, hydrated }}
+    >
       {children}
     </CartContext.Provider>
   );

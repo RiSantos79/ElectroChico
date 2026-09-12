@@ -22,14 +22,14 @@ export function ProductGallery({ images, color, name }: { images: string[]; colo
         type="button"
         onClick={() => activeImage && setLightboxOpen(true)}
         disabled={!activeImage}
-        className={`mx-auto block w-full max-w-xs ${activeImage ? "cursor-zoom-in" : "cursor-default"}`}
+        className={`mx-auto block w-full max-w-md ${activeImage ? "cursor-zoom-in" : "cursor-default"}`}
         aria-label="Ampliar imagem"
       >
         <ProductMedia color={color} name={name} image={activeImage} className="aspect-square w-full" />
       </button>
 
       {images.length > 1 && (
-        <div className="mx-auto mt-3 grid max-w-xs grid-cols-5 gap-2">
+        <div className="mx-auto mt-3 grid max-w-md grid-cols-5 gap-2">
           {images.map((image, i) => (
             <button
               key={image}
@@ -61,7 +61,8 @@ export function ProductGallery({ images, color, name }: { images: string[]; colo
             ✕
           </button>
           <div
-            className="max-h-[90vh] max-w-[90vw] overflow-hidden rounded-lg"
+            className="overflow-hidden rounded-lg"
+            style={{ width: "min(85vw, 1100px)", height: "min(85vh, 900px)" }}
             onClick={(e) => e.stopPropagation()}
             onMouseMove={handleZoomMove}
           >
@@ -69,7 +70,7 @@ export function ProductGallery({ images, color, name }: { images: string[]; colo
             <img
               src={activeImage}
               alt={name}
-              className="max-h-[90vh] max-w-[90vw] cursor-zoom-in object-contain transition-transform duration-150 ease-out hover:scale-[2]"
+              className="h-full w-full cursor-zoom-in object-contain transition-transform duration-150 ease-out hover:scale-[2]"
               style={{ transformOrigin: zoomOrigin }}
             />
           </div>
