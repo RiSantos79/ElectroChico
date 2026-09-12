@@ -31,6 +31,7 @@ export const energyClasses: EnergyClass[] = ["A", "B", "C", "D", "E", "F", "G"];
 export const promoLinks = [
   { label: "Outlet", href: "/outlet" },
   { label: "Ofertas Flash", href: "/ofertas-flash" },
+  { label: "Cartões Presente", href: "/catalogo/cartoes-presente" },
 ];
 
 export const topNavLinks = [

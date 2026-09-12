@@ -3,9 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { promoLinks, topNavLinks, type Category } from "@/data/catalog";
+import { GIFT_CARD_CATEGORY_SLUG } from "@/lib/gift-cards";
 
 export function MegaMenu({ categories }: { categories: Category[] }) {
   const [open, setOpen] = useState<string | null>(null);
+  // Cartões Presente já tem destaque próprio em promoLinks, ao lado das
+  // Ofertas Flash — não faz sentido repetir como categoria de compras normal.
+  const shoppableCategories = categories.filter((c) => c.slug !== GIFT_CARD_CATEGORY_SLUG);
 
   return (
     <nav className="hidden border-t border-border md:block" onMouseLeave={() => setOpen(null)}>
@@ -19,7 +23,7 @@ export function MegaMenu({ categories }: { categories: Category[] }) {
           </li>
         ))}
 
-        {categories.map((category) => (
+        {shoppableCategories.map((category) => (
           <li key={category.slug} className="relative shrink-0" onMouseEnter={() => setOpen(category.slug)}>
             <Link
               href={`/catalogo/${category.slug}`}

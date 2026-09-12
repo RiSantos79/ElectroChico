@@ -4,6 +4,7 @@ import type { Product } from "@/data/catalog";
 import { ProductMedia } from "@/components/product-media";
 import { ProductStockBar } from "@/components/product-stock-bar";
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { FavoriteButton } from "@/components/favorite-button";
 
 const badgeLabel: Record<NonNullable<Product["badge"]>, string> = {
   promo: "Promoção",
@@ -60,7 +61,10 @@ export function ProductCard({ product }: { product: Product }) {
           <ProductStockBar product={product} compact className="mt-2" />
         </div>
       </Link>
-      <AddToCartButton product={product} className="mt-3 w-full" />
+      <div className="mt-3 flex gap-2">
+        <AddToCartButton product={product} className="flex-1" />
+        <FavoriteButton slug={product.slug} className="size-10" />
+      </div>
     </div>
   );
 }

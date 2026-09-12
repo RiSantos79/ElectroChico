@@ -2,13 +2,16 @@ import Link from "next/link";
 import { ProductCard } from "@/components/product-card";
 import type { Product } from "@/data/catalog";
 import { getCategories, getProducts } from "@/lib/api";
+import { GIFT_CARD_CATEGORY_SLUG } from "@/lib/gift-cards";
 
 export default async function Home() {
   const [products, categories] = await Promise.all([getProducts(), getCategories()]);
-  const brands = Array.from(new Set(products.map((p) => p.brand))).sort();
-  const promoProducts = products.filter((p) => p.badge === "promo");
-  const bestsellers = products.filter((p) => p.badge === "mais-vendido");
-  const newArrivals = products.filter((p) => p.badge === "novo");
+  const shoppableCategories = categories.filter((c) => c.slug !== GIFT_CARD_CATEGORY_SLUG);
+  const shoppableProducts = products.filter((p) => p.category !== GIFT_CARD_CATEGORY_SLUG);
+  const brands = Array.from(new Set(shoppableProducts.map((p) => p.brand))).sort();
+  const promoProducts = shoppableProducts.filter((p) => p.badge === "promo");
+  const bestsellers = shoppableProducts.filter((p) => p.badge === "mais-vendido");
+  const newArrivals = shoppableProducts.filter((p) => p.badge === "novo");
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -45,7 +48,7 @@ export default async function Home() {
       <section className="mt-12">
         <h2 className="mb-4 text-lg font-semibold">Comprar por categoria</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {categories.map((category) => (
+          {shoppableCategories.map((category) => (
             <Link
               key={category.slug}
               href={`/catalogo/${category.slug}`}
