@@ -2,6 +2,7 @@ import { Body, Controller, HttpCode, Post, Req, UseGuards } from '@nestjs/common
 import type { Request } from 'express';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
+import { RegisterDto } from './dto/register.dto.js';
 import { RateLimit } from '../common/rate-limit.guard.js';
 
 @Controller('auth')
@@ -13,5 +14,12 @@ export class AuthController {
   @UseGuards(RateLimit({ windowMs: 60_000, max: 5 }))
   login(@Body() dto: LoginDto, @Req() req: Request) {
     return this.authService.login(dto.email, dto.password, req.ip);
+  }
+
+  @Post('register')
+  @HttpCode(201)
+  @UseGuards(RateLimit({ windowMs: 60_000, max: 5 }))
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto.email, dto.password, dto.name);
   }
 }

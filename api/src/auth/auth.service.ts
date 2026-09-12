@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -24,7 +24,20 @@ export class AuthService {
     }
 
     await this.audit.log('LOGIN_SUCCESS', { actor: email, ip });
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email });
+    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name });
+    return { accessToken };
+  }
+
+  async register(email: string, password: string, name: string) {
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) throw new ConflictException('Já existe uma conta com este email');
+
+    const passwordHash = await argon2.hash(password);
+    const user = await this.prisma.user.create({
+      data: { email, passwordHash, name, role: 'CUSTOMER' },
+    });
+
+    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name });
     return { accessToken };
   }
 }

@@ -3,6 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { AdminGuard } from '../auth/admin.guard.js';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -15,7 +16,7 @@ cloudinary.config({
 
 @Controller('uploads')
 export class UploadsController {
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Post()
   @UseInterceptors(
     FileInterceptor('file', {

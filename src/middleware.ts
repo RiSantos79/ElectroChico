@@ -33,8 +33,8 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("session")?.value;
   if (token) {
     try {
-      await jwtVerify(token, secret);
-      return NextResponse.next();
+      const { payload } = await jwtVerify(token, secret);
+      if (payload.role === "ADMIN") return NextResponse.next();
     } catch {
       // token inválido/expirado — cai para o redirect abaixo
     }

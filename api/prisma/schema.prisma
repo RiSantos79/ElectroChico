@@ -23,11 +23,19 @@ enum ProductBadge {
   MAIS_VENDIDO
 }
 
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
+  name         String?
+  role         Role     @default(CUSTOMER)
   createdAt    DateTime @default(now())
+  orders       Order[]
 }
 
 model Category {
@@ -88,6 +96,8 @@ enum OrderStatus {
 model Order {
   id              String      @id @default(cuid())
   status          OrderStatus @default(PENDING)
+  customer        User?       @relation(fields: [customerId], references: [id])
+  customerId      String?
   customerName    String
   customerEmail   String
   customerPhone   String
@@ -102,6 +112,8 @@ model Order {
   items           OrderItem[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+
+  @@index([customerId])
 }
 
 model OrderItem {

@@ -191,10 +191,16 @@ export type CreateOrderInput = {
   items: { productId: string; quantity: number }[];
 };
 
-export function createOrder(input: CreateOrderInput): Promise<{ orderId: string; checkoutUrl: string }> {
+export function createOrder(
+  input: CreateOrderInput,
+  customerToken?: string,
+): Promise<{ orderId: string; checkoutUrl: string }> {
   return apiFetch("/orders", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(customerToken ? { Authorization: `Bearer ${customerToken}` } : {}),
+    },
     body: JSON.stringify(input),
   });
 }
@@ -219,6 +225,10 @@ export async function getOrder(id: string): Promise<Order | null> {
 
 export function getOrdersAdmin(token: string): Promise<Order[]> {
   return apiFetch<Order[]>("/orders", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function getMyOrders(token: string): Promise<Order[]> {
+  return apiFetch<Order[]>("/orders/me", { headers: { Authorization: `Bearer ${token}` } });
 }
 
 export async function uploadImage(file: File, token: string): Promise<string> {

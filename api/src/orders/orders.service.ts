@@ -18,7 +18,7 @@ export class OrdersService {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   }
 
-  async createCheckoutSession(dto: CreateOrderDto) {
+  async createCheckoutSession(dto: CreateOrderDto, customerId?: string) {
     const productIds = dto.items.map((item) => item.productId);
     const products = await this.prisma.product.findMany({ where: { id: { in: productIds } } });
 
@@ -42,6 +42,7 @@ export class OrdersService {
 
     const order = await this.prisma.order.create({
       data: {
+        customerId,
         customerName: dto.customerName,
         customerEmail: dto.customerEmail,
         customerPhone: dto.customerPhone,
@@ -123,6 +124,14 @@ export class OrdersService {
       include: { items: true },
       orderBy: { createdAt: 'desc' },
       take: limit,
+    });
+  }
+
+  findMine(customerId: string) {
+    return this.prisma.order.findMany({
+      where: { customerId },
+      include: { items: true },
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

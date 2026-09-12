@@ -13,6 +13,7 @@ import { ProductsService } from './products.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { AdminGuard } from '../auth/admin.guard.js';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
 
 @Controller('products')
@@ -34,19 +35,19 @@ export class ProductsController {
     return this.productsService.findBySlug(slug);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Post()
   create(@Body() dto: CreateProductDto, @CurrentUser() user: AuthenticatedUser) {
     return this.productsService.create(dto, user.email);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateProductDto, @CurrentUser() user: AuthenticatedUser) {
     return this.productsService.update(id, dto, user.email);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.productsService.remove(id, user.email);
