@@ -8,7 +8,7 @@ const API_URL = process.env.API_URL ?? "http://localhost:3333";
 async function issueSession(res: Response) {
   const { accessToken } = await res.json();
   await setCustomerSessionCookie(accessToken);
-  redirect("/conta");
+  redirect("/");
 }
 
 export async function customerLoginAction(_prevState: string | null, formData: FormData): Promise<string | null> {
