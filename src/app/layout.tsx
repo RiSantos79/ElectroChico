@@ -11,6 +11,7 @@ import { IvaProvider } from "@/lib/iva-context";
 import { getCategories } from "@/lib/api";
 import { getCustomerSessionToken } from "@/lib/customer-session";
 import { CookieConsent } from "@/components/cookie-consent";
+import { ShopChrome } from "@/components/shop-chrome";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 
 const geistSans = Geist({
@@ -64,13 +65,18 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <IvaProvider>
             <FavoritesProvider key={`fav-${customerId ?? "guest"}`} customerKey={customerId}>
               <CartProvider key={`cart-${customerId ?? "guest"}`} customerKey={customerId}>
-                <Header
-                  categories={categories}
-                  customerName={customerPayload ? (customerPayload.name ?? customerPayload.email) : null}
-                />
-                <main className="flex-1">{children}</main>
-                <Footer />
-                <CookieConsent />
+                <ShopChrome
+                  header={
+                    <Header
+                      categories={categories}
+                      customerName={customerPayload ? (customerPayload.name ?? customerPayload.email) : null}
+                    />
+                  }
+                  footer={<Footer />}
+                  cookieConsent={<CookieConsent />}
+                >
+                  <main className="flex-1">{children}</main>
+                </ShopChrome>
               </CartProvider>
             </FavoritesProvider>
           </IvaProvider>
