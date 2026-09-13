@@ -395,3 +395,66 @@ export function redeemGiftCard(code: string, token: string): Promise<GiftCard> {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// --- Dashboard (admin) ---
+
+export type SalesMetric = { total: number; count: number; averageTicket: number };
+
+export type DashboardSummary = {
+  sales: {
+    today: SalesMetric;
+    prevDay: SalesMetric;
+    month: SalesMetric;
+    prevMonth: SalesMetric;
+    year: SalesMetric;
+    prevYear: SalesMetric;
+  };
+  newCustomersThisMonth: number;
+  recurringCustomers: number;
+  abandonedCarts: number;
+  stock: {
+    outOfStock: number;
+    critical: number;
+    criticalList: { id: string; name: string; slug: string; stockQuantity: number }[];
+  };
+  topProducts: { productId: string; productName: string; quantity: number }[];
+  dailySales: { date: string; total: number }[];
+  conversionRate: number | null;
+};
+
+export function getDashboardSummary(token: string): Promise<DashboardSummary> {
+  return apiFetch<DashboardSummary>("/dashboard/summary", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+// --- Clientes (admin) ---
+
+export type AdminCustomer = {
+  id: string;
+  name: string | null;
+  email: string;
+  createdAt: string;
+  totalSpent: number;
+  orderCount: number;
+  lastOrderAt: string | null;
+};
+
+export type AdminCustomerDetail = {
+  customer: {
+    id: string;
+    name: string | null;
+    email: string;
+    createdAt: string;
+    addresses: Address[];
+  };
+  orders: Order[];
+};
+
+export function getAdminCustomers(token: string): Promise<AdminCustomer[]> {
+  return apiFetch<AdminCustomer[]>("/users", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function getAdminCustomerDetail(id: string, token: string): Promise<AdminCustomerDetail> {
+  return apiFetch<AdminCustomerDetail>(`/users/${encodeURIComponent(id)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}

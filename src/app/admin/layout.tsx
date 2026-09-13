@@ -12,14 +12,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div>
       <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-3 lg:px-10">
         <div className="flex items-center gap-6">
-          <Link href="/admin/produtos" className="text-sm font-semibold text-foreground">
+          <Link href="/admin" className="text-sm font-semibold text-foreground">
             ElectroChico — Backoffice
+          </Link>
+          <Link href="/admin" className="text-sm text-muted hover:text-foreground">
+            Dashboard
           </Link>
           <Link href="/admin/produtos" className="text-sm text-muted hover:text-foreground">
             Produtos
           </Link>
           <Link href="/admin/encomendas" className="text-sm text-muted hover:text-foreground">
             Encomendas
+          </Link>
+          <Link href="/admin/clientes" className="text-sm text-muted hover:text-foreground">
+            Clientes
           </Link>
           <Link href="/admin/atividade" className="text-sm text-muted hover:text-foreground">
             Atividade
