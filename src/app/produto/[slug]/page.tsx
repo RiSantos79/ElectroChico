@@ -7,7 +7,14 @@ import { ProductCard } from "@/components/product-card";
 import { ProductActions } from "@/components/product-actions";
 import { ReviewForm } from "@/components/review-form";
 import { ProductStockBar } from "@/components/product-stock-bar";
+import { StickyBuyBar } from "@/components/sticky-buy-bar";
 import { SITE_URL } from "@/lib/site";
+
+// A descrição é HTML (editor de texto do admin) — para metadados/SEO
+// precisamos só do texto, sem as tags.
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
 
 export async function generateMetadata({
   params,
@@ -18,7 +25,7 @@ export async function generateMetadata({
   const product = await getProductBySlug(slug);
   if (!product) return {};
 
-  const description = product.description.slice(0, 160);
+  const description = stripHtml(product.description).slice(0, 160);
   return {
     title: product.name,
     description,
@@ -43,12 +50,17 @@ export default async function ProductPage({
   const categoryProducts = await getProducts({ category: product.category });
   const related = categoryProducts.filter((p) => p.slug !== slug);
   const reviews = await getReviews(product.id);
+  const discount =
+    product.oldPrice && product.oldPrice > product.price
+      ? Math.round(100 - (product.price / product.oldPrice) * 100)
+      : null;
+  const highlights = product.specs.slice(0, 4);
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.description,
+    description: stripHtml(product.description),
     image: product.images,
     sku: product.slug,
     brand: { "@type": "Brand", name: product.brand },
@@ -88,14 +100,45 @@ export default async function ProductPage({
             {product.oldPrice && (
               <span className="text-lg text-muted line-through">{formatPrice(product.oldPrice)}</span>
             )}
+            {discount && (
+              <span className="rounded-full bg-danger px-2.5 py-1 text-xs font-semibold text-white">
+                -{discount}%
+              </span>
+            )}
           </div>
           <p className="mt-1 text-sm font-medium text-muted">Classe energética {product.energyClass}</p>
 
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-border bg-surface px-4 py-3 text-xs font-medium text-muted">
+            <span className="inline-flex items-center gap-1.5 text-success">
+              <span aria-hidden>✓</span> Envio grátis
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-success">
+              <span aria-hidden>✓</span> Devolução grátis
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden>✓</span> Garantia de 2 anos
+            </span>
+          </div>
+
           <ProductStockBar product={product} className="mt-4 max-w-56" />
 
-          <p className="mt-4 text-sm leading-relaxed text-muted">{product.description}</p>
+          {highlights.length > 0 && (
+            <ul className="mt-4 space-y-1.5 text-sm text-muted">
+              {highlights.map((spec) => (
+                <li key={spec.label} className="flex gap-2">
+                  <span aria-hidden className="text-accent">
+                    •
+                  </span>
+                  <span>
+                    <span className="font-medium text-foreground">{spec.label}:</span> {spec.value}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
 
           <ProductActions product={product} />
+          <StickyBuyBar product={product} />
 
           <dl className="mt-8 divide-y divide-border rounded-xl border border-border">
             {product.specs.map((spec) => (
@@ -107,6 +150,14 @@ export default async function ProductPage({
           </dl>
         </div>
       </div>
+
+      <section className="mt-14 max-w-2xl">
+        <h2 className="mb-4 text-lg font-semibold">Descrição</h2>
+        <div
+          className="prose-sm max-w-none text-sm leading-relaxed text-muted [&_a]:text-accent [&_a]:underline [&_em]:italic [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+          dangerouslySetInnerHTML={{ __html: product.description }}
+        />
+      </section>
 
       <section className="mt-14 max-w-2xl">
         <h2 className="mb-4 text-lg font-semibold">Avaliações de clientes</h2>

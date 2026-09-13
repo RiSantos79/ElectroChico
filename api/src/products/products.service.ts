@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
+import { sanitizeDescription } from '../common/sanitize-html.js';
 
 @Injectable()
 export class ProductsService {
@@ -46,6 +47,7 @@ export class ProductsService {
     const product = await this.prisma.product.create({
       data: {
         ...rest,
+        description: sanitizeDescription(rest.description),
         specs: specs as unknown as Prisma.InputJsonValue,
         category: { connect: { id: categoryId } },
       },
@@ -61,6 +63,7 @@ export class ProductsService {
       where: { id },
       data: {
         ...rest,
+        description: rest.description !== undefined ? sanitizeDescription(rest.description) : undefined,
         specs: specs !== undefined ? (specs as unknown as Prisma.InputJsonValue) : undefined,
         category: categoryId ? { connect: { id: categoryId } } : undefined,
       },

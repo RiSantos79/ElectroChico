@@ -1,5 +1,6 @@
 import type { AdminCategory, AdminProduct } from "@/lib/api";
 import { PriceStockFields } from "@/components/admin/price-stock-fields";
+import { RichTextEditor } from "@/components/admin/rich-text-editor";
 
 function specsToText(specs: { label: string; value: string }[]) {
   return specs.map((s) => `${s.label}: ${s.value}`).join("\n");
@@ -61,16 +62,10 @@ export function ProductForm({
 
       <section className="rounded-xl border border-border bg-surface-raised p-6">
         <h2 className="mb-4 text-lg font-semibold text-foreground">Descrição e especificações</h2>
-        <label className="flex flex-col gap-1 text-sm">
+        <div className="flex flex-col gap-1 text-sm">
           Descrição
-          <textarea
-            name="description"
-            required
-            rows={4}
-            defaultValue={product?.description}
-            className="input-field resize-none"
-          />
-        </label>
+          <RichTextEditor name="description" defaultValue={product?.description} />
+        </div>
         <label className="mt-4 flex flex-col gap-1 text-sm">
           Especificações técnicas — uma por linha, no formato <code>Nome: Valor</code>
           <textarea
