@@ -10,7 +10,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: ${API_URL} https://res.cloudinary.com`,
+  `img-src 'self' data: ${API_URL} https://res.cloudinary.com https://*.tile.openstreetmap.org`,
   `connect-src 'self' ${API_URL}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
