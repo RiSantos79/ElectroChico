@@ -5,7 +5,6 @@ import { getProductBySlug, getProducts, getReviews } from "@/lib/api";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductCard } from "@/components/product-card";
 import { ProductActions } from "@/components/product-actions";
-import { ReviewForm } from "@/components/review-form";
 import { ProductStockBar } from "@/components/product-stock-bar";
 import { StickyBuyBar } from "@/components/sticky-buy-bar";
 import { ProductTabs } from "@/components/product-tabs";
@@ -126,27 +125,13 @@ export default async function ProductPage({
         </div>
       </div>
 
-      <ProductTabs description={product.description} specs={product.specs} />
-
-      <section className="mt-14 max-w-2xl">
-        <h2 className="mb-4 text-lg font-semibold">Avaliações de clientes</h2>
-        {reviews.length > 0 ? (
-          <ul className="mb-6 space-y-3">
-            {reviews.map((r) => (
-              <li key={r.id} className="rounded-xl border border-border bg-surface-raised p-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-foreground">{r.authorName}</span>
-                  <span className="text-sm text-muted">{"★".repeat(r.rating)}</span>
-                </div>
-                {r.comment && <p className="mt-1 text-sm text-muted">{r.comment}</p>}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mb-6 text-sm text-muted">Ainda não há avaliações — sê o primeiro a deixar uma.</p>
-        )}
-        <ReviewForm productId={product.id} productSlug={product.slug} />
-      </section>
+      <ProductTabs
+        description={product.description}
+        specs={product.specs}
+        reviews={reviews}
+        productId={product.id}
+        productSlug={product.slug}
+      />
 
       {related.length > 0 && (
         <section className="mt-14">

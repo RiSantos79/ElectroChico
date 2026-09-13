@@ -1,15 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import type { Review } from "@/lib/api";
+import { ReviewForm } from "@/components/review-form";
 
 export function ProductTabs({
   description,
   specs,
+  reviews,
+  productId,
+  productSlug,
 }: {
   description: string;
   specs: { label: string; value: string }[];
+  reviews: Review[];
+  productId: string;
+  productSlug: string;
 }) {
-  const [tab, setTab] = useState<"descricao" | "specs">("descricao");
+  const [tab, setTab] = useState<"descricao" | "specs" | "avaliacoes">("descricao");
 
   return (
     <section className="mt-14 max-w-2xl">
@@ -18,6 +26,7 @@ export function ProductTabs({
           [
             ["descricao", "Descrição"],
             ["specs", "Especificações técnicas"],
+            ["avaliacoes", `Avaliações (${reviews.length})`],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -33,21 +42,56 @@ export function ProductTabs({
         ))}
       </div>
 
-      {tab === "descricao" ? (
+      {tab === "descricao" && (
         <div
           className="prose-sm max-w-none text-sm leading-relaxed text-muted [&_a]:text-accent [&_a]:underline [&_em]:italic [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
           dangerouslySetInnerHTML={{ __html: description }}
         />
-      ) : (
-        <dl className="divide-y divide-border rounded-xl border border-border">
-          {specs.map((spec) => (
-            <div key={spec.label} className="flex justify-between gap-4 px-4 py-3 text-sm">
-              <dt className="text-muted">{spec.label}</dt>
-              <dd className="font-medium text-foreground">{spec.value}</dd>
-            </div>
-          ))}
-          {specs.length === 0 && <p className="px-4 py-6 text-center text-sm text-muted">Sem especificações.</p>}
-        </dl>
+      )}
+
+      {tab === "specs" &&
+        (specs.length > 0 ? (
+          <div className="overflow-hidden rounded-xl border border-border">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="bg-surface">
+                  <th className="px-4 py-3 font-semibold text-foreground">Especificação</th>
+                  <th className="px-4 py-3 font-semibold text-foreground">Detalhe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {specs.map((spec, i) => (
+                  <tr key={spec.label} className={i % 2 === 1 ? "bg-surface/60" : ""}>
+                    <td className="px-4 py-3 font-medium text-foreground">{spec.label}</td>
+                    <td className="px-4 py-3 text-muted">{spec.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-muted">Sem especificações.</p>
+        ))}
+
+      {tab === "avaliacoes" && (
+        <div>
+          {reviews.length > 0 ? (
+            <ul className="mb-6 space-y-3">
+              {reviews.map((r) => (
+                <li key={r.id} className="rounded-xl border border-border bg-surface-raised p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-foreground">{r.authorName}</span>
+                    <span className="text-sm text-muted">{"★".repeat(r.rating)}</span>
+                  </div>
+                  {r.comment && <p className="mt-1 text-sm text-muted">{r.comment}</p>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-6 text-sm text-muted">Ainda não há avaliações — sê o primeiro a deixar uma.</p>
+          )}
+          <ReviewForm productId={productId} productSlug={productSlug} />
+        </div>
       )}
     </section>
   );
