@@ -107,14 +107,8 @@ export default async function ProductPage({
           <p className="mt-1 text-sm font-medium text-muted">Classe energética {product.energyClass}</p>
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-border bg-surface px-4 py-3 text-xs font-medium text-muted">
-            <span className="inline-flex items-center gap-1.5 text-success">
-              <span aria-hidden>✓</span> Envio grátis
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-success">
-              <span aria-hidden>✓</span> Devolução grátis
-            </span>
             <span className="inline-flex items-center gap-1.5">
-              <span aria-hidden>✓</span> Garantia de 2 anos
+              <span aria-hidden>✓</span> Garantia de acordo com a legislação em vigor
             </span>
           </div>
 
