@@ -67,7 +67,8 @@ export function ProductForm({
           <RichTextEditor name="description" defaultValue={product?.description} />
         </div>
         <label className="mt-4 flex flex-col gap-1 text-sm">
-          Especificações técnicas — uma por linha, no formato <code>Nome: Valor</code>
+          Especificações técnicas — uma por linha, no formato <code>Nome: Valor</code> (também aceita colar
+          diretamente de uma tabela ou folha de cálculo, com colunas separadas por tab)
           <textarea
             name="specs"
             rows={5}

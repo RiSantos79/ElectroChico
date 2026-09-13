@@ -17,12 +17,19 @@ async function requireToken() {
   return token;
 }
 
+// Aceita tanto "Nome: Valor" escrito à mão como texto colado de uma tabela
+// ou folha de cálculo (colunas separadas por tab) — nesse caso ignora um
+// ":" a mais que normalmente sobra no fim da célula do valor.
 function parseSpecs(text: string) {
   return text
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
+      if (line.includes("\t")) {
+        const [label, ...rest] = line.split("\t");
+        return { label: label.trim(), value: rest.join("\t").trim().replace(/:\s*$/, "") };
+      }
       const [label, ...rest] = line.split(":");
       return { label: label.trim(), value: rest.join(":").trim() };
     });
