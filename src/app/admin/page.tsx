@@ -3,9 +3,31 @@ import { redirect } from "next/navigation";
 import { getDashboardSummary } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { formatPrice } from "@/lib/format";
+import { coordsForCity } from "@/lib/pt-cities";
 import { SalesBarChart } from "@/components/admin/sales-bar-chart";
+import { AvgTicketChart } from "@/components/admin/avg-ticket-chart";
+import { HourlyActivityChart } from "@/components/admin/hourly-activity-chart";
+import { WeekdayChart } from "@/components/admin/weekday-chart";
+import { TopBarChart } from "@/components/admin/top-bar-chart";
+import { DonutChart } from "@/components/admin/donut-chart";
+import { NewCustomersChart } from "@/components/admin/new-customers-chart";
+import { CitiesMapLoader } from "@/components/admin/cities-map-loader";
 
 export const metadata = { title: "Dashboard — Backoffice" };
+
+const paymentMethodLabels: Record<string, string> = {
+  card: "Cartão",
+  multibanco: "Multibanco",
+  mb_way: "MB WAY",
+  paypal: "PayPal",
+};
+
+function formatResponseTime(hours: number | null): string {
+  if (hours === null) return "—";
+  if (hours < 1) return `${Math.round(hours * 60)} min`;
+  if (hours < 48) return `${hours.toFixed(1)} h`;
+  return `${(hours / 24).toFixed(1)} dias`;
+}
 
 function variation(current: number, previous: number): { pct: number | null; up: boolean } {
   if (previous === 0) return { pct: current > 0 ? 100 : null, up: current >= previous };
@@ -47,11 +69,22 @@ function MetricCard({
   );
 }
 
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border bg-surface-raised p-4">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
 export default async function AdminDashboardPage() {
   const token = await getSessionToken();
   if (!token) redirect("/admin/login");
 
   const summary = await getDashboardSummary(token);
+
+  const unmatchedCities = summary.topCities.filter((c) => !coordsForCity(c.city));
 
   return (
     <div className="space-y-8 px-6 py-8 lg:px-10">
@@ -84,32 +117,79 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
-      <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Vendas nos últimos 30 dias</h2>
-        <div className="rounded-xl border border-border bg-surface-raised p-4">
-          <SalesBarChart data={summary.dailySales} />
-        </div>
-      </section>
+      <Panel title="Vendas e visitas — últimos 30 dias">
+        <SalesBarChart data={summary.dailyStats} />
+      </Panel>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-border bg-surface-raised p-4">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Produtos mais vendidos</h2>
-          {summary.topProducts.length === 0 ? (
-            <p className="text-sm text-muted">Ainda sem vendas.</p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {summary.topProducts.map((p) => (
-                <li key={p.productId} className="flex justify-between">
-                  <span className="text-foreground">{p.productName}</span>
-                  <span className="text-muted">{p.quantity} un.</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Ticket médio — últimos 30 dias">
+          <AvgTicketChart data={summary.dailyStats} />
+        </Panel>
+        <Panel title="Atividade por hora do dia — últimos 30 dias">
+          <HourlyActivityChart data={summary.hourlyActivity} />
+        </Panel>
+      </div>
 
-        <div className="rounded-xl border border-border bg-surface-raised p-4">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Alertas</h2>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Vendas por dia da semana — últimos 90 dias">
+          <WeekdayChart data={summary.salesByWeekday} />
+        </Panel>
+        <Panel title="Novos clientes — últimos 90 dias">
+          <NewCustomersChart data={summary.newCustomersOverTime} />
+        </Panel>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Produtos mais vendidos (top 10)">
+          <TopBarChart
+            data={summary.topProducts.map((p) => ({ label: p.productName, value: p.quantity }))}
+            variant="quantity"
+          />
+        </Panel>
+        <Panel title="Clientes com mais compras (top 10)">
+          <TopBarChart
+            data={summary.topCustomers.map((c) => ({ label: c.name || c.email, value: c.total }))}
+            variant="currency"
+          />
+        </Panel>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Panel title="Receita por categoria">
+          <DonutChart
+            data={summary.revenueByCategory.map((c) => ({ name: c.category, value: c.total }))}
+            variant="currency"
+          />
+        </Panel>
+        <Panel title="Clientes novos vs. recorrentes">
+          <DonutChart
+            data={[
+              { name: "Novos (1 compra)", value: summary.loyalty.oneTime },
+              { name: "Recorrentes (2+)", value: summary.loyalty.recurring },
+            ]}
+          />
+        </Panel>
+        <Panel title="Método de pagamento">
+          <DonutChart
+            data={summary.paymentMethods.map((p) => ({
+              name: paymentMethodLabels[p.method] ?? p.method,
+              value: p.count,
+            }))}
+          />
+        </Panel>
+      </div>
+
+      <Panel title="Clientes por cidade">
+        <CitiesMapLoader cities={summary.topCities} />
+        {unmatchedCities.length > 0 && (
+          <p className="mt-3 text-xs text-muted">
+            Sem coordenadas no mapa: {unmatchedCities.map((c) => `${c.city} (${c.orderCount})`).join(", ")}
+          </p>
+        )}
+      </Panel>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Alertas">
           <ul className="space-y-2 text-sm">
             <li className="flex justify-between">
               <span className="text-muted">Clientes recorrentes</span>
@@ -143,10 +223,39 @@ export default async function AdminDashboardPage() {
             </ul>
           )}
           <p className="mt-3 text-xs text-muted">
-            Taxa de conversão: não disponível — requer analítica de visitas, ainda não implementada.
+            Taxa de conversão: não disponível — requer analítica de sessões, ainda não implementada.
           </p>
-        </div>
-      </section>
+        </Panel>
+
+        <Panel title="Cartões-presente e suporte">
+          <ul className="space-y-2 text-sm">
+            <li className="flex justify-between">
+              <span className="text-muted">Cartões-presente ativos</span>
+              <span className="font-medium text-foreground">
+                {summary.giftCardStats.activeCount} ({formatPrice(summary.giftCardStats.activeValue)})
+              </span>
+            </li>
+            <li className="flex justify-between">
+              <span className="text-muted">Cartões-presente resgatados</span>
+              <span className="font-medium text-foreground">
+                {summary.giftCardStats.redeemedCount} ({formatPrice(summary.giftCardStats.redeemedValue)})
+              </span>
+            </li>
+            <li className="flex justify-between border-t border-border pt-2">
+              <span className="text-muted">Mensagens de suporte</span>
+              <span className="font-medium text-foreground">{summary.support.total}</span>
+            </li>
+            <li className="flex justify-between">
+              <span className="text-muted">Respondidas</span>
+              <span className="font-medium text-foreground">{summary.support.responded}</span>
+            </li>
+            <li className="flex justify-between">
+              <span className="text-muted">Tempo médio de resposta</span>
+              <span className="font-medium text-foreground">{formatResponseTime(summary.support.avgResponseHours)}</span>
+            </li>
+          </ul>
+        </Panel>
+      </div>
     </div>
   );
 }

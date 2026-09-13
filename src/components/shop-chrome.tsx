@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { PageViewTracker } from "./pageview-tracker";
 
 // O backoffice tem o seu próprio cabeçalho (AdminLayout) — sem isto, o
 // cabeçalho da loja (com a sessão do CLIENTE, "A minha conta", carrinho, etc.)
@@ -25,6 +26,7 @@ export function ShopChrome({
 
   return (
     <>
+      <PageViewTracker />
       {header}
       {children}
       {footer}

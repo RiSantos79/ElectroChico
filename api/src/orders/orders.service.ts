@@ -95,17 +95,35 @@ export class OrdersService {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       const orderId = session.metadata?.orderId;
-      if (orderId) await this.markAsPaid(orderId);
+      if (orderId) await this.markAsPaid(orderId, session.id);
     }
 
     return { received: true };
   }
 
-  private async markAsPaid(orderId: string) {
+  // Best-effort: o método de pagamento é só para estatísticas, nunca deve
+  // impedir a confirmação da encomenda se a chamada extra ao Stripe falhar.
+  private async fetchPaymentMethod(sessionId: string): Promise<string | null> {
+    try {
+      const session = await this.stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ['payment_intent.payment_method'],
+      });
+      const paymentIntent = session.payment_intent;
+      if (!paymentIntent || typeof paymentIntent === 'string') return null;
+      const paymentMethod = paymentIntent.payment_method;
+      if (!paymentMethod || typeof paymentMethod === 'string') return null;
+      return paymentMethod.type;
+    } catch {
+      return null;
+    }
+  }
+
+  private async markAsPaid(orderId: string, stripeSessionId?: string) {
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
     if (!order || order.status === 'PAID') return;
 
-    await this.prisma.order.update({ where: { id: orderId }, data: { status: 'PAID' } });
+    const paymentMethod = stripeSessionId ? await this.fetchPaymentMethod(stripeSessionId) : null;
+    await this.prisma.order.update({ where: { id: orderId }, data: { status: 'PAID', paymentMethod } });
 
     const products = await this.prisma.product.findMany({
       where: { id: { in: order.items.map((i) => i.productId) } },

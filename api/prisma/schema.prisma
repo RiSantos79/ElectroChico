@@ -130,6 +130,7 @@ model Order {
   subtotal        Decimal     @db.Decimal(10, 2)
   total           Decimal     @db.Decimal(10, 2)
   stripeSessionId String?     @unique
+  paymentMethod   String?
   items           OrderItem[]
   giftCards       GiftCard[]
   createdAt       DateTime    @default(now())
@@ -201,6 +202,16 @@ model ContactMessage {
 
   @@index([customerId])
   @@index([type])
+}
+
+// Registo mínimo de páginas vistas, sem IP nem identificador de utilizador
+// — só serve para agregados (horas de pico, volume por dia) no dashboard.
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model ContactReply {

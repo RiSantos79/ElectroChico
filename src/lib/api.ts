@@ -411,6 +411,7 @@ export type DashboardSummary = {
   };
   newCustomersThisMonth: number;
   recurringCustomers: number;
+  loyalty: { recurring: number; oneTime: number };
   abandonedCarts: number;
   stock: {
     outOfStock: number;
@@ -418,7 +419,16 @@ export type DashboardSummary = {
     criticalList: { id: string; name: string; slug: string; stockQuantity: number }[];
   };
   topProducts: { productId: string; productName: string; quantity: number }[];
-  dailySales: { date: string; total: number }[];
+  topCustomers: { customerId: string; name: string | null; email: string; total: number; orderCount: number }[];
+  dailyStats: { date: string; total: number; count: number; averageTicket: number; visits: number }[];
+  hourlyActivity: { hour: number; visits: number; salesCount: number; salesTotal: number }[];
+  salesByWeekday: { weekday: string; total: number; count: number }[];
+  revenueByCategory: { category: string; total: number }[];
+  newCustomersOverTime: { date: string; count: number }[];
+  topCities: { city: string; orderCount: number; total: number }[];
+  giftCardStats: { activeCount: number; activeValue: number; redeemedCount: number; redeemedValue: number };
+  paymentMethods: { method: string; count: number }[];
+  support: { total: number; responded: number; avgResponseHours: number | null };
   conversionRate: number | null;
 };
 
