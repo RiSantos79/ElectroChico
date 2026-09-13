@@ -52,14 +52,15 @@ export function ProductTabs({
       {tab === "specs" &&
         (specs.length > 0 ? (
           <div className="overflow-hidden rounded-xl border border-border text-sm">
-            <div className="grid grid-cols-[minmax(140px,1fr)_2fr] bg-surface">
+            <div className="grid bg-surface" style={{ gridTemplateColumns: "180px 1fr" }}>
               <div className="px-4 py-3 font-semibold text-foreground">Especificação</div>
               <div className="px-4 py-3 font-semibold text-foreground">Detalhe</div>
             </div>
             {specs.map((spec, i) => (
               <div
                 key={spec.label}
-                className={`grid grid-cols-[minmax(140px,1fr)_2fr] ${i % 2 === 1 ? "bg-surface/60" : ""}`}
+                className={`grid ${i % 2 === 1 ? "bg-surface/60" : ""}`}
+                style={{ gridTemplateColumns: "180px 1fr" }}
               >
                 <div className="px-4 py-3 font-medium text-foreground">{spec.label}</div>
                 <div className="px-4 py-3 text-muted">{spec.value}</div>
