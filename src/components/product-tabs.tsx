@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 
-export function ProductTabs({ description, specs }: { description: string; specs: string }) {
+export function ProductTabs({
+  description,
+  specs,
+}: {
+  description: string;
+  specs: { label: string; value: string }[];
+}) {
   const [tab, setTab] = useState<"descricao" | "specs">("descricao");
 
   return (
@@ -26,10 +32,23 @@ export function ProductTabs({ description, specs }: { description: string; specs
           </button>
         ))}
       </div>
-      <div
-        className="prose-sm max-w-none text-sm leading-relaxed text-muted [&_a]:text-accent [&_a]:underline [&_em]:italic [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
-        dangerouslySetInnerHTML={{ __html: tab === "descricao" ? description : specs }}
-      />
+
+      {tab === "descricao" ? (
+        <div
+          className="prose-sm max-w-none text-sm leading-relaxed text-muted [&_a]:text-accent [&_a]:underline [&_em]:italic [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+          dangerouslySetInnerHTML={{ __html: description }}
+        />
+      ) : (
+        <dl className="divide-y divide-border rounded-xl border border-border">
+          {specs.map((spec) => (
+            <div key={spec.label} className="flex justify-between gap-4 px-4 py-3 text-sm">
+              <dt className="text-muted">{spec.label}</dt>
+              <dd className="font-medium text-foreground">{spec.value}</dd>
+            </div>
+          ))}
+          {specs.length === 0 && <p className="px-4 py-6 text-center text-sm text-muted">Sem especificações.</p>}
+        </dl>
+      )}
     </section>
   );
 }

@@ -1,7 +1,24 @@
 import { EnergyClass, ProductBadge } from '../../generated/prisma/client.js';
-import { IsArray, IsEnum, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
-import { Transform } from 'class-transformer';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { slugify } from '../../common/slugify.js';
+
+class SpecDto {
+  @IsString()
+  label!: string;
+
+  @IsString()
+  value!: string;
+}
 
 export class CreateProductDto {
   @IsString()
@@ -43,8 +60,10 @@ export class CreateProductDto {
   @IsString()
   description!: string;
 
-  @IsString()
-  specs!: string;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SpecDto)
+  specs!: SpecDto[];
 
   @IsOptional()
   @IsArray()

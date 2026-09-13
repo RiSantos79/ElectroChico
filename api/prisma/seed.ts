@@ -268,10 +268,6 @@ const demoReviews: Record<string, { authorName: string; rating: number; comment:
   ],
 };
 
-function specsToHtml(specs: { label: string; value: string }[]): string {
-  return specs.map((s) => `<p><strong>${s.label}:</strong> ${s.value}</p>`).join('');
-}
-
 async function main() {
   for (const c of categories) {
     await prisma.category.upsert({
@@ -282,13 +278,12 @@ async function main() {
   }
 
   for (const p of products) {
-    const { category, specs, ...data } = p;
+    const { category, ...data } = p;
     const categoryRecord = await prisma.category.findUniqueOrThrow({ where: { slug: category } });
-    const specsHtml = specsToHtml(specs);
     const product = await prisma.product.upsert({
       where: { slug: p.slug },
-      update: { ...data, specs: specsHtml, categoryId: categoryRecord.id },
-      create: { ...data, specs: specsHtml, categoryId: categoryRecord.id },
+      update: { ...data, categoryId: categoryRecord.id },
+      create: { ...data, categoryId: categoryRecord.id },
     });
 
     const reviews = demoReviews[p.slug] ?? [];

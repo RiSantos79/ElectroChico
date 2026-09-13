@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
@@ -47,7 +48,7 @@ export class ProductsService {
       data: {
         ...rest,
         description: sanitizeRichText(rest.description),
-        specs: sanitizeRichText(specs),
+        specs: specs as unknown as Prisma.InputJsonValue,
         category: { connect: { id: categoryId } },
       },
     });
@@ -63,7 +64,7 @@ export class ProductsService {
       data: {
         ...rest,
         description: rest.description !== undefined ? sanitizeRichText(rest.description) : undefined,
-        specs: specs !== undefined ? sanitizeRichText(specs) : undefined,
+        specs: specs !== undefined ? (specs as unknown as Prisma.InputJsonValue) : undefined,
         category: categoryId ? { connect: { id: categoryId } } : undefined,
       },
     });

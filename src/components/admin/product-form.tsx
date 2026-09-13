@@ -2,6 +2,10 @@ import type { AdminCategory, AdminProduct } from "@/lib/api";
 import { PriceStockFields } from "@/components/admin/price-stock-fields";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 
+function specsToText(specs: { label: string; value: string }[]) {
+  return specs.map((s) => `${s.label}: ${s.value}`).join("\n");
+}
+
 export function ProductForm({
   categories,
   product,
@@ -62,10 +66,16 @@ export function ProductForm({
           Descrição
           <RichTextEditor name="description" defaultValue={product?.description} />
         </div>
-        <div className="mt-4 flex flex-col gap-1 text-sm">
-          Especificações técnicas
-          <RichTextEditor name="specs" defaultValue={product?.specs} />
-        </div>
+        <label className="mt-4 flex flex-col gap-1 text-sm">
+          Especificações técnicas — uma por linha, no formato <code>Nome: Valor</code>
+          <textarea
+            name="specs"
+            rows={5}
+            defaultValue={product ? specsToText(product.specs) : ""}
+            placeholder={"Capacidade: 9 kg\nClasse energética: B"}
+            className="input-field resize-none font-mono text-xs"
+          />
+        </label>
       </section>
 
       <button

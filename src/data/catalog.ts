@@ -22,7 +22,7 @@ export type Product = {
   color: string;
   images: string[];
   description: string;
-  specs: string;
+  specs: { label: string; value: string }[];
 };
 
 export const energyClasses: EnergyClass[] = ["A", "B", "C", "D", "E", "F", "G"];

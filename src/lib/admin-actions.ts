@@ -17,6 +17,17 @@ async function requireToken() {
   return token;
 }
 
+function parseSpecs(text: string) {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [label, ...rest] = line.split(":");
+      return { label: label.trim(), value: rest.join(":").trim() };
+    });
+}
+
 async function formToInput(formData: FormData, token: string): Promise<AdminProductInput> {
   const oldPrice = formData.get("oldPrice");
   const badge = formData.get("badge");
@@ -43,7 +54,7 @@ async function formToInput(formData: FormData, token: string): Promise<AdminProd
     color: String(formData.get("color") || "#1f2937"),
     images: [...keptImages, ...uploadedUrls],
     description: String(formData.get("description")),
-    specs: String(formData.get("specs") || ""),
+    specs: parseSpecs(String(formData.get("specs") || "")),
   };
 }
 
