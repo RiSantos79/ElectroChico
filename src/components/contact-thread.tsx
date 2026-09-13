@@ -3,6 +3,12 @@
 import { useActionState } from "react";
 import type { ContactMessage } from "@/lib/api";
 import { sendContactThreadAction } from "@/lib/contact-actions";
+import { ContactReplies } from "@/components/contact-replies";
+
+const pathByType: Record<"MESSAGE" | "SUGGESTION", string> = {
+  MESSAGE: "/conta/mensagens",
+  SUGGESTION: "/sugestoes",
+};
 
 export function ContactThread({
   type,
@@ -48,12 +54,7 @@ export function ContactThread({
                   <span className="text-xs text-muted">{new Date(m.createdAt).toLocaleString("pt-PT")}</span>
                 </div>
                 <p className="mt-1 text-muted">{m.body}</p>
-                {m.reply && (
-                  <div className="mt-3 rounded-lg border border-border bg-surface p-3">
-                    <div className="mb-1 text-xs font-medium text-success">Resposta da loja</div>
-                    <p className="text-foreground">{m.reply}</p>
-                  </div>
-                )}
+                <ContactReplies messageId={m.id} replies={m.replies} path={pathByType[type]} />
               </li>
             ))}
           </ul>

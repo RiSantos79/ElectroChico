@@ -68,24 +68,25 @@ export default async function AdminMessagesPage({
             </div>
             <p className="mt-2 text-sm text-muted">{m.body}</p>
 
-            {m.reply && (
-              <div className="mt-3 rounded-lg border border-border bg-surface p-3 text-sm">
+            {m.replies.map((r) => (
+              <div
+                key={r.id}
+                className={`mt-3 rounded-lg border border-border p-3 text-sm ${r.fromAdmin ? "bg-surface" : "ml-6 bg-surface-raised"}`}
+              >
                 <div className="mb-1 text-xs font-medium text-success">
-                  Respondido em {m.repliedAt ? new Date(m.repliedAt).toLocaleString("pt-PT") : ""}
+                  {r.fromAdmin ? "Resposta da loja" : "Resposta do cliente"} ·{" "}
+                  {new Date(r.createdAt).toLocaleString("pt-PT")}
                 </div>
-                <p className="text-foreground">{m.reply}</p>
+                <p className="text-foreground">{r.body}</p>
               </div>
-            )}
+            ))}
 
             <details className="mt-3">
-              <summary className="cursor-pointer text-sm font-medium text-accent hover:underline">
-                {m.reply ? "Editar resposta" : "Responder"}
-              </summary>
+              <summary className="cursor-pointer text-sm font-medium text-accent hover:underline">Responder</summary>
               <form action={replyMessageAction.bind(null, m.id)} className="mt-2 flex flex-col gap-2 sm:flex-row">
                 <textarea
                   name="reply"
                   required
-                  defaultValue={m.reply ?? ""}
                   rows={2}
                   placeholder="Escreva a sua resposta..."
                   className="input-field w-full flex-1 resize-none"

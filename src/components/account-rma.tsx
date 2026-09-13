@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import type { ContactMessage } from "@/lib/api";
 import { sendRmaAction } from "@/lib/contact-actions";
+import { ContactReplies } from "@/components/contact-replies";
 
 export function AccountRma({ requests }: { requests: ContactMessage[] }) {
   const [result, formAction] = useActionState(sendRmaAction, null);
@@ -47,12 +48,7 @@ export function AccountRma({ requests }: { requests: ContactMessage[] }) {
                 {r.orderId && <p className="mt-1 text-xs text-muted">Encomenda: {r.orderId}</p>}
                 <p className="mt-1 text-muted">{r.body}</p>
                 <span className="mt-1 inline-block text-xs font-medium text-accent">{r.status}</span>
-                {r.reply && (
-                  <div className="mt-3 rounded-lg border border-border bg-surface p-3">
-                    <div className="mb-1 text-xs font-medium text-success">Resposta da loja</div>
-                    <p className="text-foreground">{r.reply}</p>
-                  </div>
-                )}
+                <ContactReplies messageId={r.id} replies={r.replies} path="/conta/rma" />
               </li>
             ))}
           </ul>

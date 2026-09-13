@@ -2,7 +2,7 @@
 
 import { decodeJwt } from "jose";
 import { revalidatePath } from "next/cache";
-import { createContactMessage, type ContactMessageInput } from "@/lib/api";
+import { createContactMessage, replyContactMessage, type ContactMessageInput } from "@/lib/api";
 import { getCustomerSessionToken } from "@/lib/customer-session";
 
 const pathByType: Record<"MESSAGE" | "SUGGESTION", string> = {
@@ -36,6 +36,29 @@ export async function sendContactThreadAction(
     return e instanceof Error ? e.message : "Não foi possível enviar.";
   }
   revalidatePath(pathByType[type]);
+  return "ok";
+}
+
+// Usado tanto em /conta/mensagens como em /conta/rma — o path a revalidar
+// vem preso (bind) no lado do cliente, tal como o id da conversa.
+export async function sendCustomerReplyAction(
+  path: string,
+  id: string,
+  _prevState: string | null,
+  formData: FormData,
+): Promise<string | null> {
+  const token = await getCustomerSessionToken();
+  if (!token) return "Tem de iniciar sessão para continuar.";
+
+  const reply = String(formData.get("reply") || "");
+  if (!reply.trim()) return null;
+
+  try {
+    await replyContactMessage(id, reply, token);
+  } catch (e) {
+    return e instanceof Error ? e.message : "Não foi possível enviar a resposta.";
+  }
+  revalidatePath(path);
   return "ok";
 }
 

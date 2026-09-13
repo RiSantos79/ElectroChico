@@ -290,6 +290,13 @@ export function changePassword(currentPassword: string, newPassword: string, tok
 
 export type ContactType = "SUGGESTION" | "MESSAGE" | "RMA";
 
+export type ContactReply = {
+  id: string;
+  body: string;
+  fromAdmin: boolean;
+  createdAt: string;
+};
+
 export type ContactMessage = {
   id: string;
   type: ContactType;
@@ -301,8 +308,7 @@ export type ContactMessage = {
   orderId: string | null;
   productName: string | null;
   status: string;
-  reply: string | null;
-  repliedAt: string | null;
+  replies: ContactReply[];
   createdAt: string;
 };
 
@@ -338,7 +344,11 @@ export function getAdminContactMessages(token: string, type?: ContactType): Prom
 }
 
 export function replyContactMessage(id: string, reply: string, token: string) {
-  return apiFetch(`/contact/${id}/reply`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify({ reply }) });
+  return apiFetch(`/contact/${id}/replies`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ reply }),
+  });
 }
 
 export async function uploadImage(file: File, token: string): Promise<string> {

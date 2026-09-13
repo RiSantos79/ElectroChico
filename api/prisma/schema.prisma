@@ -184,9 +184,9 @@ enum ContactType {
 }
 
 model ContactMessage {
-  id          String      @id @default(cuid())
+  id          String         @id @default(cuid())
   type        ContactType
-  customer    User?       @relation(fields: [customerId], references: [id])
+  customer    User?          @relation(fields: [customerId], references: [id])
   customerId  String?
   name        String
   email       String
@@ -195,13 +195,23 @@ model ContactMessage {
   body        String
   orderId     String?
   productName String?
-  status      String      @default("OPEN")
-  reply       String?
-  repliedAt   DateTime?
-  createdAt   DateTime    @default(now())
+  status      String         @default("OPEN")
+  replies     ContactReply[]
+  createdAt   DateTime       @default(now())
 
   @@index([customerId])
   @@index([type])
+}
+
+model ContactReply {
+  id               String         @id @default(cuid())
+  contactMessage   ContactMessage @relation(fields: [contactMessageId], references: [id], onDelete: Cascade)
+  contactMessageId String
+  body             String
+  fromAdmin        Boolean
+  createdAt        DateTime       @default(now())
+
+  @@index([contactMessageId])
 }
 
 model AuditLog {

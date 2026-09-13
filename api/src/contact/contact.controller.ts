@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { ContactService } from './contact.service.js';
@@ -45,9 +45,11 @@ export class ContactController {
     return this.contactService.findAll(type);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @Patch(':id/reply')
-  reply(@Param('id') id: string, @Body() dto: ReplyContactMessageDto) {
-    return this.contactService.reply(id, dto);
+  // Endpoint único para os dois lados da conversa — o serviço decide o que é
+  // permitido consoante quem está autenticado (admin vs. dono da mensagem).
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/replies')
+  addReply(@Param('id') id: string, @Body() dto: ReplyContactMessageDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.contactService.addReply(id, dto, user.sub, user.role === 'ADMIN');
   }
 }
