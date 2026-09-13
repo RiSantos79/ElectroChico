@@ -8,6 +8,7 @@ import { ProductActions } from "@/components/product-actions";
 import { ReviewForm } from "@/components/review-form";
 import { ProductStockBar } from "@/components/product-stock-bar";
 import { StickyBuyBar } from "@/components/sticky-buy-bar";
+import { ProductTabs } from "@/components/product-tabs";
 import { SITE_URL } from "@/lib/site";
 
 // A descrição é HTML (editor de texto do admin) — para metadados/SEO
@@ -54,8 +55,6 @@ export default async function ProductPage({
     product.oldPrice && product.oldPrice > product.price
       ? Math.round(100 - (product.price / product.oldPrice) * 100)
       : null;
-  const highlights = product.specs.slice(0, 4);
-
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -122,42 +121,12 @@ export default async function ProductPage({
 
           <ProductStockBar product={product} className="mt-4 max-w-56" />
 
-          {highlights.length > 0 && (
-            <ul className="mt-4 space-y-1.5 text-sm text-muted">
-              {highlights.map((spec) => (
-                <li key={spec.label} className="flex gap-2">
-                  <span aria-hidden className="text-accent">
-                    •
-                  </span>
-                  <span>
-                    <span className="font-medium text-foreground">{spec.label}:</span> {spec.value}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-
           <ProductActions product={product} />
           <StickyBuyBar product={product} />
-
-          <dl className="mt-8 divide-y divide-border rounded-xl border border-border">
-            {product.specs.map((spec) => (
-              <div key={spec.label} className="flex justify-between gap-4 px-4 py-3 text-sm">
-                <dt className="text-muted">{spec.label}</dt>
-                <dd className="font-medium text-foreground">{spec.value}</dd>
-              </div>
-            ))}
-          </dl>
         </div>
       </div>
 
-      <section className="mt-14 max-w-2xl">
-        <h2 className="mb-4 text-lg font-semibold">Descrição</h2>
-        <div
-          className="prose-sm max-w-none text-sm leading-relaxed text-muted [&_a]:text-accent [&_a]:underline [&_em]:italic [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
-          dangerouslySetInnerHTML={{ __html: product.description }}
-        />
-      </section>
+      <ProductTabs description={product.description} specs={product.specs} />
 
       <section className="mt-14 max-w-2xl">
         <h2 className="mb-4 text-lg font-semibold">Avaliações de clientes</h2>

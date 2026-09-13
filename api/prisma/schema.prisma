@@ -86,7 +86,7 @@ model Product {
   badge        ProductBadge?
   color        String
   description  String
-  specs        Json
+  specs        String        @default("")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 

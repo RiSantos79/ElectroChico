@@ -24,7 +24,7 @@ type ApiProduct = {
   badge: keyof typeof badgeMap | null;
   color: string;
   description: string;
-  specs: { label: string; value: string }[];
+  specs: string;
 };
 
 // As imagens vêm da API como caminhos relativos (ex. "/uploads/x.png") —
@@ -140,7 +140,7 @@ export type AdminProductInput = {
   color: string;
   images: string[];
   description: string;
-  specs: { label: string; value: string }[];
+  specs: string;
 };
 
 export async function getProductById(id: string): Promise<AdminProduct> {
