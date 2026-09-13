@@ -188,6 +188,7 @@ export type CreateOrderInput = {
   floor?: string;
   postalCode: string;
   city: string;
+  newsletterOptIn?: boolean;
   items: { productId: string; quantity: number; recipientEmail?: string; giftMessage?: string }[];
 };
 

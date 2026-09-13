@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import type { Product } from "@/data/catalog";
-import { formatPrice } from "@/lib/format";
 import { ProductMedia } from "@/components/product-media";
+import { Price } from "@/components/price";
 
 export function CartView({ products }: { products: Product[] }) {
   const { lines, removeItem, setQty } = useCart();
@@ -52,7 +52,7 @@ export function CartView({ products }: { products: Product[] }) {
                 <Link href={`/produto/${product.slug}`} className="font-medium text-foreground hover:text-accent">
                   {product.name}
                 </Link>
-                <span className="text-sm text-muted">{formatPrice(product.price)}</span>
+                <Price amount={product.price} className="text-sm text-muted" />
                 <div className="mt-auto flex items-center gap-3">
                   <div className="flex items-center rounded-full border border-border">
                     <button
@@ -86,7 +86,7 @@ export function CartView({ products }: { products: Product[] }) {
                   <p className="mt-1 text-xs text-danger">Só há {product.stockQuantity} em stock</p>
                 )}
               </div>
-              <span className="font-semibold text-foreground">{formatPrice(product.price * line.qty)}</span>
+              <Price amount={product.price * line.qty} className="font-semibold text-foreground" />
             </li>
           ))}
         </ul>
@@ -95,7 +95,7 @@ export function CartView({ products }: { products: Product[] }) {
           <h2 className="text-lg font-semibold text-foreground">Resumo</h2>
           <div className="mt-4 flex justify-between text-sm text-muted">
             <span>Subtotal</span>
-            <span>{formatPrice(subtotal)}</span>
+            <Price amount={subtotal} />
           </div>
           <div className="mt-1 flex justify-between text-sm text-muted">
             <span>Envio</span>
@@ -103,7 +103,7 @@ export function CartView({ products }: { products: Product[] }) {
           </div>
           <div className="mt-4 flex justify-between border-t border-border pt-4 text-base font-semibold text-foreground">
             <span>Total</span>
-            <span>{formatPrice(subtotal)}</span>
+            <Price amount={subtotal} />
           </div>
           <Link
             href="/checkout"

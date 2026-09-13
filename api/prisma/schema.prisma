@@ -126,6 +126,7 @@ model Order {
   floor           String?
   postalCode      String
   city            String
+  newsletterOptIn Boolean     @default(false)
   subtotal        Decimal     @db.Decimal(10, 2)
   total           Decimal     @db.Decimal(10, 2)
   stripeSessionId String?     @unique

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { IvaToggle } from "@/components/iva-toggle";
 import { MegaMenu } from "@/components/mega-menu";
 import { HeaderIcons } from "@/components/header-icons";
 import type { Category } from "@/data/catalog";
@@ -31,6 +32,7 @@ export function Header({
         </form>
 
         <div className="ml-auto flex items-center gap-2">
+          <IvaToggle />
           <ThemeToggle />
           <HeaderIcons customerName={customerName} />
         </div>

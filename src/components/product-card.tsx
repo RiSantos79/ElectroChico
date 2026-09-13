@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { formatPrice } from "@/lib/format";
 import type { Product } from "@/data/catalog";
 import { ProductMedia } from "@/components/product-media";
 import { ProductStockBar } from "@/components/product-stock-bar";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { FavoriteButton } from "@/components/favorite-button";
+import { Price } from "@/components/price";
 
 const badgeLabel: Record<NonNullable<Product["badge"]>, string> = {
   promo: "Promoção",
@@ -50,10 +50,8 @@ export function ProductCard({ product }: { product: Product }) {
             <span>({product.reviews})</span>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-lg font-semibold text-foreground">{formatPrice(product.price)}</span>
-            {product.oldPrice && (
-              <span className="text-sm text-muted line-through">{formatPrice(product.oldPrice)}</span>
-            )}
+            <Price amount={product.price} className="text-lg font-semibold text-foreground" />
+            {product.oldPrice && <Price amount={product.oldPrice} className="text-sm text-muted line-through" />}
           </div>
           <span className="mt-1 text-xs font-medium text-muted">
             Classe energética {product.energyClass}

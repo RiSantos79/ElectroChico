@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsEmail, IsInt, IsOptional, IsString, Min, MinLength, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsEmail, IsInt, IsOptional, IsString, Min, MinLength, ValidateNested } from 'class-validator';
 
 class OrderItemDto {
   @IsString()
@@ -45,6 +45,10 @@ export class CreateOrderDto {
 
   @IsString()
   city!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  newsletterOptIn?: boolean;
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -57,6 +57,16 @@ export const CardIcon = () =>
     </>,
   );
 
+export const StoreIcon = () =>
+  base(
+    <>
+      <path d="M4 9.5 5 4h14l1 5.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 9.5a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5.5 11v9h13v-9" strokeLinecap="round" />
+      <path d="M10 20v-5h4v5" strokeLinecap="round" strokeLinejoin="round" />
+    </>,
+  );
+
 export const BankIcon = () =>
   base(
     <>

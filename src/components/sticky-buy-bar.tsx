@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Product } from "@/data/catalog";
-import { formatPrice } from "@/lib/format";
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { Price } from "@/components/price";
 
 // Aparece quando o botão principal de compra sai do ecrã ao fazer scroll —
 // a sentinela fica onde o botão original está; quando deixa de estar visível
@@ -30,7 +30,9 @@ export function StickyBuyBar({ product }: { product: Product }) {
           <div className="mx-auto flex max-w-6xl items-center gap-4">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-foreground">{product.name}</p>
-              <p className="text-sm font-semibold text-foreground">{formatPrice(product.price)}</p>
+              <p className="text-sm font-semibold text-foreground">
+                <Price amount={product.price} />
+              </p>
             </div>
             <AddToCartButton product={product} className="shrink-0 px-6 py-2.5 text-sm" />
           </div>

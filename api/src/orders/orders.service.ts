@@ -54,6 +54,7 @@ export class OrdersService {
         floor: dto.floor,
         postalCode: dto.postalCode,
         city: dto.city,
+        newsletterOptIn: dto.newsletterOptIn ?? false,
         subtotal,
         total: subtotal,
         items: { create: orderItemsData },

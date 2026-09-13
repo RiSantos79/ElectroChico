@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { useFavorites } from "@/lib/favorites-context";
-import { formatPrice } from "@/lib/format";
 import { AccountMenu } from "@/components/account-menu";
+import { Price } from "@/components/price";
 
 export function HeaderIcons({ customerName }: { customerName?: string | null }) {
   const { count, total } = useCart();
@@ -38,7 +38,7 @@ export function HeaderIcons({ customerName }: { customerName?: string | null }) 
           <circle cx="17.5" cy="20" r="1.3" />
         </svg>
         <span>
-          {count} {count === 1 ? "artigo" : "artigos"} · {formatPrice(total)}
+          {count} {count === 1 ? "artigo" : "artigos"} · <Price amount={total} />
         </span>
       </Link>
     </div>

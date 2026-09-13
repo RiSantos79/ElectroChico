@@ -4,10 +4,19 @@ import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { useCart, type CartLine } from "@/lib/cart-context";
 import type { Product } from "@/data/catalog";
-import { formatPrice } from "@/lib/format";
+import { Price } from "@/components/price";
 import { createOrderAction } from "@/lib/order-actions";
 import { GIFT_CARD_CATEGORY_SLUG } from "@/lib/gift-cards";
-import { BankIcon, CardIcon, EnvelopeIcon, HomeIcon, MapPinIcon, PhoneIcon, UserIcon } from "@/components/checkout-icons";
+import {
+  BankIcon,
+  CardIcon,
+  EnvelopeIcon,
+  HomeIcon,
+  MapPinIcon,
+  PhoneIcon,
+  StoreIcon,
+  UserIcon,
+} from "@/components/checkout-icons";
 
 function PayPalBadge() {
   return (
@@ -26,11 +35,12 @@ function MbWayBadge() {
   );
 }
 
-const paymentMethods: { value: string; icon: ReactNode }[] = [
+const paymentMethods: { value: string; icon: ReactNode; label?: string; badge?: string }[] = [
   { value: "MB Way", icon: <MbWayBadge /> },
   { value: "Multibanco", icon: <BankIcon /> },
   { value: "Cartão de crédito", icon: <CardIcon /> },
   { value: "PayPal", icon: <PayPalBadge /> },
+  { value: "Levantamento em Loja", icon: <StoreIcon />, label: "Levantamento em Loja", badge: "GRÁTIS" },
 ];
 
 function FieldWithIcon({
@@ -91,6 +101,7 @@ export function CheckoutView({ products }: { products: Product[] }) {
       floor: String(formData.get("floor") || "") || undefined,
       postalCode: `${formData.get("postalCode4") || ""}-${formData.get("postalCode3") || ""}`,
       city: String(formData.get("city") || ""),
+      newsletterOptIn: formData.get("newsletterOptIn") === "on",
       items: items.map(({ line, product }) => ({
         productId: product.id,
         quantity: line.qty,
@@ -208,7 +219,12 @@ export function CheckoutView({ products }: { products: Product[] }) {
                   className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 text-sm text-muted"
                 >
                   {method.icon}
-                  {method.value !== "MB Way" && method.value !== "PayPal" && method.value}
+                  {method.label ?? (method.value !== "MB Way" && method.value !== "PayPal" && method.value)}
+                  {method.badge && (
+                    <span className="ml-auto rounded-full bg-success/20 px-2 py-0.5 text-xs font-semibold text-success">
+                      {method.badge}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -223,14 +239,21 @@ export function CheckoutView({ products }: { products: Product[] }) {
                 <span>
                   {product.name} × {line.qty}
                 </span>
-                <span>{formatPrice(product.price * line.qty)}</span>
+                <Price amount={product.price * line.qty} />
               </li>
             ))}
           </ul>
           <div className="flex justify-between border-t border-border pt-4 text-base font-semibold text-foreground">
             <span>Total</span>
-            <span>{formatPrice(subtotal)}</span>
+            <Price amount={subtotal} />
           </div>
+
+          <label className="flex items-start gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2.5 text-xs text-muted">
+            <input type="checkbox" name="newsletterOptIn" className="mt-0.5 size-4 shrink-0" />
+            Quero subscrever a Newsletter ElectroChico para receber novidades em primeira mão e comunicações
+            personalizadas.
+          </label>
+
           {error && <p className="text-sm text-danger">{error}</p>}
           <button
             type="submit"
