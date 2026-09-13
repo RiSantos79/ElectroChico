@@ -51,23 +51,20 @@ export function ProductTabs({
 
       {tab === "specs" &&
         (specs.length > 0 ? (
-          <div className="overflow-hidden rounded-xl border border-border">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="bg-surface">
-                  <th className="px-4 py-3 font-semibold text-foreground">Especificação</th>
-                  <th className="px-4 py-3 font-semibold text-foreground">Detalhe</th>
-                </tr>
-              </thead>
-              <tbody>
-                {specs.map((spec, i) => (
-                  <tr key={spec.label} className={i % 2 === 1 ? "bg-surface/60" : ""}>
-                    <td className="px-4 py-3 font-medium text-foreground">{spec.label}</td>
-                    <td className="px-4 py-3 text-muted">{spec.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="overflow-hidden rounded-xl border border-border text-sm">
+            <div className="grid grid-cols-[minmax(140px,1fr)_2fr] bg-surface">
+              <div className="px-4 py-3 font-semibold text-foreground">Especificação</div>
+              <div className="px-4 py-3 font-semibold text-foreground">Detalhe</div>
+            </div>
+            {specs.map((spec, i) => (
+              <div
+                key={spec.label}
+                className={`grid grid-cols-[minmax(140px,1fr)_2fr] ${i % 2 === 1 ? "bg-surface/60" : ""}`}
+              >
+                <div className="px-4 py-3 font-medium text-foreground">{spec.label}</div>
+                <div className="px-4 py-3 text-muted">{spec.value}</div>
+              </div>
+            ))}
           </div>
         ) : (
           <p className="text-sm text-muted">Sem especificações.</p>
