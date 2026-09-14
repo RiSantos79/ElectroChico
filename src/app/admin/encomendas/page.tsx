@@ -36,7 +36,15 @@ export default async function AdminOrdersPage() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <h1 className="mb-6 text-2xl font-bold text-foreground">Encomendas ({orders.length})</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Encomendas ({orders.length})</h1>
+        <Link
+          href="/admin/encomendas/export"
+          className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface"
+        >
+          Exportar CSV
+        </Link>
+      </div>
       <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-sm">
           <thead className="bg-surface text-left text-muted">
