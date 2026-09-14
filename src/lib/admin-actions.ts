@@ -15,10 +15,12 @@ import {
   updateCoupon,
   updateOrderStatus,
   updateProduct,
+  updateSiteSettings,
   uploadImage,
   type AdminProductInput,
   type CouponInput,
   type OrderStatus,
+  type SiteSettings,
 } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 
@@ -208,4 +210,33 @@ export async function sendReminderAction(id: string) {
   const result = await sendCartReminder(id, token);
   revalidatePath("/admin/carrinhos-abandonados");
   redirect(`/admin/carrinhos-abandonados?resultado=${result.sent ? "enviado" : "nao-configurado"}`);
+}
+
+export async function updateSiteSettingsAction(formData: FormData) {
+  const token = await requireToken();
+  const fields: (keyof SiteSettings)[] = [
+    "companyName",
+    "taxId",
+    "address",
+    "phone",
+    "email",
+    "facebookUrl",
+    "instagramUrl",
+    "copyrightText",
+    "trustBadge1Title",
+    "trustBadge1Desc",
+    "trustBadge2Title",
+    "trustBadge2Desc",
+    "trustBadge3Title",
+    "trustBadge3Desc",
+    "trustBadge4Title",
+    "trustBadge4Desc",
+  ];
+  const data: Partial<SiteSettings> = {};
+  for (const field of fields) {
+    data[field] = String(formData.get(field) ?? "");
+  }
+  await updateSiteSettings(data, token);
+  revalidatePath("/admin/definicoes");
+  revalidatePath("/");
 }

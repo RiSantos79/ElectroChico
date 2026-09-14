@@ -306,6 +306,29 @@ model NewsletterCampaign {
   updatedAt DateTime                 @updatedAt
 }
 
+// Registo único (id fixo) com a informação da empresa e os textos do
+// rodapé — o admin edita isto em vez de estar fixo no código.
+model SiteSettings {
+  id               String   @id @default("singleton")
+  companyName      String?
+  taxId            String?
+  address          String?
+  phone            String?
+  email            String?
+  facebookUrl      String?
+  instagramUrl     String?
+  copyrightText    String?
+  trustBadge1Title String?
+  trustBadge1Desc  String?
+  trustBadge2Title String?
+  trustBadge2Desc  String?
+  trustBadge3Title String?
+  trustBadge3Desc  String?
+  trustBadge4Title String?
+  trustBadge4Desc  String?
+  updatedAt        DateTime @updatedAt
+}
+
 // Registo mínimo de páginas vistas, sem IP nem identificador de utilizador
 // — só serve para agregados (horas de pico, volume por dia) no dashboard.
 model PageView {

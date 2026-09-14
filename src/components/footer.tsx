@@ -1,11 +1,18 @@
-const trustItems = [
-  { title: "Entregas rápidas", desc: "Em 24-48h em todo o país" },
-  { title: "Pagamentos seguros", desc: "MB Way, Multibanco, cartão e PayPal" },
-  { title: "Apoio ao cliente", desc: "Suporte dedicado 7 dias por semana" },
-  { title: "Garantia oficial", desc: "Garantia do fabricante em todos os produtos" },
-];
+import { getSiteSettings } from "@/lib/api";
 
-export function Footer() {
+export async function Footer() {
+  const settings = await getSiteSettings().catch(() => ({}) as Awaited<ReturnType<typeof getSiteSettings>>);
+
+  const trustItems = [
+    { title: settings.trustBadge1Title, desc: settings.trustBadge1Desc },
+    { title: settings.trustBadge2Title, desc: settings.trustBadge2Desc },
+    { title: settings.trustBadge3Title, desc: settings.trustBadge3Desc },
+    { title: settings.trustBadge4Title, desc: settings.trustBadge4Desc },
+  ].filter((item): item is { title: string; desc: string } => Boolean(item.title));
+
+  const hasCompanyInfo = settings.companyName || settings.taxId || settings.address || settings.phone;
+  const hasSocial = settings.facebookUrl || settings.instagramUrl;
+
   return (
     <footer className="mt-16 border-t border-border bg-surface">
       <div className="grid grid-cols-2 gap-6 px-6 py-10 sm:grid-cols-4 lg:px-10">
@@ -17,8 +24,32 @@ export function Footer() {
         ))}
       </div>
       <div className="border-t border-border">
-        <div className="px-6 py-6 text-sm text-muted lg:px-10">
-          © {new Date().getFullYear()} ElectroChico. Todos os direitos reservados.
+        <div className="flex flex-col gap-2 px-6 py-6 text-sm text-muted lg:flex-row lg:items-center lg:justify-between lg:px-10">
+          <div className="space-y-1">
+            {settings.copyrightText && <p>{settings.copyrightText}</p>}
+            {hasCompanyInfo && (
+              <p className="text-xs">
+                {[settings.companyName, settings.taxId && `NIF ${settings.taxId}`, settings.address]
+                  .filter(Boolean)
+                  .join(" · ")}
+                {settings.phone && ` · Tel. ${settings.phone}`}
+              </p>
+            )}
+          </div>
+          {hasSocial && (
+            <div className="flex gap-4 text-xs">
+              {settings.facebookUrl && (
+                <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                  Facebook
+                </a>
+              )}
+              {settings.instagramUrl && (
+                <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                  Instagram
+                </a>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </footer>

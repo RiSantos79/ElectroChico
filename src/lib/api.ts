@@ -329,6 +329,39 @@ export function sendNewsletterCampaign(
   return apiFetch(`/newsletter/campaigns/${id}/send`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
 }
 
+// --- Definições do site ---
+
+export type SiteSettings = {
+  companyName?: string;
+  taxId?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  copyrightText?: string;
+  trustBadge1Title?: string;
+  trustBadge1Desc?: string;
+  trustBadge2Title?: string;
+  trustBadge2Desc?: string;
+  trustBadge3Title?: string;
+  trustBadge3Desc?: string;
+  trustBadge4Title?: string;
+  trustBadge4Desc?: string;
+};
+
+export function getSiteSettings(): Promise<SiteSettings> {
+  return apiFetch<SiteSettings>("/site-settings");
+}
+
+export function updateSiteSettings(data: Partial<SiteSettings>, token: string): Promise<SiteSettings> {
+  return apiFetch<SiteSettings>("/site-settings", {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+}
+
 // --- Cupões ---
 
 export type Coupon = {

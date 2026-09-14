@@ -17,6 +17,7 @@ import { BrandsModule } from './brands/brands.module.js';
 import { StockModule } from './stock/stock.module.js';
 import { CouponsModule } from './coupons/coupons.module.js';
 import { NewsletterModule } from './newsletter/newsletter.module.js';
+import { SiteSettingsModule } from './site-settings/site-settings.module.js';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { NewsletterModule } from './newsletter/newsletter.module.js';
     StockModule,
     CouponsModule,
     NewsletterModule,
+    SiteSettingsModule,
   ],
 })
 export class AppModule {}
