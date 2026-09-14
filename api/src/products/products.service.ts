@@ -7,6 +7,17 @@ import { UpdateProductDto } from './dto/update-product.dto.js';
 import { sanitizeRichText } from '../common/sanitize-html.js';
 import { StockService } from '../stock/stock.service.js';
 
+// Postgres `contains`/`mode: insensitive` ignora maiúsculas/minúsculas mas
+// não acentos — "maq" não bate com "máquina". Normalizamos em memória em vez
+// de ativar a extensão `unaccent` na base de dados, seguindo a mesma lógica
+// já usada no filtro completo do catálogo (src/lib/search.ts no frontend).
+function normalize(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+}
+
 @Injectable()
 export class ProductsService {
   constructor(
@@ -25,6 +36,33 @@ export class ProductsService {
       include: { category: true, brand: true },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // Autocomplete do cabeçalho: correspondência por substring, sem
+  // sensibilidade a maiúsculas/minúsculas nem a acentos. A tolerância a
+  // erros ortográficos mais avançada já existe no filtro completo do
+  // catálogo (src/lib/search.ts no frontend).
+  async search(term: string, limit = 8) {
+    const q = normalize(term);
+    if (!q) return [];
+    const candidates = await this.prisma.product.findMany({
+      where: { archived: false },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        price: true,
+        images: true,
+        brand: { select: { name: true } },
+        category: { select: { name: true } },
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return candidates
+      .filter((p) => normalize(`${p.name} ${p.brand.name} ${p.category.name}`).includes(q))
+      .slice(0, limit)
+      .map((p) => ({ id: p.id, slug: p.slug, name: p.name, price: p.price, images: p.images, brand: p.brand }));
   }
 
   async findBySlug(slug: string) {

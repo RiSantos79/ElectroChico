@@ -94,6 +94,22 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return text ? JSON.parse(text) : (undefined as T);
 }
 
+export type ProductSearchResult = {
+  id: string;
+  slug: string;
+  name: string;
+  price: number;
+  images: string[];
+  brand: { name: string };
+};
+
+export async function searchProducts(q: string): Promise<ProductSearchResult[]> {
+  const results = await apiFetch<(Omit<ProductSearchResult, "price"> & { price: string })[]>(
+    `/products/search?q=${encodeURIComponent(q)}`,
+  );
+  return results.map((r) => ({ ...r, price: Number(r.price) }));
+}
+
 export async function getProducts(params?: { category?: string; brand?: string; includeArchived?: boolean }) {
   const query = new URLSearchParams();
   if (params?.category) query.set("category", params.category);

@@ -3,6 +3,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { IvaToggle } from "@/components/iva-toggle";
 import { MegaMenu } from "@/components/mega-menu";
 import { HeaderIcons } from "@/components/header-icons";
+import { HeaderSearch } from "@/components/header-search";
 import type { Category } from "@/data/catalog";
 
 export function Header({
@@ -19,17 +20,7 @@ export function Header({
           Electro<span className="text-accent">Chico</span>
         </Link>
 
-        <form action="/catalogo" className="mx-auto hidden max-w-xl flex-1 md:block">
-          <label className="relative block">
-            <span className="sr-only">Pesquisar produtos</span>
-            <input
-              type="search"
-              name="q"
-              placeholder="Pesquisar produtos, marcas e categorias..."
-              className="w-full rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none"
-            />
-          </label>
-        </form>
+        <HeaderSearch />
 
         <div className="ml-auto flex items-center gap-2">
           <IvaToggle />

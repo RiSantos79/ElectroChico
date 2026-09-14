@@ -34,6 +34,11 @@ export class ProductsController {
     return this.productsService.findById(id);
   }
 
+  @Get('search')
+  search(@Query('q') q?: string) {
+    return this.productsService.search(q ?? '');
+  }
+
   @Get(':slug')
   findOne(@Param('slug') slug: string) {
     return this.productsService.findBySlug(slug);
