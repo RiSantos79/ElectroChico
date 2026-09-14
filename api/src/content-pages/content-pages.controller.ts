@@ -1,0 +1,27 @@
+import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { ContentPagesService } from './content-pages.service.js';
+import { UpdateContentPageDto } from './dto/update-content-page.dto.js';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { AdminGuard } from '../auth/admin.guard.js';
+
+@Controller('content-pages')
+export class ContentPagesController {
+  constructor(private readonly contentPagesService: ContentPagesService) {}
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Get()
+  findAll() {
+    return this.contentPagesService.findAll();
+  }
+
+  @Get(':slug')
+  findOne(@Param('slug') slug: string) {
+    return this.contentPagesService.findBySlug(slug);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Patch(':slug')
+  update(@Param('slug') slug: string, @Body() dto: UpdateContentPageDto) {
+    return this.contentPagesService.update(slug, dto);
+  }
+}

@@ -12,6 +12,7 @@ import {
   sendCartReminder,
   updateBrand,
   updateCategory,
+  updateContentPage,
   updateCoupon,
   updateOrderStatus,
   updateProduct,
@@ -239,4 +240,16 @@ export async function updateSiteSettingsAction(formData: FormData) {
   await updateSiteSettings(data, token);
   revalidatePath("/admin/definicoes");
   revalidatePath("/");
+}
+
+export async function updateContentPageAction(slug: string, formData: FormData) {
+  const token = await requireToken();
+  await updateContentPage(
+    slug,
+    { title: String(formData.get("title") ?? ""), body: String(formData.get("body") ?? "") },
+    token,
+  );
+  revalidatePath("/admin/conteudos");
+  revalidatePath(`/${slug}`);
+  redirect("/admin/conteudos");
 }

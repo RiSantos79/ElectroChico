@@ -362,6 +362,30 @@ export function updateSiteSettings(data: Partial<SiteSettings>, token: string): 
   });
 }
 
+// --- Páginas de conteúdo ---
+
+export type ContentPage = { id: string; slug: string; title: string; body: string; updatedAt: string };
+
+export async function getContentPage(slug: string): Promise<ContentPage | null> {
+  try {
+    return await apiFetch<ContentPage>(`/content-pages/${slug}`);
+  } catch {
+    return null;
+  }
+}
+
+export function getContentPagesAdmin(token: string): Promise<ContentPage[]> {
+  return apiFetch<ContentPage[]>("/content-pages", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function updateContentPage(slug: string, data: { title?: string; body?: string }, token: string) {
+  return apiFetch<ContentPage>(`/content-pages/${slug}`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+}
+
 // --- Cupões ---
 
 export type Coupon = {

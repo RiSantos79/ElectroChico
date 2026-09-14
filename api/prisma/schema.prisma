@@ -329,6 +329,17 @@ model SiteSettings {
   updatedAt        DateTime @updatedAt
 }
 
+// Conteúdo das páginas institucionais (Entregas, Privacidade, Contacto,
+// Orçamentos) editável no backoffice — o slug corresponde à página no site,
+// é um conjunto fixo, não uma lista de páginas livres criadas pelo admin.
+model ContentPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  body      String
+  updatedAt DateTime @updatedAt
+}
+
 // Registo mínimo de páginas vistas, sem IP nem identificador de utilizador
 // — só serve para agregados (horas de pico, volume por dia) no dashboard.
 model PageView {
