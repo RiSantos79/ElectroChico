@@ -4,15 +4,19 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
   createBrand,
+  createCoupon,
   createProduct,
+  deleteCoupon,
   deleteProduct,
   duplicateProduct,
   updateBrand,
   updateCategory,
+  updateCoupon,
   updateOrderStatus,
   updateProduct,
   uploadImage,
   type AdminProductInput,
+  type CouponInput,
   type OrderStatus,
 } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
@@ -164,4 +168,36 @@ export async function updateOrderAction(id: string, formData: FormData) {
   );
   revalidatePath("/admin/encomendas");
   revalidatePath(`/admin/encomendas/${id}`);
+}
+
+function isoOrUndefined(formData: FormData, key: string): string | undefined {
+  const raw = formData.get(key);
+  return raw ? new Date(String(raw)).toISOString() : undefined;
+}
+
+export async function createCouponAction(formData: FormData) {
+  const token = await requireToken();
+  const input: CouponInput = {
+    code: String(formData.get("code")),
+    type: String(formData.get("type")) as CouponInput["type"],
+    value: Number(formData.get("value")),
+    minOrderValue: optionalNumber(formData, "minOrderValue"),
+    maxUses: optionalNumber(formData, "maxUses"),
+    validFrom: isoOrUndefined(formData, "validFrom"),
+    validUntil: isoOrUndefined(formData, "validUntil"),
+  };
+  await createCoupon(input, token);
+  revalidatePath("/admin/cupoes");
+}
+
+export async function toggleCouponAction(id: string, active: boolean) {
+  const token = await requireToken();
+  await updateCoupon(id, { active }, token);
+  revalidatePath("/admin/cupoes");
+}
+
+export async function deleteCouponAction(id: string) {
+  const token = await requireToken();
+  await deleteCoupon(id, token);
+  revalidatePath("/admin/cupoes");
 }

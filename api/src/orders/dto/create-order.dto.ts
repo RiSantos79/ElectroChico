@@ -50,6 +50,10 @@ export class CreateOrderDto {
   @IsBoolean()
   newsletterOptIn?: boolean;
 
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)

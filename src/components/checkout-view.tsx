@@ -5,7 +5,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { useCart, type CartLine } from "@/lib/cart-context";
 import type { Product } from "@/data/catalog";
 import { Price } from "@/components/price";
-import { createOrderAction } from "@/lib/order-actions";
+import { applyCouponAction, createOrderAction } from "@/lib/order-actions";
 import { GIFT_CARD_CATEGORY_SLUG } from "@/lib/gift-cards";
 import {
   BankIcon,
@@ -64,12 +64,34 @@ export function CheckoutView({ products }: { products: Product[] }) {
   const { lines } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [couponInput, setCouponInput] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
 
   const items = lines
     .map((line) => ({ line, product: products.find((p) => p.slug === line.slug) }))
     .filter((entry): entry is { line: CartLine; product: Product } => Boolean(entry.product));
   const subtotal = items.reduce((sum, { line, product }) => sum + product.price * line.qty, 0);
   const giftCardItems = items.filter(({ product }) => product.category === GIFT_CARD_CATEGORY_SLUG);
+  const total = subtotal - (appliedCoupon?.discountAmount ?? 0);
+
+  async function handleApplyCoupon() {
+    if (!couponInput.trim()) return;
+    setApplyingCoupon(true);
+    setCouponError(null);
+    const result = await applyCouponAction(
+      couponInput.trim(),
+      items.map(({ line, product }) => ({ productId: product.id, quantity: line.qty })),
+    );
+    setApplyingCoupon(false);
+    if (result.error || result.discountAmount === undefined) {
+      setCouponError(result.error ?? "Não foi possível aplicar o código.");
+      setAppliedCoupon(null);
+      return;
+    }
+    setAppliedCoupon({ code: couponInput.trim().toUpperCase(), discountAmount: result.discountAmount });
+  }
 
   if (items.length === 0) {
     return (
@@ -102,6 +124,7 @@ export function CheckoutView({ products }: { products: Product[] }) {
       postalCode: `${formData.get("postalCode4") || ""}-${formData.get("postalCode3") || ""}`,
       city: String(formData.get("city") || ""),
       newsletterOptIn: formData.get("newsletterOptIn") === "on",
+      couponCode: appliedCoupon?.code,
       items: items.map(({ line, product }) => ({
         productId: product.id,
         quantity: line.qty,
@@ -243,9 +266,59 @@ export function CheckoutView({ products }: { products: Product[] }) {
               </li>
             ))}
           </ul>
-          <div className="flex justify-between border-t border-border pt-4 text-base font-semibold text-foreground">
-            <span>Total</span>
-            <Price amount={subtotal} />
+          <div className="border-t border-border pt-4">
+            {appliedCoupon ? (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted">
+                  Cupão <span className="font-medium text-foreground">{appliedCoupon.code}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppliedCoupon(null);
+                    setCouponInput("");
+                  }}
+                  className="text-xs text-muted underline hover:text-foreground"
+                >
+                  Remover
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value)}
+                  placeholder="Código de desconto"
+                  className="input-field flex-1 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyCoupon}
+                  disabled={applyingCoupon || !couponInput.trim()}
+                  className="rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {applyingCoupon ? "..." : "Aplicar"}
+                </button>
+              </div>
+            )}
+            {couponError && <p className="mt-1 text-xs text-danger">{couponError}</p>}
+          </div>
+
+          <div className="space-y-1 border-t border-border pt-4">
+            <div className="flex justify-between text-sm text-muted">
+              <span>Subtotal</span>
+              <Price amount={subtotal} />
+            </div>
+            {appliedCoupon && (
+              <div className="flex justify-between text-sm text-success">
+                <span>Desconto</span>
+                <span>-<Price amount={appliedCoupon.discountAmount} /></span>
+              </div>
+            )}
+            <div className="flex justify-between text-base font-semibold text-foreground">
+              <span>Total</span>
+              <Price amount={total} />
+            </div>
           </div>
 
           <label className="flex items-start gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2.5 text-xs text-muted">

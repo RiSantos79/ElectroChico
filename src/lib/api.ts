@@ -272,6 +272,60 @@ export async function getStockMovements(token: string): Promise<StockMovement[]>
   return apiFetch<StockMovement[]>("/stock-movements", { headers: { Authorization: `Bearer ${token}` } });
 }
 
+// --- Cupões ---
+
+export type Coupon = {
+  id: string;
+  code: string;
+  type: "PERCENTAGE" | "FIXED";
+  value: string;
+  minOrderValue: string | null;
+  maxUses: number | null;
+  usesCount: number;
+  validFrom: string | null;
+  validUntil: string | null;
+  active: boolean;
+  createdAt: string;
+};
+
+export type CouponInput = {
+  code: string;
+  type: "PERCENTAGE" | "FIXED";
+  value: number;
+  minOrderValue?: number;
+  maxUses?: number;
+  validFrom?: string;
+  validUntil?: string;
+  active?: boolean;
+};
+
+export async function getCouponsAdmin(token: string): Promise<Coupon[]> {
+  return apiFetch<Coupon[]>("/coupons", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function createCoupon(data: CouponInput, token: string) {
+  return apiFetch<Coupon>("/coupons", { method: "POST", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function updateCoupon(id: string, data: Partial<CouponInput>, token: string) {
+  return apiFetch<Coupon>(`/coupons/${id}`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function deleteCoupon(id: string, token: string) {
+  return apiFetch(`/coupons/${id}`, { method: "DELETE", headers: authHeaders(token) });
+}
+
+export async function applyCoupon(
+  code: string,
+  items: { productId: string; quantity: number }[],
+): Promise<{ subtotal: number; discountAmount: number; total: number }> {
+  return apiFetch("/coupons/apply", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, items }),
+  });
+}
+
 // --- Encomendas ---
 
 export type CreateOrderInput = {
@@ -284,6 +338,7 @@ export type CreateOrderInput = {
   postalCode: string;
   city: string;
   newsletterOptIn?: boolean;
+  couponCode?: string;
   items: { productId: string; quantity: number; recipientEmail?: string; giftMessage?: string }[];
 };
 
@@ -328,6 +383,8 @@ export type Order = {
   postalCode?: string;
   city?: string;
   subtotal?: string;
+  discountAmount?: string | null;
+  couponCode?: string | null;
   total: string;
   createdAt: string;
   trackingCarrier?: string | null;

@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { StockService } from '../stock/stock.service.js';
+import { CouponsService } from '../coupons/coupons.service.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
 import type { UpdateOrderDto } from './dto/update-order.dto.js';
 import { GIFT_CARD_CATEGORY_SLUG, generateGiftCardCode } from '../common/gift-cards.js';
@@ -16,6 +17,7 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly stock: StockService,
+    private readonly coupons: CouponsService,
   ) {
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error('STRIPE_SECRET_KEY não está definido.');
@@ -47,6 +49,15 @@ export class OrdersService {
     // cliente envia — evita alguém manipular o valor pago no browser.
     const subtotal = orderItemsData.reduce((sum, item) => sum + Number(item.unitPrice) * item.quantity, 0);
 
+    let discountAmount = 0;
+    let couponCode: string | undefined;
+    if (dto.couponCode) {
+      const result = await this.coupons.validateAndCompute(dto.couponCode, subtotal);
+      discountAmount = result.discountAmount;
+      couponCode = result.coupon.code;
+    }
+    const total = subtotal - discountAmount;
+
     const order = await this.prisma.order.create({
       data: {
         customerId,
@@ -60,12 +71,33 @@ export class OrdersService {
         city: dto.city,
         newsletterOptIn: dto.newsletterOptIn ?? false,
         subtotal,
-        total: subtotal,
+        discountAmount: discountAmount > 0 ? discountAmount : undefined,
+        couponCode,
+        total,
         items: { create: orderItemsData },
       },
     });
 
     const webOrigin = process.env.WEB_ORIGIN ?? 'http://localhost:3001';
+
+    // O desconto é aplicado como um cupão Stripe criado na hora (válido só
+    // para esta sessão) em vez de uma linha negativa — o Stripe não aceita
+    // unit_amount negativo em linhas de checkout.
+    const discounts =
+      discountAmount > 0
+        ? [
+            {
+              coupon: (
+                await this.stripe.coupons.create({
+                  amount_off: Math.round(discountAmount * 100),
+                  currency: 'eur',
+                  duration: 'once',
+                  name: `Desconto ${couponCode}`,
+                })
+              ).id,
+            },
+          ]
+        : undefined;
 
     const session = await this.stripe.checkout.sessions.create({
       mode: 'payment',
@@ -78,6 +110,7 @@ export class OrdersService {
         },
         quantity: item.quantity,
       })),
+      discounts,
       success_url: `${webOrigin}/checkout/sucesso?order=${order.id}`,
       cancel_url: `${webOrigin}/checkout?cancelado=1`,
       metadata: { orderId: order.id },
@@ -128,6 +161,15 @@ export class OrdersService {
 
     const paymentMethod = stripeSessionId ? await this.fetchPaymentMethod(stripeSessionId) : null;
     await this.prisma.order.update({ where: { id: orderId }, data: { status: 'PAID', paymentMethod } });
+
+    // Só conta a utilização do cupão quando o pagamento é confirmado — um
+    // checkout abandonado não deve gastar o limite de utilizações.
+    if (order.couponCode) {
+      await this.prisma.coupon.updateMany({
+        where: { code: order.couponCode },
+        data: { usesCount: { increment: 1 } },
+      });
+    }
 
     const products = await this.prisma.product.findMany({
       where: { id: { in: order.items.map((i) => i.productId) } },

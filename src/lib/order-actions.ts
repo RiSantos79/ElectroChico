@@ -1,6 +1,6 @@
 "use server";
 
-import { createOrder, type CreateOrderInput } from "@/lib/api";
+import { applyCoupon, createOrder, type CreateOrderInput } from "@/lib/api";
 import { getCustomerSessionToken } from "@/lib/customer-session";
 
 export async function createOrderAction(
@@ -12,5 +12,17 @@ export async function createOrderAction(
     return { checkoutUrl };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Não foi possível criar a encomenda." };
+  }
+}
+
+export async function applyCouponAction(
+  code: string,
+  items: { productId: string; quantity: number }[],
+): Promise<{ discountAmount?: number; total?: number; error?: string }> {
+  try {
+    const { discountAmount, total } = await applyCoupon(code, items);
+    return { discountAmount, total };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Não foi possível aplicar o código." };
   }
 }

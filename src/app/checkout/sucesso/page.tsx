@@ -40,6 +40,12 @@ export default async function CheckoutSuccessPage({
               </li>
             ))}
           </ul>
+          {order.discountAmount && (
+            <div className="flex justify-between border-t border-border pt-2 text-success">
+              <span>Desconto {order.couponCode ? `(${order.couponCode})` : ""}</span>
+              <span>-{formatPrice(Number(order.discountAmount))}</span>
+            </div>
+          )}
           <div className="flex justify-between border-t border-border pt-2 font-semibold text-foreground">
             <span>Total</span>
             <span>{formatPrice(Number(order.total))}</span>

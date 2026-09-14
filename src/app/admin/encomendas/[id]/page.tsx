@@ -56,6 +56,12 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
             </li>
           ))}
         </ul>
+        {order.discountAmount && (
+          <div className="mt-3 flex justify-between border-t border-border pt-3 text-sm text-success">
+            <span>Desconto {order.couponCode ? `(${order.couponCode})` : ""}</span>
+            <span>-{formatPrice(Number(order.discountAmount))}</span>
+          </div>
+        )}
         <div className="mt-3 flex justify-between border-t border-border pt-3 text-sm font-semibold text-foreground">
           <span>Total</span>
           <span>{formatPrice(Number(order.total))}</span>
