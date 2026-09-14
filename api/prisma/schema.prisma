@@ -62,36 +62,58 @@ model Category {
   id             String    @id @default(cuid())
   slug           String    @unique
   name           String
+  imageUrl       String?
   subcategories  String[]
   products       Product[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
 
+model Brand {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  name      String    @unique
+  logoUrl   String?
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 model Product {
-  id           String        @id @default(cuid())
-  slug         String        @unique
-  name         String
-  brand        String
-  category     Category      @relation(fields: [categoryId], references: [id])
-  categoryId   String
-  price        Decimal       @db.Decimal(10, 2)
-  oldPrice     Decimal?      @db.Decimal(10, 2)
-  energyClass  EnergyClass
-  rating       Float         @default(0)
-  reviewCount  Int           @default(0)
-  reviews      Review[]
-  images       String[]      @default([])
-  stockQuantity Int          @default(0)
-  badge        ProductBadge?
-  color        String
-  description  String
-  specs        Json
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  name           String
+  brand          Brand         @relation(fields: [brandId], references: [id])
+  brandId        String
+  category       Category      @relation(fields: [categoryId], references: [id])
+  categoryId     String
+  price          Decimal       @db.Decimal(10, 2)
+  oldPrice       Decimal?      @db.Decimal(10, 2)
+  energyClass    EnergyClass
+  rating         Float         @default(0)
+  reviewCount    Int           @default(0)
+  reviews        Review[]
+  images         String[]      @default([])
+  stockQuantity  Int           @default(0)
+  badge          ProductBadge?
+  color          String
+  description    String
+  specs          Json
+  sku            String?
+  ean            String?
+  weightKg       Float?
+  widthCm        Float?
+  heightCm       Float?
+  depthCm        Float?
+  warrantyMonths Int?
+  archived       Boolean       @default(false)
+  metaTitle      String?
+  metaDescription String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   @@index([categoryId])
-  @@index([brand])
+  @@index([brandId])
 }
 
 model Review {

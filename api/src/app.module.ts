@@ -13,6 +13,7 @@ import { GiftCardsModule } from './gift-cards/gift-cards.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { UsersModule } from './users/users.module.js';
 import { AnalyticsModule } from './analytics/analytics.module.js';
+import { BrandsModule } from './brands/brands.module.js';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AnalyticsModule } from './analytics/analytics.module.js';
     DashboardModule,
     UsersModule,
     AnalyticsModule,
+    BrandsModule,
   ],
 })
 export class AppModule {}

@@ -8,11 +8,13 @@ const badgeMap = {
   MAIS_VENDIDO: "mais-vendido",
 } as const;
 
+type ApiBrand = { id: string; slug: string; name: string; logoUrl: string | null };
+
 type ApiProduct = {
   id: string;
   slug: string;
   name: string;
-  brand: string;
+  brand: ApiBrand;
   category: { slug: string; name: string; subcategories: string[] };
   price: string;
   oldPrice: string | null;
@@ -25,6 +27,16 @@ type ApiProduct = {
   color: string;
   description: string;
   specs: { label: string; value: string }[];
+  sku: string | null;
+  ean: string | null;
+  weightKg: number | null;
+  widthCm: number | null;
+  heightCm: number | null;
+  depthCm: number | null;
+  warrantyMonths: number | null;
+  archived: boolean;
+  metaTitle: string | null;
+  metaDescription: string | null;
 };
 
 // As imagens vêm da API como caminhos relativos (ex. "/uploads/x.png") —
@@ -38,7 +50,8 @@ function mapProduct(p: ApiProduct): Product {
     id: p.id,
     slug: p.slug,
     name: p.name,
-    brand: p.brand,
+    brand: p.brand.name,
+    brandSlug: p.brand.slug,
     category: p.category.slug,
     price: Number(p.price),
     oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
@@ -51,6 +64,16 @@ function mapProduct(p: ApiProduct): Product {
     images: p.images.map(absoluteMediaUrl),
     description: p.description,
     specs: p.specs,
+    sku: p.sku ?? undefined,
+    ean: p.ean ?? undefined,
+    weightKg: p.weightKg ?? undefined,
+    widthCm: p.widthCm ?? undefined,
+    heightCm: p.heightCm ?? undefined,
+    depthCm: p.depthCm ?? undefined,
+    warrantyMonths: p.warrantyMonths ?? undefined,
+    metaTitle: p.metaTitle ?? undefined,
+    metaDescription: p.metaDescription ?? undefined,
+    archived: p.archived,
   };
 }
 
@@ -71,9 +94,13 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return text ? JSON.parse(text) : (undefined as T);
 }
 
-export async function getProducts(params?: { category?: string }) {
-  const query = params?.category ? `?category=${encodeURIComponent(params.category)}` : "";
-  const products = await apiFetch<ApiProduct[]>(`/products${query}`);
+export async function getProducts(params?: { category?: string; brand?: string; includeArchived?: boolean }) {
+  const query = new URLSearchParams();
+  if (params?.category) query.set("category", params.category);
+  if (params?.brand) query.set("brand", params.brand);
+  if (params?.includeArchived) query.set("includeArchived", "true");
+  const qs = query.toString();
+  const products = await apiFetch<ApiProduct[]>(`/products${qs ? `?${qs}` : ""}`);
   return products.map(mapProduct);
 }
 
@@ -94,6 +121,43 @@ export type AdminCategory = Category & { id: string };
 
 export async function getCategoriesAdmin(): Promise<AdminCategory[]> {
   return apiFetch<AdminCategory[]>("/categories");
+}
+
+export function updateCategory(id: string, data: { imageUrl?: string }, token: string) {
+  return apiFetch<AdminCategory>(`/categories/${id}`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+}
+
+// --- Marcas ---
+
+export type Brand = { id: string; slug: string; name: string; logoUrl: string | null };
+export type AdminBrand = Brand & { productCount: number };
+
+export async function getBrands(): Promise<Brand[]> {
+  return apiFetch<Brand[]>("/brands");
+}
+
+export async function getBrandBySlug(slug: string): Promise<Brand | null> {
+  try {
+    return await apiFetch<Brand>(`/brands/${encodeURIComponent(slug)}`);
+  } catch {
+    return null;
+  }
+}
+
+export async function getBrandsAdmin(): Promise<AdminBrand[]> {
+  return apiFetch<AdminBrand[]>("/brands");
+}
+
+export function createBrand(data: { name: string; logoUrl?: string }, token: string) {
+  return apiFetch<Brand>("/brands", { method: "POST", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function updateBrand(id: string, data: { name?: string; logoUrl?: string }, token: string) {
+  return apiFetch<Brand>(`/brands/${id}`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
 }
 
 // --- Avaliações ---
@@ -125,12 +189,12 @@ export function submitReview(productId: string, data: { authorName: string; rati
 // converter, para não precisar de um mapeador de ida-e-volta só para o backoffice.
 // rating/reviewCount não aparecem aqui de propósito — vêm sempre de avaliações reais.
 
-export type AdminProduct = Omit<ApiProduct, "category"> & { categoryId: string };
+export type AdminProduct = Omit<ApiProduct, "category" | "brand"> & { categoryId: string; brandId: string };
 
 export type AdminProductInput = {
   slug: string;
   name: string;
-  brand: string;
+  brandId: string;
   categoryId: string;
   price: number;
   oldPrice?: number;
@@ -141,6 +205,16 @@ export type AdminProductInput = {
   images: string[];
   description: string;
   specs: { label: string; value: string }[];
+  sku?: string;
+  ean?: string;
+  weightKg?: number;
+  widthCm?: number;
+  heightCm?: number;
+  depthCm?: number;
+  warrantyMonths?: number;
+  archived?: boolean;
+  metaTitle?: string;
+  metaDescription?: string;
 };
 
 export async function getProductById(id: string): Promise<AdminProduct> {
@@ -161,6 +235,10 @@ export function updateProduct(id: string, data: Partial<AdminProductInput>, toke
 
 export function deleteProduct(id: string, token: string) {
   return apiFetch(`/products/${id}`, { method: "DELETE", headers: authHeaders(token) });
+}
+
+export function duplicateProduct(id: string, token: string): Promise<AdminProduct> {
+  return apiFetch<AdminProduct>(`/products/${id}/duplicate`, { method: "POST", headers: authHeaders(token) });
 }
 
 export type AuditLog = {

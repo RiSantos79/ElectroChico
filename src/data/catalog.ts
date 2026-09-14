@@ -1,6 +1,7 @@
 export type Category = {
   slug: string;
   name: string;
+  imageUrl?: string | null;
   subcategories: string[];
 };
 
@@ -11,6 +12,7 @@ export type Product = {
   slug: string;
   name: string;
   brand: string;
+  brandSlug: string;
   category: string;
   price: number;
   oldPrice?: number;
@@ -23,6 +25,16 @@ export type Product = {
   images: string[];
   description: string;
   specs: { label: string; value: string }[];
+  sku?: string;
+  ean?: string;
+  weightKg?: number;
+  widthCm?: number;
+  heightCm?: number;
+  depthCm?: number;
+  warrantyMonths?: number;
+  metaTitle?: string;
+  metaDescription?: string;
+  archived?: boolean;
 };
 
 export const energyClasses: EnergyClass[] = ["A", "B", "C", "D", "E", "F", "G"];

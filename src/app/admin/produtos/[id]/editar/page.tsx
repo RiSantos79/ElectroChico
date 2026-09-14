@@ -1,22 +1,33 @@
 import { notFound } from "next/navigation";
 import { ProductForm } from "@/components/admin/product-form";
-import { getCategoriesAdmin, getProductById } from "@/lib/api";
-import { updateProductAction } from "@/lib/admin-actions";
+import { getBrandsAdmin, getCategoriesAdmin, getProductById } from "@/lib/api";
+import { duplicateProductAction, updateProductAction } from "@/lib/admin-actions";
 
 export const metadata = { title: "Editar produto — Backoffice" };
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [categories, product] = await Promise.all([
+  const [categories, brands, product] = await Promise.all([
     getCategoriesAdmin(),
+    getBrandsAdmin(),
     getProductById(id).catch(() => null),
   ]);
   if (!product) notFound();
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <h1 className="mb-6 text-2xl font-bold text-foreground">Editar produto</h1>
-      <ProductForm categories={categories} product={product} action={updateProductAction.bind(null, id)} />
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Editar produto</h1>
+        <form action={duplicateProductAction.bind(null, id)}>
+          <button
+            type="submit"
+            className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface"
+          >
+            Duplicar produto
+          </button>
+        </form>
+      </div>
+      <ProductForm categories={categories} brands={brands} product={product} action={updateProductAction.bind(null, id)} />
     </div>
   );
 }

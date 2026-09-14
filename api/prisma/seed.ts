@@ -268,6 +268,14 @@ const demoReviews: Record<string, { authorName: string; rating: number; comment:
   ],
 };
 
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 async function main() {
   for (const c of categories) {
     await prisma.category.upsert({
@@ -277,13 +285,20 @@ async function main() {
     });
   }
 
+  const brandNames = [...new Set(products.map((p) => p.brand))];
+  for (const name of brandNames) {
+    const slug = slugify(name);
+    await prisma.brand.upsert({ where: { slug }, update: { name }, create: { slug, name } });
+  }
+
   for (const p of products) {
-    const { category, ...data } = p;
+    const { category, brand, ...data } = p;
     const categoryRecord = await prisma.category.findUniqueOrThrow({ where: { slug: category } });
+    const brandRecord = await prisma.brand.findUniqueOrThrow({ where: { slug: slugify(brand) } });
     const product = await prisma.product.upsert({
       where: { slug: p.slug },
-      update: { ...data, categoryId: categoryRecord.id },
-      create: { ...data, categoryId: categoryRecord.id },
+      update: { ...data, categoryId: categoryRecord.id, brandId: brandRecord.id },
+      create: { ...data, categoryId: categoryRecord.id, brandId: brandRecord.id },
     });
 
     const reviews = demoReviews[p.slug] ?? [];

@@ -12,10 +12,14 @@ export function CatalogView({
   title,
   products,
   initialQuery = "",
+  bannerImage,
+  logoImage,
 }: {
   title: string;
   products: Product[];
   initialQuery?: string;
+  bannerImage?: string | null;
+  logoImage?: string | null;
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
@@ -70,7 +74,21 @@ export function CatalogView({
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <h1 className="mb-6 text-2xl font-bold text-foreground">{title}</h1>
+      {bannerImage && (
+        // eslint-disable-next-line @next/next/no-img-element -- imagem vinda da API, não vale a pena otimizar para um banner ocasional
+        <img
+          src={bannerImage}
+          alt=""
+          className="mb-6 h-40 w-full rounded-2xl object-cover sm:h-56"
+        />
+      )}
+      <div className="mb-6 flex items-center gap-3">
+        {logoImage && (
+          // eslint-disable-next-line @next/next/no-img-element -- logótipo vindo da API, não vale a pena otimizar
+          <img src={logoImage} alt="" className="size-12 rounded-lg object-contain" />
+        )}
+        <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+      </div>
       <div className="grid gap-8 md:grid-cols-[240px_1fr]">
         <aside className="space-y-6">
           <div>

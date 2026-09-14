@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { getProducts } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
-import { deleteProductAction } from "@/lib/admin-actions";
+import { deleteProductAction, duplicateProductAction } from "@/lib/admin-actions";
 import { StockBar } from "@/components/stock-bar";
 
 export const metadata = { title: "Produtos — Backoffice" };
 
 export default async function AdminProductsPage() {
-  const products = await getProducts();
+  const products = await getProducts({ includeArchived: true });
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -36,7 +36,14 @@ export default async function AdminProductsPage() {
           <tbody className="divide-y divide-border">
             {products.map((product) => (
               <tr key={product.id}>
-                <td className="px-4 py-3 font-medium text-foreground">{product.name}</td>
+                <td className="px-4 py-3 font-medium text-foreground">
+                  {product.name}
+                  {product.archived && (
+                    <span className="ml-2 rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-muted">
+                      Arquivado
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-muted">{product.brand}</td>
                 <td className="px-4 py-3 text-muted">{product.category}</td>
                 <td className="px-4 py-3 text-foreground">{formatPrice(product.price)}</td>
@@ -51,6 +58,11 @@ export default async function AdminProductsPage() {
                     >
                       Editar
                     </Link>
+                    <form action={duplicateProductAction.bind(null, product.id)}>
+                      <button type="submit" className="font-medium text-accent hover:underline">
+                        Duplicar
+                      </button>
+                    </form>
                     <form action={deleteProductAction.bind(null, product.id)}>
                       <button type="submit" className="font-medium text-danger hover:underline">
                         Apagar

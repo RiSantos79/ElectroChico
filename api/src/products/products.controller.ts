@@ -21,8 +21,12 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  findAll(@Query('category') categorySlug?: string, @Query('brand') brand?: string) {
-    return this.productsService.findAll({ categorySlug, brand });
+  findAll(
+    @Query('category') categorySlug?: string,
+    @Query('brand') brandSlug?: string,
+    @Query('includeArchived') includeArchived?: string,
+  ) {
+    return this.productsService.findAll({ categorySlug, brandSlug, includeArchived: includeArchived === 'true' });
   }
 
   @Get('by-id/:id')
@@ -39,6 +43,12 @@ export class ProductsController {
   @Post()
   create(@Body() dto: CreateProductDto, @CurrentUser() user: AuthenticatedUser) {
     return this.productsService.create(dto, user.email);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Post(':id/duplicate')
+  duplicate(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.productsService.duplicate(id, user.email);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)

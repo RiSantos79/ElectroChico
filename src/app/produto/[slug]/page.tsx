@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductBySlug, getProducts, getReviews } from "@/lib/api";
 import { ProductGallery } from "@/components/product-gallery";
@@ -25,17 +26,38 @@ export async function generateMetadata({
   const product = await getProductBySlug(slug);
   if (!product) return {};
 
-  const description = stripHtml(product.description).slice(0, 160);
+  const title = product.metaTitle || product.name;
+  const description = product.metaDescription || stripHtml(product.description).slice(0, 160);
   return {
-    title: product.name,
+    title,
     description,
     alternates: { canonical: `/produto/${product.slug}` },
     openGraph: {
-      title: product.name,
+      title,
       description,
       images: product.images[0] ? [{ url: product.images[0] }] : undefined,
     },
   };
+}
+
+function buildDisplaySpecs(product: {
+  specs: { label: string; value: string }[];
+  ean?: string;
+  weightKg?: number;
+  widthCm?: number;
+  heightCm?: number;
+  depthCm?: number;
+}) {
+  const extra: { label: string; value: string }[] = [];
+  if (product.ean) extra.push({ label: "EAN", value: product.ean });
+  if (product.weightKg) extra.push({ label: "Peso", value: `${product.weightKg} kg` });
+  if (product.widthCm && product.heightCm && product.depthCm) {
+    extra.push({
+      label: "Dimensões (L × A × P)",
+      value: `${product.widthCm} × ${product.heightCm} × ${product.depthCm} cm`,
+    });
+  }
+  return [...product.specs, ...extra];
 }
 
 export default async function ProductPage({
@@ -85,7 +107,13 @@ export default async function ProductPage({
         <ProductGallery images={product.images} color={product.color} name={product.name} />
 
         <div>
-          <span className="text-sm font-medium uppercase tracking-wide text-muted">{product.brand}</span>
+          <Link
+            href={`/marca/${product.brandSlug}`}
+            className="text-sm font-medium uppercase tracking-wide text-muted hover:text-accent"
+          >
+            {product.brand}
+          </Link>
+          {product.sku && <span className="ml-3 text-xs text-muted">Ref.: {product.sku}</span>}
           <h1 className="mt-1 text-2xl font-bold text-foreground">{product.name}</h1>
           <div className="mt-2 flex items-center gap-2 text-sm text-muted">
             <span aria-hidden>★</span>
@@ -106,7 +134,10 @@ export default async function ProductPage({
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-border bg-surface px-4 py-3 text-xs font-medium text-muted">
             <span className="inline-flex items-center gap-1.5">
-              <span aria-hidden>✓</span> Garantia de acordo com a legislação em vigor
+              <span aria-hidden>✓</span>{" "}
+              {product.warrantyMonths
+                ? `Garantia do fabricante: ${product.warrantyMonths} meses`
+                : "Garantia de acordo com a legislação em vigor"}
             </span>
           </div>
 
@@ -119,7 +150,7 @@ export default async function ProductPage({
 
       <ProductTabs
         description={product.description}
-        specs={product.specs}
+        specs={buildDisplaySpecs(product)}
         reviews={reviews}
         productId={product.id}
         productSlug={product.slug}

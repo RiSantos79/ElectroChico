@@ -1,4 +1,4 @@
-import type { AdminCategory, AdminProduct } from "@/lib/api";
+import type { AdminBrand, AdminCategory, AdminProduct } from "@/lib/api";
 import { PriceStockFields } from "@/components/admin/price-stock-fields";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 
@@ -8,10 +8,12 @@ function specsToText(specs: { label: string; value: string }[]) {
 
 export function ProductForm({
   categories,
+  brands,
   product,
   action,
 }: {
   categories: AdminCategory[];
+  brands: AdminBrand[];
   product?: AdminProduct;
   action: (formData: FormData) => void;
 }) {
@@ -30,7 +32,16 @@ export function ProductForm({
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Marca
-            <input name="brand" required defaultValue={product?.brand} className="input-field" />
+            <select name="brandId" required defaultValue={product?.brandId} className="input-field">
+              <option value="" disabled>
+                Escolha uma marca
+              </option>
+              {brands.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Categoria
@@ -46,6 +57,12 @@ export function ProductForm({
             </select>
           </label>
         </div>
+        {product && (
+          <label className="mt-4 flex items-center gap-2 text-sm">
+            <input type="checkbox" name="archived" defaultChecked={product.archived} className="size-4" />
+            Produto arquivado (escondido do catálogo, mas continua editável aqui)
+          </label>
+        )}
       </section>
 
       <section className="rounded-xl border border-border bg-surface-raised p-6">
@@ -77,6 +94,93 @@ export function ProductForm({
             className="input-field resize-none font-mono text-xs"
           />
         </label>
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface-raised p-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Logística e identificação</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-1 text-sm">
+            SKU (referência interna)
+            <input name="sku" defaultValue={product?.sku ?? ""} className="input-field" />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            EAN (código de barras)
+            <input name="ean" defaultValue={product?.ean ?? ""} className="input-field" />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Peso (kg)
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              name="weightKg"
+              defaultValue={product?.weightKg ?? ""}
+              className="input-field"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Garantia (meses)
+            <input
+              type="number"
+              min="0"
+              name="warrantyMonths"
+              defaultValue={product?.warrantyMonths ?? ""}
+              className="input-field"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Largura (cm)
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              name="widthCm"
+              defaultValue={product?.widthCm ?? ""}
+              className="input-field"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Altura (cm)
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              name="heightCm"
+              defaultValue={product?.heightCm ?? ""}
+              className="input-field"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Profundidade (cm)
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              name="depthCm"
+              defaultValue={product?.depthCm ?? ""}
+              className="input-field"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface-raised p-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">SEO</h2>
+        <div className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1 text-sm">
+            Meta título (opcional — usa o nome do produto se ficar vazio)
+            <input name="metaTitle" defaultValue={product?.metaTitle ?? ""} className="input-field" />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Meta descrição (opcional — usa o início da descrição se ficar vazio)
+            <textarea
+              name="metaDescription"
+              rows={2}
+              defaultValue={product?.metaDescription ?? ""}
+              className="input-field resize-none"
+            />
+          </label>
+        </div>
       </section>
 
       <button

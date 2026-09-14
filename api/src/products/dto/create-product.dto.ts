@@ -1,6 +1,7 @@
 import { EnergyClass, ProductBadge } from '../../generated/prisma/client.js';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNumber,
@@ -29,7 +30,7 @@ export class CreateProductDto {
   name!: string;
 
   @IsString()
-  brand!: string;
+  brandId!: string;
 
   @IsString()
   categoryId!: string;
@@ -69,4 +70,49 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   images?: string[];
+
+  @IsOptional()
+  @IsString()
+  sku?: string;
+
+  @IsOptional()
+  @IsString()
+  ean?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  weightKg?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  widthCm?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  heightCm?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  depthCm?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  warrantyMonths?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  archived?: boolean;
+
+  @IsOptional()
+  @IsString()
+  metaTitle?: string;
+
+  @IsOptional()
+  @IsString()
+  metaDescription?: string;
 }

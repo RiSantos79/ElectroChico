@@ -14,5 +14,5 @@ export default async function CategoryPage({
 
   const categoryProducts = await getProducts({ category: slug });
 
-  return <CatalogView title={category.name} products={categoryProducts} />;
+  return <CatalogView title={category.name} products={categoryProducts} bannerImage={category.imageUrl} />;
 }
