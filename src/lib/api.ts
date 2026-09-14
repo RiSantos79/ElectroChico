@@ -386,6 +386,53 @@ export function updateContentPage(slug: string, data: { title?: string; body?: s
   });
 }
 
+// --- Banners da homepage ---
+
+export type Banner = {
+  id: string;
+  size: "LARGE" | "SMALL";
+  eyebrow: string | null;
+  title: string;
+  description: string | null;
+  linkUrl: string;
+  ctaLabel: string | null;
+  imageUrl: string | null;
+  order: number;
+  active: boolean;
+};
+
+export type BannerInput = {
+  size: "LARGE" | "SMALL";
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  linkUrl: string;
+  ctaLabel?: string;
+  imageUrl?: string;
+  order?: number;
+  active?: boolean;
+};
+
+export function getBanners(): Promise<Banner[]> {
+  return apiFetch<Banner[]>("/banners");
+}
+
+export function getBannersAdmin(token: string): Promise<Banner[]> {
+  return apiFetch<Banner[]>("/banners/all", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function createBanner(data: BannerInput, token: string) {
+  return apiFetch<Banner>("/banners", { method: "POST", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function updateBanner(id: string, data: Partial<BannerInput>, token: string) {
+  return apiFetch<Banner>(`/banners/${id}`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function deleteBanner(id: string, token: string) {
+  return apiFetch(`/banners/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+}
+
 // --- Cupões ---
 
 export type Coupon = {

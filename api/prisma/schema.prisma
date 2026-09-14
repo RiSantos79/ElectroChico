@@ -329,6 +329,30 @@ model SiteSettings {
   updatedAt        DateTime @updatedAt
 }
 
+enum BannerSize {
+  LARGE
+  SMALL
+}
+
+// Banners do hero da homepage — ao contrário do ContentPage, esta é mesmo
+// uma lista livre: o admin pode adicionar/remover campanhas à vontade.
+model Banner {
+  id          String     @id @default(cuid())
+  size        BannerSize @default(LARGE)
+  eyebrow     String?
+  title       String
+  description String?
+  linkUrl     String
+  ctaLabel    String?
+  imageUrl    String?
+  order       Int        @default(0)
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([active, order])
+}
+
 // Conteúdo das páginas institucionais (Entregas, Privacidade, Contacto,
 // Orçamentos) editável no backoffice — o slug corresponde à página no site,
 // é um conjunto fixo, não uma lista de páginas livres criadas pelo admin.

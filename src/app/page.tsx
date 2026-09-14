@@ -1,47 +1,47 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/product-card";
 import type { Product } from "@/data/catalog";
-import { getCategories, getProducts } from "@/lib/api";
+import { getBanners, getCategories, getProducts, type Banner } from "@/lib/api";
 import { GIFT_CARD_CATEGORY_SLUG } from "@/lib/gift-cards";
 
+// Único fallback caso o admin apague todos os banners — sem isto a homepage
+// ficava sem <h1> nenhum no hero.
+const fallbackBanners: Banner[] = [
+  {
+    id: "fallback-large",
+    size: "LARGE",
+    eyebrow: "Campanha da semana",
+    title: "Até 30% de desconto em eletrodomésticos de cozinha",
+    description: "Renove a sua cozinha com as melhores marcas e entrega rápida em todo o país.",
+    linkUrl: "/catalogo/eletrodomesticos",
+    ctaLabel: "Ver ofertas",
+    imageUrl: null,
+    order: 0,
+    active: true,
+  },
+];
+
 export default async function Home() {
-  const [products, categories] = await Promise.all([getProducts(), getCategories()]);
+  const [products, categories, banners] = await Promise.all([
+    getProducts(),
+    getCategories(),
+    getBanners().catch(() => []),
+  ]);
   const shoppableCategories = categories.filter((c) => c.slug !== GIFT_CARD_CATEGORY_SLUG);
   const shoppableProducts = products.filter((p) => p.category !== GIFT_CARD_CATEGORY_SLUG);
   const brands = Array.from(new Set(shoppableProducts.map((p) => p.brand))).sort();
   const promoProducts = shoppableProducts.filter((p) => p.badge === "promo");
   const bestsellers = shoppableProducts.filter((p) => p.badge === "mais-vendido");
   const newArrivals = shoppableProducts.filter((p) => p.badge === "novo");
+  const heroBanners = banners.length > 0 ? banners : fallbackBanners;
 
   return (
     <div className="px-6 py-8 lg:px-10">
       {/* Hero */}
       <section className="grid gap-4 md:grid-cols-3">
-        <div className="flex flex-col justify-center gap-4 rounded-2xl bg-gradient-to-br from-accent to-blue-800 p-8 text-accent-foreground md:col-span-2 md:p-12">
-          <span className="text-sm font-medium uppercase tracking-wide opacity-80">
-            Campanha da semana
-          </span>
-          <h1 className="text-3xl font-bold leading-tight md:text-4xl">
-            Até 30% de desconto em eletrodomésticos de cozinha
-          </h1>
-          <p className="max-w-md text-sm opacity-90">
-            Renove a sua cozinha com as melhores marcas e entrega rápida em todo o país.
-          </p>
-          <Link
-            href="/catalogo/eletrodomesticos"
-            className="w-fit rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-accent hover:opacity-90"
-          >
-            Ver ofertas
-          </Link>
-        </div>
-        <div className="flex flex-col justify-center gap-3 rounded-2xl border border-border bg-surface p-8">
-          <span className="text-sm font-medium uppercase tracking-wide text-muted">Destaque</span>
-          <h2 className="text-xl font-semibold">Imagem e Som</h2>
-          <p className="text-sm text-muted">TVs, home cinema e o melhor em entretenimento.</p>
-          <Link href="/catalogo/imagem-e-som" className="w-fit text-sm font-medium text-accent hover:underline">
-            Explorar →
-          </Link>
-        </div>
+        {heroBanners.map((banner, i) => (
+          <HeroBanner key={banner.id} banner={banner} useH1={i === 0} />
+        ))}
       </section>
 
       {/* Category tiles */}
@@ -82,6 +82,58 @@ export default async function Home() {
           ))}
         </div>
       </section>
+    </div>
+  );
+}
+
+function HeroBanner({ banner, useH1 }: { banner: Banner; useH1: boolean }) {
+  const isLarge = banner.size === "LARGE";
+  const HeadingTag = useH1 ? "h1" : "h2";
+  const style = banner.imageUrl
+    ? {
+        backgroundImage: `linear-gradient(to bottom right, rgba(0,0,0,0.55), rgba(0,0,0,0.25)), url(${banner.imageUrl})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }
+    : undefined;
+
+  if (isLarge) {
+    return (
+      <div
+        className={`flex flex-col justify-center gap-4 rounded-2xl p-8 text-accent-foreground md:col-span-2 md:p-12 ${
+          banner.imageUrl ? "" : "bg-gradient-to-br from-accent to-blue-800"
+        }`}
+        style={style}
+      >
+        {banner.eyebrow && (
+          <span className="text-sm font-medium uppercase tracking-wide opacity-80">{banner.eyebrow}</span>
+        )}
+        <HeadingTag className="text-3xl font-bold leading-tight md:text-4xl">{banner.title}</HeadingTag>
+        {banner.description && <p className="max-w-md text-sm opacity-90">{banner.description}</p>}
+        {banner.ctaLabel && (
+          <Link
+            href={banner.linkUrl}
+            className="w-fit rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-accent hover:opacity-90"
+          >
+            {banner.ctaLabel}
+          </Link>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col justify-center gap-3 rounded-2xl border border-border bg-surface p-8" style={style}>
+      {banner.eyebrow && (
+        <span className="text-sm font-medium uppercase tracking-wide text-muted">{banner.eyebrow}</span>
+      )}
+      <HeadingTag className="text-xl font-semibold">{banner.title}</HeadingTag>
+      {banner.description && <p className="text-sm text-muted">{banner.description}</p>}
+      {banner.ctaLabel && (
+        <Link href={banner.linkUrl} className="w-fit text-sm font-medium text-accent hover:underline">
+          {banner.ctaLabel} →
+        </Link>
+      )}
     </div>
   );
 }

@@ -3,13 +3,17 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
+  createBanner,
   createBrand,
   createCoupon,
   createProduct,
+  deleteBanner,
   deleteCoupon,
   deleteProduct,
   duplicateProduct,
+  getBannersAdmin,
   sendCartReminder,
+  updateBanner,
   updateBrand,
   updateCategory,
   updateContentPage,
@@ -19,6 +23,7 @@ import {
   updateSiteSettings,
   uploadImage,
   type AdminProductInput,
+  type BannerInput,
   type CouponInput,
   type OrderStatus,
   type SiteSettings,
@@ -252,4 +257,75 @@ export async function updateContentPageAction(slug: string, formData: FormData) 
   revalidatePath("/admin/conteudos");
   revalidatePath(`/${slug}`);
   redirect("/admin/conteudos");
+}
+
+async function uploadedBannerImageUrl(formData: FormData, token: string): Promise<string | undefined> {
+  const file = formData.get("image");
+  if (!(file instanceof File) || file.size === 0) return undefined;
+  return uploadImage(file, token);
+}
+
+export async function createBannerAction(formData: FormData) {
+  const token = await requireToken();
+  const imageUrl = await uploadedBannerImageUrl(formData, token);
+  const input: BannerInput = {
+    size: String(formData.get("size")) as BannerInput["size"],
+    title: String(formData.get("title")),
+    linkUrl: String(formData.get("linkUrl")),
+    eyebrow: optionalString(formData, "eyebrow"),
+    description: optionalString(formData, "description"),
+    ctaLabel: optionalString(formData, "ctaLabel"),
+    imageUrl,
+  };
+  await createBanner(input, token);
+  revalidatePath("/admin/banners");
+  revalidatePath("/");
+}
+
+export async function updateBannerAction(id: string, formData: FormData) {
+  const token = await requireToken();
+  const imageUrl = await uploadedBannerImageUrl(formData, token);
+  await updateBanner(
+    id,
+    {
+      size: String(formData.get("size")) as BannerInput["size"],
+      title: String(formData.get("title")),
+      linkUrl: String(formData.get("linkUrl")),
+      eyebrow: optionalString(formData, "eyebrow"),
+      description: optionalString(formData, "description"),
+      ctaLabel: optionalString(formData, "ctaLabel"),
+      ...(imageUrl ? { imageUrl } : {}),
+    },
+    token,
+  );
+  revalidatePath("/admin/banners");
+  revalidatePath("/");
+}
+
+export async function toggleBannerAction(id: string, active: boolean) {
+  const token = await requireToken();
+  await updateBanner(id, { active }, token);
+  revalidatePath("/admin/banners");
+  revalidatePath("/");
+}
+
+export async function deleteBannerAction(id: string) {
+  const token = await requireToken();
+  await deleteBanner(id, token);
+  revalidatePath("/admin/banners");
+  revalidatePath("/");
+}
+
+export async function moveBannerAction(id: string, direction: "up" | "down") {
+  const token = await requireToken();
+  const banners = await getBannersAdmin(token);
+  const index = banners.findIndex((b) => b.id === id);
+  const swapWith = direction === "up" ? index - 1 : index + 1;
+  if (index === -1 || swapWith < 0 || swapWith >= banners.length) return;
+  await Promise.all([
+    updateBanner(banners[index].id, { order: banners[swapWith].order }, token),
+    updateBanner(banners[swapWith].id, { order: banners[index].order }, token),
+  ]);
+  revalidatePath("/admin/banners");
+  revalidatePath("/");
 }

@@ -19,6 +19,7 @@ import { CouponsModule } from './coupons/coupons.module.js';
 import { NewsletterModule } from './newsletter/newsletter.module.js';
 import { SiteSettingsModule } from './site-settings/site-settings.module.js';
 import { ContentPagesModule } from './content-pages/content-pages.module.js';
+import { BannersModule } from './banners/banners.module.js';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ContentPagesModule } from './content-pages/content-pages.module.js';
     NewsletterModule,
     SiteSettingsModule,
     ContentPagesModule,
+    BannersModule,
   ],
 })
 export class AppModule {}
