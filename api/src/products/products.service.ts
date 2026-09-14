@@ -5,12 +5,14 @@ import { AuditService } from '../audit/audit.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 import { sanitizeRichText } from '../common/sanitize-html.js';
+import { StockService } from '../stock/stock.service.js';
 
 @Injectable()
 export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly stock: StockService,
   ) {}
 
   findAll(params: { categorySlug?: string; brandSlug?: string; includeArchived?: boolean }) {
@@ -59,7 +61,7 @@ export class ProductsService {
   }
 
   async update(id: string, dto: UpdateProductDto, actorEmail?: string) {
-    await this.ensureExists(id);
+    const before = await this.ensureExists(id);
     const { categoryId, brandId, specs, ...rest } = dto;
     const product = await this.prisma.product.update({
       where: { id },
@@ -72,6 +74,15 @@ export class ProductsService {
       },
     });
     await this.audit.log('PRODUCT_UPDATE', { entity: 'Product', entityId: id, actor: actorEmail });
+
+    if (dto.stockQuantity !== undefined && dto.stockQuantity !== before.stockQuantity) {
+      await this.stock.recordMovement({
+        productId: id,
+        type: 'ADJUSTMENT',
+        delta: dto.stockQuantity - before.stockQuantity,
+        reason: `Ajuste manual por ${actorEmail ?? 'admin'}`,
+      });
+    }
     return product;
   }
 
@@ -128,5 +139,6 @@ export class ProductsService {
   private async ensureExists(id: string) {
     const product = await this.prisma.product.findUnique({ where: { id } });
     if (!product) throw new NotFoundException(`Produto com id "${id}" não encontrado`);
+    return product;
   }
 }

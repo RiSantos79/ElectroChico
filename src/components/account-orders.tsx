@@ -5,15 +5,23 @@ import { formatPrice } from "@/lib/format";
 const statusLabel: Record<string, string> = {
   PENDING: "Pendente",
   PAID: "Paga",
-  FAILED: "Falhada",
+  PROCESSING: "A preparar",
+  SHIPPED: "Enviada",
+  DELIVERED: "Entregue",
   CANCELLED: "Cancelada",
+  REFUNDED: "Reembolsada",
+  FAILED: "Falhada",
 };
 
 const statusColor: Record<string, string> = {
   PENDING: "text-muted",
   PAID: "text-success",
-  FAILED: "text-danger",
+  PROCESSING: "text-accent",
+  SHIPPED: "text-accent",
+  DELIVERED: "text-success",
   CANCELLED: "text-muted",
+  REFUNDED: "text-danger",
+  FAILED: "text-danger",
 };
 
 export function AccountOrders({ orders }: { orders: Order[] }) {
@@ -48,6 +56,13 @@ export function AccountOrders({ orders }: { orders: Order[] }) {
                   </li>
                 ))}
               </ul>
+              {(order.trackingCarrier || order.trackingCode) && (
+                <p className="mt-2 text-xs text-muted">
+                  Envio: {order.trackingCarrier}
+                  {order.trackingCarrier && order.trackingCode ? " — " : ""}
+                  {order.trackingCode}
+                </p>
+              )}
               <div className="mt-2 text-right text-sm font-semibold text-foreground">
                 {formatPrice(Number(order.total))}
               </div>

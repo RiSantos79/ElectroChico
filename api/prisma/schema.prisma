@@ -112,8 +112,31 @@ model Product {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
+  stockMovements StockMovement[]
+
   @@index([categoryId])
   @@index([brandId])
+}
+
+enum StockMovementType {
+  SALE
+  RESTOCK
+  ADJUSTMENT
+  RETURN
+}
+
+model StockMovement {
+  id        String            @id @default(cuid())
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  type      StockMovementType
+  delta     Int
+  reason    String?
+  orderId   String?
+  createdAt DateTime          @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
 }
 
 model Review {
@@ -131,8 +154,12 @@ model Review {
 enum OrderStatus {
   PENDING
   PAID
-  FAILED
+  PROCESSING
+  SHIPPED
+  DELIVERED
   CANCELLED
+  REFUNDED
+  FAILED
 }
 
 model Order {
@@ -153,6 +180,8 @@ model Order {
   total           Decimal     @db.Decimal(10, 2)
   stripeSessionId String?     @unique
   paymentMethod   String?
+  trackingCarrier String?
+  trackingCode    String?
   items           OrderItem[]
   giftCards       GiftCard[]
   createdAt       DateTime    @default(now())

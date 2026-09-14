@@ -255,6 +255,23 @@ export async function getAuditLogs(token: string): Promise<AuditLog[]> {
   return apiFetch<AuditLog[]>("/audit-logs", { headers: { Authorization: `Bearer ${token}` } });
 }
 
+// --- Stock ---
+
+export type StockMovement = {
+  id: string;
+  productId: string;
+  type: "SALE" | "RESTOCK" | "ADJUSTMENT" | "RETURN";
+  delta: number;
+  reason: string | null;
+  orderId: string | null;
+  createdAt: string;
+  product: { name: string; slug: string };
+};
+
+export async function getStockMovements(token: string): Promise<StockMovement[]> {
+  return apiFetch<StockMovement[]>("/stock-movements", { headers: { Authorization: `Bearer ${token}` } });
+}
+
 // --- Encomendas ---
 
 export type CreateOrderInput = {
@@ -284,16 +301,48 @@ export function createOrder(
   });
 }
 
+export type OrderStatus =
+  | "PENDING"
+  | "PAID"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "REFUNDED"
+  | "FAILED";
+
+// Estados que significam "o pagamento foi cobrado" — uma encomenda paga
+// continua a contar para totais/estatísticas mesmo depois de avançar para
+// preparação/envio/entrega.
+export const PAID_LIKE_STATUSES: OrderStatus[] = ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"];
+
 export type Order = {
   id: string;
-  status: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+  status: OrderStatus;
   customerName: string;
   customerEmail: string;
+  customerPhone?: string;
+  street?: string;
+  streetNumber?: string;
+  floor?: string | null;
+  postalCode?: string;
+  city?: string;
+  subtotal?: string;
   total: string;
   createdAt: string;
+  trackingCarrier?: string | null;
+  trackingCode?: string | null;
   items: { id: string; productName: string; unitPrice: string; quantity: number }[];
   giftCards?: { code: string; value: string; recipientEmail: string | null; message: string | null }[];
 };
+
+export function updateOrderStatus(
+  id: string,
+  data: { status?: OrderStatus; trackingCarrier?: string; trackingCode?: string },
+  token: string,
+): Promise<Order> {
+  return apiFetch<Order>(`/orders/${id}`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
+}
 
 export async function getOrder(id: string): Promise<Order | null> {
   try {

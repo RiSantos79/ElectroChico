@@ -1,8 +1,9 @@
-import { BadRequestException, Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { OrdersService } from './orders.service.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
+import { UpdateOrderDto } from './dto/update-order.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { AdminGuard } from '../auth/admin.guard.js';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
@@ -46,6 +47,12 @@ export class OrdersController {
   @Get('orders/:id')
   findOne(@Param('id') id: string) {
     return this.ordersService.findById(id);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Patch('orders/:id')
+  update(@Param('id') id: string, @Body() dto: UpdateOrderDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.ordersService.updateStatus(id, dto, user.email);
   }
 
   @Post('webhooks/stripe')

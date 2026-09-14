@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PAID_LIKE_STATUSES } from '../common/order-status.js';
 
 const STOCK_CRITICAL_THRESHOLD = 5;
 const ABANDONED_CART_AFTER_MS = 60 * 60 * 1000; // 1h sem pagar = considera-se abandonado
@@ -88,7 +89,7 @@ export class DashboardService {
 
   private async salesBetween(from: Date, to: Date) {
     const result = await this.prisma.order.aggregate({
-      where: { status: 'PAID', updatedAt: { gte: from, lt: to } },
+      where: { status: { in: PAID_LIKE_STATUSES }, updatedAt: { gte: from, lt: to } },
       _sum: { total: true },
       _count: true,
     });
@@ -100,7 +101,7 @@ export class DashboardService {
   private async customerLoyalty() {
     const grouped = await this.prisma.order.groupBy({
       by: ['customerId'],
-      where: { status: 'PAID', customerId: { not: null } },
+      where: { status: { in: PAID_LIKE_STATUSES }, customerId: { not: null } },
       _count: { _all: true },
     });
     const recurring = grouped.filter((g) => g._count._all > 1).length;
@@ -132,7 +133,7 @@ export class DashboardService {
   private async topProducts(limit: number) {
     const grouped = await this.prisma.orderItem.groupBy({
       by: ['productId', 'productName'],
-      where: { order: { status: 'PAID' } },
+      where: { order: { status: { in: PAID_LIKE_STATUSES } } },
       _sum: { quantity: true },
       orderBy: { _sum: { quantity: 'desc' } },
       take: limit,
@@ -147,7 +148,7 @@ export class DashboardService {
   private async topCustomers(limit: number) {
     const grouped = await this.prisma.order.groupBy({
       by: ['customerId'],
-      where: { status: 'PAID', customerId: { not: null } },
+      where: { status: { in: PAID_LIKE_STATUSES }, customerId: { not: null } },
       _sum: { total: true },
       _count: { _all: true },
       orderBy: { _sum: { total: 'desc' } },
@@ -179,7 +180,7 @@ export class DashboardService {
 
     const [orders, views] = await Promise.all([
       this.prisma.order.findMany({
-        where: { status: 'PAID', updatedAt: { gte: from } },
+        where: { status: { in: PAID_LIKE_STATUSES }, updatedAt: { gte: from } },
         select: { total: true, updatedAt: true },
       }),
       this.prisma.pageView.findMany({
@@ -235,7 +236,7 @@ export class DashboardService {
     const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const [orders, views] = await Promise.all([
       this.prisma.order.findMany({
-        where: { status: 'PAID', updatedAt: { gte: from } },
+        where: { status: { in: PAID_LIKE_STATUSES }, updatedAt: { gte: from } },
         select: { updatedAt: true, total: true },
       }),
       this.prisma.pageView.findMany({
@@ -259,7 +260,7 @@ export class DashboardService {
   private async salesByWeekday(days: number) {
     const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const orders = await this.prisma.order.findMany({
-      where: { status: 'PAID', updatedAt: { gte: from } },
+      where: { status: { in: PAID_LIKE_STATUSES }, updatedAt: { gte: from } },
       select: { updatedAt: true, total: true },
     });
 
@@ -279,7 +280,7 @@ export class DashboardService {
   // "Produto descontinuado".
   private async revenueByCategory() {
     const items = await this.prisma.orderItem.findMany({
-      where: { order: { status: 'PAID' } },
+      where: { order: { status: { in: PAID_LIKE_STATUSES } } },
       select: { productId: true, unitPrice: true, quantity: true },
     });
     const productIds = [...new Set(items.map((i) => i.productId))];
@@ -318,7 +319,7 @@ export class DashboardService {
   private async topCities(limit: number) {
     const grouped = await this.prisma.order.groupBy({
       by: ['city'],
-      where: { status: 'PAID' },
+      where: { status: { in: PAID_LIKE_STATUSES } },
       _count: { _all: true },
       _sum: { total: true },
       orderBy: { _count: { city: 'desc' } },
@@ -347,7 +348,7 @@ export class DashboardService {
   private async paymentMethodBreakdown() {
     const grouped = await this.prisma.order.groupBy({
       by: ['paymentMethod'],
-      where: { status: 'PAID' },
+      where: { status: { in: PAID_LIKE_STATUSES } },
       _count: { _all: true },
     });
     return grouped.map((g) => ({ method: g.paymentMethod ?? 'Desconhecido', count: g._count._all }));

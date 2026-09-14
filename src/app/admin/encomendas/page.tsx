@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOrdersAdmin } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
@@ -8,15 +9,23 @@ export const metadata = { title: "Encomendas — Backoffice" };
 const statusLabel: Record<string, string> = {
   PENDING: "Pendente",
   PAID: "Paga",
-  FAILED: "Falhada",
+  PROCESSING: "A preparar",
+  SHIPPED: "Enviada",
+  DELIVERED: "Entregue",
   CANCELLED: "Cancelada",
+  REFUNDED: "Reembolsada",
+  FAILED: "Falhada",
 };
 
 const statusColor: Record<string, string> = {
   PENDING: "text-muted",
   PAID: "text-success",
-  FAILED: "text-danger",
+  PROCESSING: "text-accent",
+  SHIPPED: "text-accent",
+  DELIVERED: "text-success",
   CANCELLED: "text-muted",
+  REFUNDED: "text-danger",
+  FAILED: "text-danger",
 };
 
 export default async function AdminOrdersPage() {
@@ -37,6 +46,7 @@ export default async function AdminOrdersPage() {
               <th className="px-4 py-3 font-medium">Artigos</th>
               <th className="px-4 py-3 font-medium">Total</th>
               <th className="px-4 py-3 font-medium">Estado</th>
+              <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -54,11 +64,16 @@ export default async function AdminOrdersPage() {
                 <td className={`px-4 py-3 font-medium ${statusColor[order.status] ?? "text-muted"}`}>
                   {statusLabel[order.status] ?? order.status}
                 </td>
+                <td className="px-4 py-3 text-right">
+                  <Link href={`/admin/encomendas/${order.id}`} className="font-medium text-accent hover:underline">
+                    Ver
+                  </Link>
+                </td>
               </tr>
             ))}
             {orders.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted">
+                <td colSpan={6} className="px-4 py-8 text-center text-muted">
                   Ainda não há encomendas.
                 </td>
               </tr>

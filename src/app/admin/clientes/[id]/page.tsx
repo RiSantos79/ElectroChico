@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAdminCustomerDetail } from "@/lib/api";
+import { getAdminCustomerDetail, PAID_LIKE_STATUSES } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { formatPrice } from "@/lib/format";
 
@@ -8,8 +8,12 @@ export const metadata = { title: "Cliente — Backoffice" };
 const statusLabel: Record<string, string> = {
   PENDING: "Pendente",
   PAID: "Paga",
-  FAILED: "Falhada",
+  PROCESSING: "A preparar",
+  SHIPPED: "Enviada",
+  DELIVERED: "Entregue",
   CANCELLED: "Cancelada",
+  REFUNDED: "Reembolsada",
+  FAILED: "Falhada",
 };
 
 export default async function AdminCustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,7 +23,9 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
   const { id } = await params;
   const { customer, orders } = await getAdminCustomerDetail(id, token);
 
-  const totalSpent = orders.filter((o) => o.status === "PAID").reduce((sum, o) => sum + Number(o.total), 0);
+  const totalSpent = orders
+    .filter((o) => PAID_LIKE_STATUSES.includes(o.status))
+    .reduce((sum, o) => sum + Number(o.total), 0);
 
   return (
     <div className="space-y-6 px-6 py-8 lg:px-10">

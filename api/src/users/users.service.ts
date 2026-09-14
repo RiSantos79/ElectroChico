@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PAID_LIKE_STATUSES } from '../common/order-status.js';
 
 @Injectable()
 export class UsersService {
@@ -10,7 +11,7 @@ export class UsersService {
       this.prisma.user.findMany({ where: { role: 'CUSTOMER' }, orderBy: { createdAt: 'desc' } }),
       this.prisma.order.groupBy({
         by: ['customerId'],
-        where: { status: 'PAID', customerId: { not: null } },
+        where: { status: { in: PAID_LIKE_STATUSES }, customerId: { not: null } },
         _sum: { total: true },
         _count: { _all: true },
         _max: { createdAt: true },

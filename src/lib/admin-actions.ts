@@ -9,9 +9,11 @@ import {
   duplicateProduct,
   updateBrand,
   updateCategory,
+  updateOrderStatus,
   updateProduct,
   uploadImage,
   type AdminProductInput,
+  type OrderStatus,
 } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 
@@ -147,4 +149,19 @@ export async function updateCategoryImageAction(id: string, formData: FormData) 
   const logoUrl = await uploadedLogoUrl(formData, token);
   if (logoUrl) await updateCategory(id, { imageUrl: logoUrl }, token);
   revalidatePath("/admin/categorias");
+}
+
+export async function updateOrderAction(id: string, formData: FormData) {
+  const token = await requireToken();
+  await updateOrderStatus(
+    id,
+    {
+      status: String(formData.get("status")) as OrderStatus,
+      trackingCarrier: optionalString(formData, "trackingCarrier"),
+      trackingCode: optionalString(formData, "trackingCode"),
+    },
+    token,
+  );
+  revalidatePath("/admin/encomendas");
+  revalidatePath(`/admin/encomendas/${id}`);
 }

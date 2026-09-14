@@ -2,8 +2,11 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { StockService } from '../stock/stock.service.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
+import type { UpdateOrderDto } from './dto/update-order.dto.js';
 import { GIFT_CARD_CATEGORY_SLUG, generateGiftCardCode } from '../common/gift-cards.js';
+import { PAID_LIKE_STATUSES } from '../common/order-status.js';
 
 @Injectable()
 export class OrdersService {
@@ -12,6 +15,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly stock: StockService,
   ) {
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error('STRIPE_SECRET_KEY não está definido.');
@@ -120,7 +124,7 @@ export class OrdersService {
 
   private async markAsPaid(orderId: string, stripeSessionId?: string) {
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
-    if (!order || order.status === 'PAID') return;
+    if (!order || PAID_LIKE_STATUSES.includes(order.status)) return;
 
     const paymentMethod = stripeSessionId ? await this.fetchPaymentMethod(stripeSessionId) : null;
     await this.prisma.order.update({ where: { id: orderId }, data: { status: 'PAID', paymentMethod } });
@@ -137,6 +141,12 @@ export class OrdersService {
         where: { id: item.productId },
         data: { stockQuantity: { decrement: item.quantity } },
       });
+      await this.stock.recordMovement({
+        productId: item.productId,
+        type: 'SALE',
+        delta: -item.quantity,
+        orderId,
+      });
 
       const product = products.find((p) => p.id === item.productId);
       if (product?.category.slug === GIFT_CARD_CATEGORY_SLUG) {
@@ -144,6 +154,47 @@ export class OrdersService {
       }
     }
     await this.audit.log('ORDER_PAID', { entity: 'Order', entityId: orderId });
+  }
+
+  // Cancelar/reembolsar uma encomenda já paga devolve o stock — mas só uma
+  // vez, por isso verifica se o estado anterior já tinha reservado stock.
+  async updateStatus(id: string, dto: UpdateOrderDto, actorEmail?: string) {
+    const order = await this.prisma.order.findUnique({ where: { id }, include: { items: true } });
+    if (!order) throw new NotFoundException(`Encomenda "${id}" não encontrada`);
+
+    const isRestocking =
+      dto.status &&
+      ['CANCELLED', 'REFUNDED'].includes(dto.status) &&
+      PAID_LIKE_STATUSES.includes(order.status) &&
+      dto.status !== order.status;
+
+    if (isRestocking) {
+      for (const item of order.items) {
+        await this.prisma.product.update({
+          where: { id: item.productId },
+          data: { stockQuantity: { increment: item.quantity } },
+        });
+        await this.stock.recordMovement({
+          productId: item.productId,
+          type: 'RETURN',
+          delta: item.quantity,
+          orderId: id,
+          reason: `Encomenda ${dto.status === 'CANCELLED' ? 'cancelada' : 'reembolsada'}`,
+        });
+      }
+    }
+
+    const updated = await this.prisma.order.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        trackingCarrier: dto.trackingCarrier,
+        trackingCode: dto.trackingCode,
+      },
+      include: { items: true },
+    });
+    await this.audit.log('ORDER_STATUS_UPDATE', { entity: 'Order', entityId: id, actor: actorEmail });
+    return updated;
   }
 
   // Um cartão presente vale sempre o preço unitário do artigo, multiplicado
