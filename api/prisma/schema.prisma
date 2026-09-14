@@ -29,15 +29,18 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String?
-  role         Role     @default(CUSTOMER)
-  createdAt    DateTime @default(now())
-  orders       Order[]
-  addresses    Address[]
-  contactMessages ContactMessage[]
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  passwordHash       String
+  name               String?
+  role               Role      @default(CUSTOMER)
+  mfaEnabled         Boolean   @default(false)
+  mfaSecretEncrypted String?
+  mfaRecoveryCodes   String[]  @default([])
+  createdAt          DateTime  @default(now())
+  orders             Order[]
+  addresses          Address[]
+  contactMessages    ContactMessage[]
 }
 
 model Address {

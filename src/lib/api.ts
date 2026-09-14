@@ -482,6 +482,28 @@ export function changePassword(currentPassword: string, newPassword: string, tok
   });
 }
 
+// --- Verificação em duas etapas (2FA) ---
+
+export function getMfaStatus(token: string): Promise<{ enabled: boolean; recoveryCodesRemaining: number }> {
+  return apiFetch("/auth/mfa/status", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function setupMfa(token: string): Promise<{ secret: string; otpauthUrl: string }> {
+  return apiFetch("/auth/mfa/setup", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function enableMfa(code: string, token: string): Promise<{ recoveryCodes: string[] }> {
+  return apiFetch("/auth/mfa/enable", { method: "POST", headers: authHeaders(token), body: JSON.stringify({ code }) });
+}
+
+export function disableMfa(password: string, token: string): Promise<{ ok: boolean }> {
+  return apiFetch("/auth/mfa/disable", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ password }),
+  });
+}
+
 // --- Sugestões / Mensagens / RMA ---
 
 export type ContactType = "SUGGESTION" | "MESSAGE" | "RMA";

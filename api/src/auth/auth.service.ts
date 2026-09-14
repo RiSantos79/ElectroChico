@@ -1,8 +1,13 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
+import { authenticator } from 'otplib';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { encryptSecret, decryptSecret } from '../common/mfa-crypto.js';
+import { generateRecoveryCodes } from '../common/recovery-codes.js';
+
+const MFA_TOKEN_TTL = '5m';
 
 @Injectable()
 export class AuthService {
@@ -23,9 +28,115 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
+    if (user.mfaEnabled) {
+      // Token de curta duração e sem "role" — não serve para aceder a nada,
+      // só para provar que a password já foi validada quando se chamar
+      // /auth/mfa/verify a seguir.
+      const mfaToken = await this.jwt.signAsync({ sub: user.id, mfaPending: true }, { expiresIn: MFA_TOKEN_TTL });
+      return { mfaRequired: true, mfaToken };
+    }
+
     await this.audit.log('LOGIN_SUCCESS', { actor: email, ip });
     const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name });
     return { accessToken };
+  }
+
+  async verifyMfa(mfaToken: string, code: string, ip?: string) {
+    let payload: { sub: string; mfaPending?: boolean };
+    try {
+      payload = await this.jwt.verifyAsync(mfaToken);
+    } catch {
+      throw new UnauthorizedException('Sessão de verificação inválida ou expirada — inicie sessão novamente.');
+    }
+    if (!payload.mfaPending) throw new UnauthorizedException('Token inválido para este passo.');
+
+    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user || !user.mfaEnabled || !user.mfaSecretEncrypted) {
+      throw new UnauthorizedException('Conta sem verificação em duas etapas ativa.');
+    }
+
+    const normalizedCode = code.trim().toUpperCase();
+    const isTotpValid = authenticator.check(code.trim(), decryptSecret(user.mfaSecretEncrypted));
+
+    if (!isTotpValid) {
+      const matchedRecoveryCode = await this.consumeRecoveryCode(user.id, user.mfaRecoveryCodes, normalizedCode);
+      if (!matchedRecoveryCode) {
+        await this.audit.log('LOGIN_FAILED', { actor: user.email, ip });
+        throw new UnauthorizedException('Código inválido.');
+      }
+    }
+
+    await this.audit.log('LOGIN_SUCCESS', { actor: user.email, ip });
+    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name });
+    return { accessToken };
+  }
+
+  private async consumeRecoveryCode(userId: string, hashedCodes: string[], candidate: string): Promise<boolean> {
+    for (const hashed of hashedCodes) {
+      if (await argon2.verify(hashed, candidate).catch(() => false)) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { mfaRecoveryCodes: hashedCodes.filter((h) => h !== hashed) },
+        });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async getMfaStatus(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Utilizador não encontrado');
+    return { enabled: user.mfaEnabled, recoveryCodesRemaining: user.mfaRecoveryCodes.length };
+  }
+
+  async setupMfa(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Utilizador não encontrado');
+    if (user.mfaEnabled) {
+      throw new BadRequestException('A verificação em duas etapas já está ativa — desative-a primeiro para a reconfigurar.');
+    }
+
+    const secret = authenticator.generateSecret();
+    await this.prisma.user.update({ where: { id: userId }, data: { mfaSecretEncrypted: encryptSecret(secret) } });
+
+    const otpauthUrl = authenticator.keyuri(user.email, 'ElectroChico', secret);
+    return { secret, otpauthUrl };
+  }
+
+  async enableMfa(userId: string, code: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Utilizador não encontrado');
+    if (user.mfaEnabled) throw new BadRequestException('A verificação em duas etapas já está ativa.');
+    if (!user.mfaSecretEncrypted) {
+      throw new BadRequestException('Nenhuma configuração pendente — comece por gerar um código QR.');
+    }
+
+    const isValid = authenticator.check(code.trim(), decryptSecret(user.mfaSecretEncrypted));
+    if (!isValid) throw new UnauthorizedException('Código inválido.');
+
+    const recoveryCodes = generateRecoveryCodes();
+    const hashedCodes = await Promise.all(recoveryCodes.map((c) => argon2.hash(c)));
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaEnabled: true, mfaRecoveryCodes: hashedCodes },
+    });
+    await this.audit.log('MFA_ENABLED', { actor: user.email });
+    return { recoveryCodes };
+  }
+
+  async disableMfa(userId: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Utilizador não encontrado');
+
+    const valid = await argon2.verify(user.passwordHash, password).catch(() => false);
+    if (!valid) throw new UnauthorizedException('Palavra-passe incorreta');
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { mfaEnabled: false, mfaSecretEncrypted: null, mfaRecoveryCodes: [] },
+    });
+    await this.audit.log('MFA_DISABLED', { actor: user.email });
   }
 
   async register(email: string, password: string, name: string) {
