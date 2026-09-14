@@ -3,7 +3,7 @@ import { getMyContactMessages } from "@/lib/api";
 import { AccountAuthForm } from "@/components/account-auth-form";
 import { ContactThread } from "@/components/contact-thread";
 
-export const metadata = { title: "Sugestões — ElectroChico" };
+export const metadata = { title: "Sugestões" };
 
 export default async function SuggestionsPage() {
   const token = await getCustomerSessionToken();

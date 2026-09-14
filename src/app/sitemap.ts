@@ -1,19 +1,32 @@
 import type { MetadataRoute } from "next";
-import { getProducts, getCategories } from "@/lib/api";
+import { getBrands, getCategories, getProducts } from "@/lib/api";
 import { SITE_URL } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [products, categories] = await Promise.all([
+  const [products, categories, brands] = await Promise.all([
     getProducts().catch(() => []),
     getCategories().catch(() => []),
+    getBrands().catch(() => []),
   ]);
 
-  const staticRoutes = ["", "/catalogo", "/outlet", "/ofertas-flash", "/entregas", "/orcamentos", "/contacto"].map(
-    (path) => ({ url: `${SITE_URL}${path}`, lastModified: new Date() }),
-  );
+  const staticRoutes = [
+    "",
+    "/catalogo",
+    "/outlet",
+    "/ofertas-flash",
+    "/entregas",
+    "/orcamentos",
+    "/contacto",
+    "/privacidade",
+  ].map((path) => ({ url: `${SITE_URL}${path}`, lastModified: new Date() }));
 
   const categoryRoutes = categories.map((c) => ({
     url: `${SITE_URL}/catalogo/${c.slug}`,
+    lastModified: new Date(),
+  }));
+
+  const brandRoutes = brands.map((b) => ({
+    url: `${SITE_URL}/marca/${b.slug}`,
     lastModified: new Date(),
   }));
 
@@ -22,5 +35,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(),
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...productRoutes];
+  return [...staticRoutes, ...categoryRoutes, ...brandRoutes, ...productRoutes];
 }

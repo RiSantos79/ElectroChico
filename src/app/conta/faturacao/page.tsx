@@ -3,7 +3,7 @@ import { getMyOrders, PAID_LIKE_STATUSES } from "@/lib/api";
 import { AccountAuthForm } from "@/components/account-auth-form";
 import { AccountInvoices } from "@/components/account-invoices";
 
-export const metadata = { title: "Facturação — ElectroChico" };
+export const metadata = { title: "Facturação" };
 
 export default async function AccountInvoicesPage() {
   const token = await getCustomerSessionToken();

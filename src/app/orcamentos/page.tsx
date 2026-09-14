@@ -1,6 +1,11 @@
 import { QuoteForm } from "@/components/quote-form";
 import { getCategories } from "@/lib/api";
 
+export const metadata = {
+  title: "Pedido de orçamento",
+  description: "Peça um orçamento à ElectroChico para instalação ou compra em quantidade de eletrodomésticos.",
+};
+
 export default async function QuotePage() {
   const categories = await getCategories();
 

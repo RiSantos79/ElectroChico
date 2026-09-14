@@ -1,7 +1,7 @@
 import { CatalogView } from "@/components/catalog-view";
 import { getProducts } from "@/lib/api";
 
-export const metadata = { title: "Outlet — ElectroChico" };
+export const metadata = { title: "Outlet" };
 
 export default async function OutletPage() {
   const products = await getProducts();

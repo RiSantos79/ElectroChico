@@ -1,4 +1,4 @@
-export const metadata = { title: "Política de Privacidade — ElectroChico" };
+export const metadata = { title: "Política de Privacidade" };
 
 const sections = [
   {

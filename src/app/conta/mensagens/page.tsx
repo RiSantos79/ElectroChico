@@ -3,7 +3,7 @@ import { getMyContactMessages } from "@/lib/api";
 import { AccountAuthForm } from "@/components/account-auth-form";
 import { ContactThread } from "@/components/contact-thread";
 
-export const metadata = { title: "Mensagens — ElectroChico" };
+export const metadata = { title: "Mensagens" };
 
 export default async function AccountMessagesPage() {
   const token = await getCustomerSessionToken();

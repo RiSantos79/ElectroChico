@@ -1,7 +1,7 @@
 import { CatalogView } from "@/components/catalog-view";
 import { getProducts } from "@/lib/api";
 
-export const metadata = { title: "Ofertas Flash — ElectroChico" };
+export const metadata = { title: "Ofertas Flash" };
 
 export default async function FlashDealsPage() {
   const products = await getProducts();

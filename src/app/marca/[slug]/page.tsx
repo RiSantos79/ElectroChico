@@ -11,7 +11,19 @@ export async function generateMetadata({
   const { slug } = await params;
   const brand = await getBrandBySlug(slug);
   if (!brand) return {};
-  return { title: `${brand.name} — ElectroChico` };
+
+  const title = brand.name;
+  const description = `Compre produtos ${brand.name} na ElectroChico — os melhores preços, entrega rápida e garantia oficial.`;
+  return {
+    title,
+    description,
+    alternates: { canonical: `/marca/${slug}` },
+    openGraph: {
+      title,
+      description,
+      images: brand.logoUrl ? [{ url: brand.logoUrl }] : undefined,
+    },
+  };
 }
 
 export default async function BrandPage({ params }: { params: Promise<{ slug: string }> }) {

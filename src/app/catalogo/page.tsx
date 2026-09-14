@@ -1,7 +1,7 @@
 import { CatalogView } from "@/components/catalog-view";
 import { getProducts } from "@/lib/api";
 
-export const metadata = { title: "Catálogo — ElectroChico" };
+export const metadata = { title: "Catálogo" };
 
 export default async function CatalogPage({
   searchParams,

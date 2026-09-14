@@ -3,7 +3,7 @@ import { getMyContactMessages } from "@/lib/api";
 import { AccountAuthForm } from "@/components/account-auth-form";
 import { AccountRma } from "@/components/account-rma";
 
-export const metadata = { title: "Pedido de Devolução ou RMA — ElectroChico" };
+export const metadata = { title: "Pedido de Devolução ou RMA" };
 
 export default async function AccountRmaPage() {
   const token = await getCustomerSessionToken();

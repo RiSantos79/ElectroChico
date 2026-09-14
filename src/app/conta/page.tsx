@@ -5,7 +5,7 @@ import { AccountAuthForm } from "@/components/account-auth-form";
 import { AccountProfile } from "@/components/account-profile";
 import { AccountAddresses } from "@/components/account-addresses";
 
-export const metadata = { title: "A minha conta — ElectroChico" };
+export const metadata = { title: "A minha conta" };
 
 export default async function AccountPage() {
   const token = await getCustomerSessionToken();

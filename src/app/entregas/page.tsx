@@ -17,6 +17,11 @@ const items = [
   },
 ];
 
+export const metadata = {
+  title: "Entregas",
+  description: "Prazos e custos de envio da ElectroChico — entregas em Portugal Continental e Ilhas.",
+};
+
 export default function DeliveryPage() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-12 lg:px-10">

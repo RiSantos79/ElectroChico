@@ -2,7 +2,7 @@ import { getCustomerSessionToken } from "@/lib/customer-session";
 import { AccountAuthForm } from "@/components/account-auth-form";
 import { AccountPasswordForm } from "@/components/account-password-form";
 
-export const metadata = { title: "Modificar palavra-passe — ElectroChico" };
+export const metadata = { title: "Modificar palavra-passe" };
 
 export default async function AccountPasswordPage() {
   const token = await getCustomerSessionToken();

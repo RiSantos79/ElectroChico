@@ -3,7 +3,7 @@ import { getMyOrders } from "@/lib/api";
 import { AccountAuthForm } from "@/components/account-auth-form";
 import { AccountOrders } from "@/components/account-orders";
 
-export const metadata = { title: "As minhas encomendas — ElectroChico" };
+export const metadata = { title: "As minhas encomendas" };
 
 export default async function AccountOrdersPage() {
   const token = await getCustomerSessionToken();
