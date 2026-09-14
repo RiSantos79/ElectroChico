@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState } from "react";
+import { sendPublicContactAction } from "@/lib/contact-actions";
 
 export default function ContactPage() {
-  const [sent, setSent] = useState(false);
+  const [result, formAction, pending] = useActionState(sendPublicContactAction, null);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12 lg:px-10">
@@ -12,27 +13,23 @@ export default function ContactPage() {
         Tem alguma dúvida? Preencha o formulário e a nossa equipa responde o mais rápido possível.
       </p>
 
-      {sent ? (
+      {result === "ok" ? (
         <div className="mt-8 rounded-xl border border-border bg-surface p-6 text-sm text-foreground">
           Mensagem enviada. Obrigado pelo contacto!
         </div>
       ) : (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSent(true);
-          }}
-          className="mt-8 space-y-4"
-        >
-          <input required placeholder="Nome" className="input-field w-full" />
-          <input required type="email" placeholder="Email" className="input-field w-full" />
-          <input placeholder="Assunto" className="input-field w-full" />
-          <textarea required placeholder="Mensagem" rows={5} className="input-field w-full resize-none" />
+        <form action={formAction} className="mt-8 space-y-4">
+          <input name="name" required placeholder="Nome" className="input-field w-full" />
+          <input name="email" required type="email" placeholder="Email" className="input-field w-full" />
+          <input name="subject" placeholder="Assunto" className="input-field w-full" />
+          <textarea name="body" required placeholder="Mensagem" rows={5} className="input-field w-full resize-none" />
+          {result && result !== "ok" && <p className="text-sm text-danger">{result}</p>}
           <button
             type="submit"
-            className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground hover:opacity-90"
+            disabled={pending}
+            className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground hover:opacity-90 disabled:opacity-50"
           >
-            Enviar mensagem
+            {pending ? "A enviar..." : "Enviar mensagem"}
           </button>
         </form>
       )}

@@ -62,6 +62,45 @@ export async function sendCustomerReplyAction(
   return "ok";
 }
 
+// Contacto e Pedido de Orçamento são páginas públicas — qualquer visitante
+// tem de conseguir usá-las sem conta, ao contrário de Sugestões/Mensagens/RMA.
+export async function sendPublicContactAction(
+  _prevState: string | null,
+  formData: FormData,
+): Promise<string | null> {
+  try {
+    await createContactMessage({
+      type: "MESSAGE",
+      name: String(formData.get("name") || ""),
+      email: String(formData.get("email") || ""),
+      subject: String(formData.get("subject") || "") || undefined,
+      body: String(formData.get("body") || ""),
+    });
+  } catch (e) {
+    return e instanceof Error ? e.message : "Não foi possível enviar a mensagem.";
+  }
+  return "ok";
+}
+
+export async function sendQuoteRequestAction(
+  _prevState: string | null,
+  formData: FormData,
+): Promise<string | null> {
+  try {
+    await createContactMessage({
+      type: "QUOTE",
+      name: String(formData.get("name") || ""),
+      email: String(formData.get("email") || ""),
+      phone: String(formData.get("phone") || "") || undefined,
+      subject: String(formData.get("category") || "") || undefined,
+      body: String(formData.get("body") || ""),
+    });
+  } catch (e) {
+    return e instanceof Error ? e.message : "Não foi possível enviar o pedido.";
+  }
+  return "ok";
+}
+
 export async function sendRmaAction(_prevState: string | null, formData: FormData): Promise<string | null> {
   const token = await getCustomerSessionToken();
   if (!token) return "Tem de iniciar sessão para pedir uma devolução/RMA.";

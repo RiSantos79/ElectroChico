@@ -239,6 +239,7 @@ enum ContactType {
   SUGGESTION
   MESSAGE
   RMA
+  QUOTE
 }
 
 model ContactMessage {

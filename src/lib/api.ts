@@ -563,7 +563,7 @@ export function disableMfa(password: string, token: string): Promise<{ ok: boole
 
 // --- Sugestões / Mensagens / RMA ---
 
-export type ContactType = "SUGGESTION" | "MESSAGE" | "RMA";
+export type ContactType = "SUGGESTION" | "MESSAGE" | "RMA" | "QUOTE";
 
 export type ContactReply = {
   id: string;

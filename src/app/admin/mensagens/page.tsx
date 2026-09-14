@@ -10,6 +10,7 @@ const typeLabel: Record<ContactType, string> = {
   SUGGESTION: "Sugestão",
   MESSAGE: "Mensagem",
   RMA: "RMA",
+  QUOTE: "Orçamento",
 };
 
 const tabs: { value: ContactType | undefined; label: string }[] = [
@@ -17,6 +18,7 @@ const tabs: { value: ContactType | undefined; label: string }[] = [
   { value: "SUGGESTION", label: "Sugestões" },
   { value: "MESSAGE", label: "Mensagens" },
   { value: "RMA", label: "RMA" },
+  { value: "QUOTE", label: "Orçamentos" },
 ];
 
 export default async function AdminMessagesPage({
