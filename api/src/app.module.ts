@@ -16,6 +16,7 @@ import { AnalyticsModule } from './analytics/analytics.module.js';
 import { BrandsModule } from './brands/brands.module.js';
 import { StockModule } from './stock/stock.module.js';
 import { CouponsModule } from './coupons/coupons.module.js';
+import { NewsletterModule } from './newsletter/newsletter.module.js';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { CouponsModule } from './coupons/coupons.module.js';
     BrandsModule,
     StockModule,
     CouponsModule,
+    NewsletterModule,
   ],
 })
 export class AppModule {}

@@ -272,6 +272,63 @@ export async function getStockMovements(token: string): Promise<StockMovement[]>
   return apiFetch<StockMovement[]>("/stock-movements", { headers: { Authorization: `Bearer ${token}` } });
 }
 
+// --- Newsletter ---
+
+export type NewsletterSubscriber = {
+  id: string;
+  email: string;
+  name: string | null;
+  subscribedAt: string;
+  unsubscribedAt: string | null;
+};
+
+export type NewsletterCampaign = {
+  id: string;
+  subject: string;
+  body: string;
+  status: "DRAFT" | "SENT";
+  sentAt: string | null;
+  sentCount: number;
+  createdAt: string;
+};
+
+export function getNewsletterSubscribers(token: string, includeUnsubscribed = false): Promise<NewsletterSubscriber[]> {
+  const query = includeUnsubscribed ? "?includeUnsubscribed=true" : "";
+  return apiFetch<NewsletterSubscriber[]>(`/newsletter/subscribers${query}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function unsubscribeNewsletter(id: string, token: string) {
+  return apiFetch(`/newsletter/subscribers/${id}/unsubscribe`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function getNewsletterCampaigns(token: string): Promise<NewsletterCampaign[]> {
+  return apiFetch<NewsletterCampaign[]>("/newsletter/campaigns", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function createNewsletterCampaign(data: { subject: string; body: string }, token: string) {
+  return apiFetch<NewsletterCampaign>("/newsletter/campaigns", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteNewsletterCampaign(id: string, token: string) {
+  return apiFetch(`/newsletter/campaigns/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function sendNewsletterCampaign(
+  id: string,
+  token: string,
+): Promise<{ sent: boolean; reason?: "not_configured" | "provider_error"; sentCount: number }> {
+  return apiFetch(`/newsletter/campaigns/${id}/send`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+}
+
 // --- Cupões ---
 
 export type Coupon = {

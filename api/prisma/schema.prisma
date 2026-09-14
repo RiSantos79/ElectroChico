@@ -281,6 +281,30 @@ model Coupon {
   updatedAt     DateTime   @updatedAt
 }
 
+model NewsletterSubscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+}
+
+enum NewsletterCampaignStatus {
+  DRAFT
+  SENT
+}
+
+model NewsletterCampaign {
+  id        String                   @id @default(cuid())
+  subject   String
+  body      String
+  status    NewsletterCampaignStatus @default(DRAFT)
+  sentAt    DateTime?
+  sentCount Int                      @default(0)
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+}
+
 // Registo mínimo de páginas vistas, sem IP nem identificador de utilizador
 // — só serve para agregados (horas de pico, volume por dia) no dashboard.
 model PageView {

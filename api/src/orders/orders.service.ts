@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { StockService } from '../stock/stock.service.js';
 import { CouponsService } from '../coupons/coupons.service.js';
 import { EmailService } from '../email/email.service.js';
+import { NewsletterService } from '../newsletter/newsletter.service.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
 import type { UpdateOrderDto } from './dto/update-order.dto.js';
 import { GIFT_CARD_CATEGORY_SLUG, generateGiftCardCode } from '../common/gift-cards.js';
@@ -21,6 +22,7 @@ export class OrdersService {
     private readonly stock: StockService,
     private readonly coupons: CouponsService,
     private readonly email: EmailService,
+    private readonly newsletter: NewsletterService,
   ) {
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error('STRIPE_SECRET_KEY não está definido.');
@@ -80,6 +82,12 @@ export class OrdersService {
         items: { create: orderItemsData },
       },
     });
+
+    // O consentimento é dado ao marcar a caixa no checkout, não depende do
+    // pagamento se concretizar.
+    if (dto.newsletterOptIn) {
+      await this.newsletter.subscribe(dto.customerEmail, dto.customerName);
+    }
 
     const webOrigin = process.env.WEB_ORIGIN ?? 'http://localhost:3001';
 
