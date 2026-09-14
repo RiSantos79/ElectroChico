@@ -4,10 +4,12 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { StockService } from '../stock/stock.service.js';
 import { CouponsService } from '../coupons/coupons.service.js';
+import { EmailService } from '../email/email.service.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
 import type { UpdateOrderDto } from './dto/update-order.dto.js';
 import { GIFT_CARD_CATEGORY_SLUG, generateGiftCardCode } from '../common/gift-cards.js';
 import { PAID_LIKE_STATUSES } from '../common/order-status.js';
+import { ABANDONED_CART_AFTER_MS } from '../common/abandoned-cart.js';
 
 @Injectable()
 export class OrdersService {
@@ -18,6 +20,7 @@ export class OrdersService {
     private readonly audit: AuditService,
     private readonly stock: StockService,
     private readonly coupons: CouponsService,
+    private readonly email: EmailService,
   ) {
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error('STRIPE_SECRET_KEY não está definido.');
@@ -289,5 +292,39 @@ export class OrdersService {
       include: { items: true },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  findAbandoned() {
+    return this.prisma.order.findMany({
+      where: { status: 'PENDING', createdAt: { lt: new Date(Date.now() - ABANDONED_CART_AFTER_MS) } },
+      include: { items: true },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async sendAbandonedCartReminder(id: string, actorEmail?: string) {
+    const order = await this.prisma.order.findUnique({ where: { id }, include: { items: true } });
+    if (!order) throw new NotFoundException(`Encomenda "${id}" não encontrada`);
+    if (order.status !== 'PENDING') {
+      throw new BadRequestException('Esta encomenda já não está pendente.');
+    }
+
+    const itemsHtml = order.items.map((item) => `<li>${item.productName} × ${item.quantity}</li>`).join('');
+    const result = await this.email.send({
+      to: order.customerEmail,
+      subject: 'Ainda tem artigos à sua espera na ElectroChico',
+      html: `
+        <p>Olá ${order.customerName},</p>
+        <p>Reparámos que deixou estes artigos por finalizar:</p>
+        <ul>${itemsHtml}</ul>
+        <p>Volte à ElectroChico para concluir a sua compra.</p>
+      `,
+    });
+
+    if (result.sent) {
+      await this.prisma.order.update({ where: { id }, data: { reminderSentAt: new Date() } });
+      await this.audit.log('ABANDONED_CART_REMINDER_SENT', { entity: 'Order', entityId: id, actor: actorEmail });
+    }
+    return result;
   }
 }

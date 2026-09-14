@@ -44,6 +44,12 @@ export class OrdersController {
     return this.ordersService.findRecent();
   }
 
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Get('orders/abandoned')
+  findAbandoned() {
+    return this.ordersService.findAbandoned();
+  }
+
   @Get('orders/:id')
   findOne(@Param('id') id: string) {
     return this.ordersService.findById(id);
@@ -53,6 +59,12 @@ export class OrdersController {
   @Patch('orders/:id')
   update(@Param('id') id: string, @Body() dto: UpdateOrderDto, @CurrentUser() user: AuthenticatedUser) {
     return this.ordersService.updateStatus(id, dto, user.email);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Post('orders/:id/remind')
+  sendReminder(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.ordersService.sendAbandonedCartReminder(id, user.email);
   }
 
   @Post('webhooks/stripe')

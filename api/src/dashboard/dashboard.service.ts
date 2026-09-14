@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PAID_LIKE_STATUSES } from '../common/order-status.js';
+import { ABANDONED_CART_AFTER_MS } from '../common/abandoned-cart.js';
 
 const STOCK_CRITICAL_THRESHOLD = 5;
-const ABANDONED_CART_AFTER_MS = 60 * 60 * 1000; // 1h sem pagar = considera-se abandonado
 
 @Injectable()
 export class DashboardService {

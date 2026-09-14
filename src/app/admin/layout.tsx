@@ -36,6 +36,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin/cupoes" className="text-sm text-muted hover:text-foreground">
             Cupões
           </Link>
+          <Link href="/admin/carrinhos-abandonados" className="text-sm text-muted hover:text-foreground">
+            Carrinhos Abandonados
+          </Link>
           <Link href="/admin/clientes" className="text-sm text-muted hover:text-foreground">
             Clientes
           </Link>

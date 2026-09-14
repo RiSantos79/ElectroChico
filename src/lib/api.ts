@@ -389,6 +389,7 @@ export type Order = {
   createdAt: string;
   trackingCarrier?: string | null;
   trackingCode?: string | null;
+  reminderSentAt?: string | null;
   items: { id: string; productName: string; unitPrice: string; quantity: number }[];
   giftCards?: { code: string; value: string; recipientEmail: string | null; message: string | null }[];
 };
@@ -415,6 +416,17 @@ export function getOrdersAdmin(token: string): Promise<Order[]> {
 
 export function getMyOrders(token: string): Promise<Order[]> {
   return apiFetch<Order[]>("/orders/me", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function getAbandonedCarts(token: string): Promise<Order[]> {
+  return apiFetch<Order[]>("/orders/abandoned", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function sendCartReminder(
+  id: string,
+  token: string,
+): Promise<{ sent: boolean; reason?: "not_configured" | "provider_error" }> {
+  return apiFetch(`/orders/${id}/remind`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
 }
 
 // --- Conta de cliente ---

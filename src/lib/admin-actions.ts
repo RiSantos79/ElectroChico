@@ -9,6 +9,7 @@ import {
   deleteCoupon,
   deleteProduct,
   duplicateProduct,
+  sendCartReminder,
   updateBrand,
   updateCategory,
   updateCoupon,
@@ -200,4 +201,11 @@ export async function deleteCouponAction(id: string) {
   const token = await requireToken();
   await deleteCoupon(id, token);
   revalidatePath("/admin/cupoes");
+}
+
+export async function sendReminderAction(id: string) {
+  const token = await requireToken();
+  const result = await sendCartReminder(id, token);
+  revalidatePath("/admin/carrinhos-abandonados");
+  redirect(`/admin/carrinhos-abandonados?resultado=${result.sent ? "enviado" : "nao-configurado"}`);
 }
