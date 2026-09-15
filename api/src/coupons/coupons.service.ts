@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import { CreateCouponDto } from './dto/create-coupon.dto.js';
 import { UpdateCouponDto } from './dto/update-coupon.dto.js';
 import type { ApplyCouponDto } from './dto/apply-coupon.dto.js';
@@ -7,21 +8,26 @@ import type { Coupon } from '../generated/prisma/client.js';
 
 @Injectable()
 export class CouponsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   findAll() {
     return this.prisma.coupon.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
-  async create(dto: CreateCouponDto) {
+  async create(dto: CreateCouponDto, actorEmail?: string) {
     const code = dto.code.trim().toUpperCase();
     if (await this.prisma.coupon.findUnique({ where: { code } })) {
       throw new ConflictException(`Já existe um cupão com o código "${code}"`);
     }
-    return this.prisma.coupon.create({ data: { ...dto, code } });
+    const coupon = await this.prisma.coupon.create({ data: { ...dto, code } });
+    await this.audit.log('COUPON_CREATE', { entity: 'Coupon', entityId: coupon.id, actor: actorEmail });
+    return coupon;
   }
 
-  async update(id: string, dto: UpdateCouponDto) {
+  async update(id: string, dto: UpdateCouponDto, actorEmail?: string) {
     const existing = await this.prisma.coupon.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException(`Cupão com id "${id}" não encontrado`);
 
@@ -29,13 +35,16 @@ export class CouponsService {
     if (code && code !== existing.code && (await this.prisma.coupon.findUnique({ where: { code } }))) {
       throw new ConflictException(`Já existe um cupão com o código "${code}"`);
     }
-    return this.prisma.coupon.update({ where: { id }, data: { ...dto, code } });
+    const coupon = await this.prisma.coupon.update({ where: { id }, data: { ...dto, code } });
+    await this.audit.log('COUPON_UPDATE', { entity: 'Coupon', entityId: id, actor: actorEmail });
+    return coupon;
   }
 
-  async remove(id: string) {
+  async remove(id: string, actorEmail?: string) {
     const existing = await this.prisma.coupon.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException(`Cupão com id "${id}" não encontrado`);
     await this.prisma.coupon.delete({ where: { id } });
+    await this.audit.log('COUPON_DELETE', { entity: 'Coupon', entityId: id, actor: actorEmail });
   }
 
   // Recalcula o subtotal a partir dos preços reais na base de dados — nunca

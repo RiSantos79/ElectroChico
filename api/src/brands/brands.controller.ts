@@ -5,6 +5,7 @@ import { UpdateBrandDto } from './dto/update-brand.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
+import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
 
 @Controller('brands')
 export class BrandsController {
@@ -23,14 +24,14 @@ export class BrandsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('marcas', 'create')
   @Post()
-  create(@Body() dto: CreateBrandDto) {
-    return this.brandsService.create(dto);
+  create(@Body() dto: CreateBrandDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.brandsService.create(dto, user.email);
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('marcas', 'edit')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateBrandDto) {
-    return this.brandsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateBrandDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.brandsService.update(id, dto, user.email);
   }
 }

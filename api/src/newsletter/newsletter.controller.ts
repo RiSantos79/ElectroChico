@@ -5,6 +5,7 @@ import { UpdateCampaignDto } from './dto/update-campaign.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
+import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
 
 @Controller('newsletter')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -31,25 +32,25 @@ export class NewsletterController {
 
   @RequirePermission('configuracoes', 'create')
   @Post('campaigns')
-  createCampaign(@Body() dto: CreateCampaignDto) {
-    return this.newsletterService.createCampaign(dto);
+  createCampaign(@Body() dto: CreateCampaignDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.newsletterService.createCampaign(dto, user.email);
   }
 
   @RequirePermission('configuracoes', 'edit')
   @Patch('campaigns/:id')
-  updateCampaign(@Param('id') id: string, @Body() dto: UpdateCampaignDto) {
-    return this.newsletterService.updateCampaign(id, dto);
+  updateCampaign(@Param('id') id: string, @Body() dto: UpdateCampaignDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.newsletterService.updateCampaign(id, dto, user.email);
   }
 
   @RequirePermission('configuracoes', 'delete')
   @Delete('campaigns/:id')
-  removeCampaign(@Param('id') id: string) {
-    return this.newsletterService.removeCampaign(id);
+  removeCampaign(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.newsletterService.removeCampaign(id, user.email);
   }
 
   @RequirePermission('configuracoes', 'edit')
   @Post('campaigns/:id/send')
-  sendCampaign(@Param('id') id: string) {
-    return this.newsletterService.sendCampaign(id);
+  sendCampaign(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.newsletterService.sendCampaign(id, user.email);
   }
 }

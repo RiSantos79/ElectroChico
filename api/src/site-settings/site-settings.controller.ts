@@ -4,6 +4,7 @@ import { UpdateSiteSettingsDto } from './dto/update-site-settings.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
+import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
 
 @Controller('site-settings')
 export class SiteSettingsController {
@@ -17,7 +18,7 @@ export class SiteSettingsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('configuracoes', 'edit')
   @Patch()
-  update(@Body() dto: UpdateSiteSettingsDto) {
-    return this.siteSettingsService.update(dto);
+  update(@Body() dto: UpdateSiteSettingsDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.siteSettingsService.update(dto, user.email);
   }
 }

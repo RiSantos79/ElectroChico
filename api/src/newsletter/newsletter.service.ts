@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailService } from '../email/email.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import { sanitizeRichText } from '../common/sanitize-html.js';
 import { CreateCampaignDto } from './dto/create-campaign.dto.js';
 import { UpdateCampaignDto } from './dto/update-campaign.dto.js';
@@ -10,6 +11,7 @@ export class NewsletterService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly email: EmailService,
+    private readonly audit: AuditService,
   ) {}
 
   // Chamado a partir do checkout quando o cliente marca a caixa de
@@ -39,34 +41,39 @@ export class NewsletterService {
     return this.prisma.newsletterCampaign.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
-  createCampaign(dto: CreateCampaignDto) {
-    return this.prisma.newsletterCampaign.create({
+  async createCampaign(dto: CreateCampaignDto, actorEmail?: string) {
+    const campaign = await this.prisma.newsletterCampaign.create({
       data: { subject: dto.subject, body: sanitizeRichText(dto.body) },
     });
+    await this.audit.log('NEWSLETTER_CAMPAIGN_CREATE', { entity: 'NewsletterCampaign', entityId: campaign.id, actor: actorEmail });
+    return campaign;
   }
 
-  async updateCampaign(id: string, dto: UpdateCampaignDto) {
+  async updateCampaign(id: string, dto: UpdateCampaignDto, actorEmail?: string) {
     const campaign = await this.prisma.newsletterCampaign.findUnique({ where: { id } });
     if (!campaign) throw new NotFoundException(`Campanha com id "${id}" não encontrada`);
     if (campaign.status === 'SENT') throw new BadRequestException('Uma campanha já enviada não pode ser editada.');
 
-    return this.prisma.newsletterCampaign.update({
+    const updated = await this.prisma.newsletterCampaign.update({
       where: { id },
       data: { subject: dto.subject, body: dto.body !== undefined ? sanitizeRichText(dto.body) : undefined },
     });
+    await this.audit.log('NEWSLETTER_CAMPAIGN_UPDATE', { entity: 'NewsletterCampaign', entityId: id, actor: actorEmail });
+    return updated;
   }
 
-  async removeCampaign(id: string) {
+  async removeCampaign(id: string, actorEmail?: string) {
     const campaign = await this.prisma.newsletterCampaign.findUnique({ where: { id } });
     if (!campaign) throw new NotFoundException(`Campanha com id "${id}" não encontrada`);
     if (campaign.status === 'SENT') throw new BadRequestException('Uma campanha já enviada não pode ser apagada.');
     await this.prisma.newsletterCampaign.delete({ where: { id } });
+    await this.audit.log('NEWSLETTER_CAMPAIGN_DELETE', { entity: 'NewsletterCampaign', entityId: id, actor: actorEmail });
   }
 
   // Best-effort: tal como o lembrete de carrinho abandonado, isto fica inerte
   // (sem enviar nada, sem marcar como enviada) enquanto não houver um
   // fornecedor de email configurado.
-  async sendCampaign(id: string) {
+  async sendCampaign(id: string, actorEmail?: string) {
     const campaign = await this.prisma.newsletterCampaign.findUnique({ where: { id } });
     if (!campaign) throw new NotFoundException(`Campanha com id "${id}" não encontrada`);
     if (campaign.status === 'SENT') throw new BadRequestException('Esta campanha já foi enviada.');
@@ -90,6 +97,7 @@ export class NewsletterService {
       where: { id },
       data: { status: 'SENT', sentAt: new Date(), sentCount },
     });
+    await this.audit.log('NEWSLETTER_CAMPAIGN_SENT', { entity: 'NewsletterCampaign', entityId: id, actor: actorEmail });
     return { sent: sentCount > 0, sentCount };
   }
 }

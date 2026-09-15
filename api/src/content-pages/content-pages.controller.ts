@@ -4,6 +4,7 @@ import { UpdateContentPageDto } from './dto/update-content-page.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
+import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
 
 @Controller('content-pages')
 export class ContentPagesController {
@@ -24,7 +25,7 @@ export class ContentPagesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('configuracoes', 'edit')
   @Patch(':slug')
-  update(@Param('slug') slug: string, @Body() dto: UpdateContentPageDto) {
-    return this.contentPagesService.update(slug, dto);
+  update(@Param('slug') slug: string, @Body() dto: UpdateContentPageDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.contentPagesService.update(slug, dto, user.email);
   }
 }

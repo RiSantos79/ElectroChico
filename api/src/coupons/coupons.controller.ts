@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
 import { RateLimit } from '../common/rate-limit.guard.js';
+import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
 
 @Controller('coupons')
 export class CouponsController {
@@ -31,21 +32,21 @@ export class CouponsController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('cupoes', 'create')
   @Post()
-  create(@Body() dto: CreateCouponDto) {
-    return this.couponsService.create(dto);
+  create(@Body() dto: CreateCouponDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.couponsService.create(dto, user.email);
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('cupoes', 'edit')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateCouponDto) {
-    return this.couponsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateCouponDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.couponsService.update(id, dto, user.email);
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('cupoes', 'delete')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.couponsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.couponsService.remove(id, user.email);
   }
 }

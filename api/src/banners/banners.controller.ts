@@ -5,6 +5,7 @@ import { UpdateBannerDto } from './dto/update-banner.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
+import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
 
 @Controller('banners')
 export class BannersController {
@@ -25,21 +26,21 @@ export class BannersController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('configuracoes', 'create')
   @Post()
-  create(@Body() dto: CreateBannerDto) {
-    return this.bannersService.create(dto);
+  create(@Body() dto: CreateBannerDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.bannersService.create(dto, user.email);
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('configuracoes', 'edit')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateBannerDto) {
-    return this.bannersService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateBannerDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.bannersService.update(id, dto, user.email);
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('configuracoes', 'delete')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.bannersService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.bannersService.remove(id, user.email);
   }
 }

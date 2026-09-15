@@ -267,8 +267,25 @@ export type AuditLog = {
   createdAt: string;
 };
 
-export async function getAuditLogs(token: string): Promise<AuditLog[]> {
-  return apiFetch<AuditLog[]>("/audit-logs", { headers: { Authorization: `Bearer ${token}` } });
+export type AuditLogFilters = { actor?: string; action?: string; entity?: string; from?: string; to?: string };
+
+export async function getAuditLogs(token: string, filters?: AuditLogFilters): Promise<AuditLog[]> {
+  const query = new URLSearchParams();
+  if (filters?.actor) query.set("actor", filters.actor);
+  if (filters?.action) query.set("action", filters.action);
+  if (filters?.entity) query.set("entity", filters.entity);
+  if (filters?.from) query.set("from", filters.from);
+  if (filters?.to) query.set("to", filters.to);
+  const qs = query.toString();
+  return apiFetch<AuditLog[]>(`/audit-logs${qs ? `?${qs}` : ""}`, { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function getAuditActions(token: string): Promise<string[]> {
+  return apiFetch<string[]>("/audit-logs/actions", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function getAuditEntities(token: string): Promise<string[]> {
+  return apiFetch<string[]>("/audit-logs/entities", { headers: { Authorization: `Bearer ${token}` } });
 }
 
 // --- Stock ---

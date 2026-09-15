@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import type { SiteSettings } from '../generated/prisma/client.js';
 import { UpdateSiteSettingsDto } from './dto/update-site-settings.dto.js';
 
@@ -33,19 +34,23 @@ function withDefaults(settings: SiteSettings | null) {
 
 @Injectable()
 export class SiteSettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async get() {
     const settings = await this.prisma.siteSettings.findUnique({ where: { id: SINGLETON_ID } });
     return withDefaults(settings);
   }
 
-  async update(dto: UpdateSiteSettingsDto) {
+  async update(dto: UpdateSiteSettingsDto, actorEmail?: string) {
     const settings = await this.prisma.siteSettings.upsert({
       where: { id: SINGLETON_ID },
       update: dto,
       create: { id: SINGLETON_ID, ...dto },
     });
+    await this.audit.log('SITE_SETTINGS_UPDATE', { entity: 'SiteSettings', actor: actorEmail });
     return withDefaults(settings);
   }
 }
