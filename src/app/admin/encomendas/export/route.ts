@@ -1,4 +1,4 @@
-import { getOrdersAdmin, type Order } from "@/lib/api";
+import { getOrdersAdmin, logDataExport, type Order } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { csvResponse, toCsv } from "@/lib/csv";
 
@@ -18,6 +18,7 @@ export async function GET() {
   if (!token) return new Response("Não autenticado", { status: 401 });
 
   const orders = await getOrdersAdmin(token);
+  await logDataExport("Order", orders.length, token);
   const csv = toCsv<Order>(orders, [
     { label: "ID", value: (o) => o.id },
     { label: "Data", value: (o) => new Date(o.createdAt).toLocaleString("pt-PT") },

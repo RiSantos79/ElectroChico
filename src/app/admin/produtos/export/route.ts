@@ -1,4 +1,4 @@
-import { getProducts } from "@/lib/api";
+import { getProducts, logDataExport } from "@/lib/api";
 import type { Product } from "@/data/catalog";
 import { getSessionToken } from "@/lib/session";
 import { csvResponse, toCsv } from "@/lib/csv";
@@ -8,6 +8,7 @@ export async function GET() {
   if (!token) return new Response("Não autenticado", { status: 401 });
 
   const products = await getProducts({ includeArchived: true });
+  await logDataExport("Product", products.length, token);
   const csv = toCsv<Product>(products, [
     { label: "Nome", value: (p) => p.name },
     { label: "Marca", value: (p) => p.brand },

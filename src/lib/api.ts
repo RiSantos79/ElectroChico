@@ -1066,10 +1066,23 @@ export type DashboardSummary = {
   paymentMethods: { method: string; count: number }[];
   support: { total: number; responded: number; avgResponseHours: number | null };
   conversionRate: number | null;
+  securityAlerts: { type: string; message: string; actor: string | null; createdAt: string }[];
 };
 
 export function getDashboardSummary(token: string): Promise<DashboardSummary> {
   return apiFetch<DashboardSummary>("/dashboard/summary", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+// Regista uma exportação de dados para efeitos de auditoria/alertas de
+// segurança — chamado pelas rotas de exportação CSV depois de gerarem o ficheiro.
+export function logDataExport(entity: string, count: number, token: string) {
+  return apiFetch("/audit-logs/log-export", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ entity, count }),
+  }).catch(() => {
+    // registo de auditoria nunca deve impedir o download do ficheiro
+  });
 }
 
 // --- Clientes (admin) ---

@@ -42,6 +42,7 @@ export class DashboardService {
       giftCardStats,
       paymentMethods,
       support,
+      securityAlerts,
     ] = await Promise.all([
       this.salesBetween(startOfDay, now),
       this.salesBetween(startOfPrevDay, startOfDay),
@@ -64,6 +65,7 @@ export class DashboardService {
       this.giftCardStats(),
       this.paymentMethodBreakdown(),
       this.supportStats(),
+      this.securityAlerts(),
     ]);
 
     return {
@@ -84,6 +86,7 @@ export class DashboardService {
       giftCardStats,
       paymentMethods,
       support,
+      securityAlerts,
     };
   }
 
@@ -374,5 +377,66 @@ export class DashboardService {
         3_600_000
       : null;
     return { total, responded: responded.length, avgResponseHours };
+  }
+
+  // Junta vários tipos de evento sensível (já registados no AuditLog) numa
+  // única lista ordenada por data, para o dashboard não ter de saber nada
+  // sobre a forma como cada um é gravado.
+  private async securityAlerts() {
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const [lockouts, staffCreations, roleChanges, permissionChanges, exports, newDevices] = await Promise.all([
+      this.prisma.auditLog.findMany({ where: { action: 'LOGIN_BLOCKED_LOCKOUT', createdAt: { gte: since } } }),
+      this.prisma.auditLog.findMany({ where: { action: 'STAFF_CREATE', createdAt: { gte: since } } }),
+      this.prisma.auditLog.findMany({ where: { action: 'ROLE_CHANGED', createdAt: { gte: since } } }),
+      this.prisma.auditLog.findMany({ where: { action: 'PERMISSIONS_CHANGED', createdAt: { gte: since } } }),
+      this.prisma.auditLog.findMany({ where: { action: 'DATA_EXPORT', createdAt: { gte: since } } }),
+      this.prisma.auditLog.findMany({ where: { action: 'NEW_DEVICE_LOGIN', createdAt: { gte: since } } }),
+    ]);
+
+    // "Criação de novos administradores" cobre tanto contas criadas já como
+    // SUPER_ADMIN/ADMIN como contas promovidas depois — em ambos os casos só
+    // interessa se a role ATUAL do utilizador afetado é de nível admin.
+    const candidateIds = [...staffCreations, ...roleChanges]
+      .map((l) => l.entityId)
+      .filter((id): id is string => id !== null);
+    const adminUsers =
+      candidateIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: candidateIds }, role: { in: ['SUPER_ADMIN', 'ADMIN'] } },
+            select: { id: true, email: true },
+          })
+        : [];
+    const adminUserById = new Map(adminUsers.map((u) => [u.id, u.email]));
+
+    type Alert = { type: string; message: string; actor: string | null; createdAt: Date };
+    const alerts: Alert[] = [];
+
+    for (const l of lockouts) {
+      alerts.push({ type: 'LOCKOUT', message: `Conta bloqueada por tentativas de login falhadas`, actor: l.actor, createdAt: l.createdAt });
+    }
+    for (const l of staffCreations) {
+      const email = l.entityId ? adminUserById.get(l.entityId) : undefined;
+      if (email) alerts.push({ type: 'ADMIN_CREATED', message: `Nova conta de administrador criada: ${email}`, actor: l.actor, createdAt: l.createdAt });
+    }
+    for (const l of roleChanges) {
+      const email = l.entityId ? adminUserById.get(l.entityId) : undefined;
+      if (email) alerts.push({ type: 'ADMIN_PROMOTED', message: `Conta promovida a administrador: ${email}`, actor: l.actor, createdAt: l.createdAt });
+    }
+    for (const l of permissionChanges) {
+      alerts.push({ type: 'PERMISSIONS_CHANGED', message: 'Permissões de um funcionário foram alteradas', actor: l.actor, createdAt: l.createdAt });
+    }
+    for (const l of exports) {
+      alerts.push({
+        type: 'DATA_EXPORT',
+        message: `Exportação de ${l.entityId ?? '?'} registo(s) de ${l.entity ?? 'dados'}`,
+        actor: l.actor,
+        createdAt: l.createdAt,
+      });
+    }
+    for (const l of newDevices) {
+      alerts.push({ type: 'NEW_DEVICE', message: 'Acesso administrativo a partir de um novo dispositivo', actor: l.actor, createdAt: l.createdAt });
+    }
+
+    return alerts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 30);
   }
 }

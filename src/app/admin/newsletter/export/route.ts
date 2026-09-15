@@ -1,4 +1,4 @@
-import { getNewsletterSubscribers, type NewsletterSubscriber } from "@/lib/api";
+import { getNewsletterSubscribers, logDataExport, type NewsletterSubscriber } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { csvResponse, toCsv } from "@/lib/csv";
 
@@ -7,6 +7,7 @@ export async function GET() {
   if (!token) return new Response("Não autenticado", { status: 401 });
 
   const subscribers = await getNewsletterSubscribers(token, true);
+  await logDataExport("NewsletterSubscriber", subscribers.length, token);
   const csv = toCsv<NewsletterSubscriber>(subscribers, [
     { label: "Email", value: (s) => s.email },
     { label: "Nome", value: (s) => s.name ?? "" },

@@ -96,6 +96,14 @@ export class AuthService {
   // a referencia — revogar a sessão invalida o token de imediato, mesmo que
   // ainda não tenha expirado.
   private async issueToken(user: User, ip?: string, userAgent?: string) {
+    // "Acessos administrativos a partir de novos dispositivos" — compara com
+    // sessões anteriores do mesmo utilizador antes de criar a nova.
+    if (userAgent && user.role !== 'CUSTOMER') {
+      const seenBefore = await this.prisma.session.findFirst({ where: { userId: user.id, userAgent } });
+      if (!seenBefore) {
+        await this.audit.log('NEW_DEVICE_LOGIN', { entity: 'User', entityId: user.id, actor: user.email, ip });
+      }
+    }
     const session = await this.prisma.session.create({ data: { userId: user.id, ip, userAgent } });
     return this.jwt.signAsync({
       sub: user.id,

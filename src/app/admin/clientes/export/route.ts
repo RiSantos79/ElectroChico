@@ -1,4 +1,4 @@
-import { getAdminCustomers, type AdminCustomer } from "@/lib/api";
+import { getAdminCustomers, logDataExport, type AdminCustomer } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { csvResponse, toCsv } from "@/lib/csv";
 
@@ -7,6 +7,7 @@ export async function GET() {
   if (!token) return new Response("Não autenticado", { status: 401 });
 
   const customers = await getAdminCustomers(token);
+  await logDataExport("Customer", customers.length, token);
   const csv = toCsv<AdminCustomer>(customers, [
     { label: "Nome", value: (c) => c.name ?? "" },
     { label: "Email", value: (c) => c.email },

@@ -90,6 +90,25 @@ export default async function AdminDashboardPage() {
     <div className="space-y-8 px-6 py-8 lg:px-10">
       <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
 
+      {summary.securityAlerts.length > 0 && (
+        <section className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-amber-500">
+            Alertas de segurança — últimos 7 dias
+          </h2>
+          <ul className="divide-y divide-amber-500/20">
+            {summary.securityAlerts.map((alert, i) => (
+              <li key={i} className="flex items-center justify-between gap-4 py-2 text-sm">
+                <span className="text-foreground">{alert.message}</span>
+                <span className="shrink-0 text-xs text-muted">
+                  {alert.actor && <>{alert.actor} — </>}
+                  {new Date(alert.createdAt).toLocaleString("pt-PT")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Vendas</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
