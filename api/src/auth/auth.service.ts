@@ -44,7 +44,7 @@ export class AuthService {
     }
 
     await this.recordLogin(user.id, email, ip);
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name });
+    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name, tokenVersion: user.tokenVersion });
     return { accessToken };
   }
 
@@ -85,7 +85,7 @@ export class AuthService {
     }
 
     await this.recordLogin(user.id, user.email, ip);
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name });
+    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name, tokenVersion: user.tokenVersion });
     return { accessToken };
   }
 
@@ -166,13 +166,13 @@ export class AuthService {
       data: { email, passwordHash, name, role: 'CUSTOMER' },
     });
 
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name });
+    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name, tokenVersion: user.tokenVersion });
     return { accessToken };
   }
 
   async updateName(userId: string, name: string) {
     const user = await this.prisma.user.update({ where: { id: userId }, data: { name } });
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name });
+    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name, tokenVersion: user.tokenVersion });
     return { accessToken };
   }
 

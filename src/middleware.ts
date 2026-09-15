@@ -34,7 +34,9 @@ export async function middleware(request: NextRequest) {
   if (token) {
     try {
       const { payload } = await jwtVerify(token, secret);
-      if (payload.role === "ADMIN") return NextResponse.next();
+      // Qualquer role de staff entra no backoffice — o que cada uma vê e pode
+      // fazer lá dentro é decidido pelas permissões (verificadas na API).
+      if (payload.role !== "CUSTOMER") return NextResponse.next();
     } catch {
       // token inválido/expirado — cai para o redirect abaixo
     }

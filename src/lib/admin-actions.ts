@@ -3,15 +3,21 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
+  ACTIONS,
   createBanner,
   createBrand,
   createCoupon,
   createProduct,
+  createStaff,
   deleteBanner,
   deleteCoupon,
   deleteProduct,
+  deleteStaff,
   duplicateProduct,
+  forceStaffLogout,
+  forceStaffPasswordReset,
   getBannersAdmin,
+  MODULES,
   sendCartReminder,
   updateBanner,
   updateBrand,
@@ -21,12 +27,19 @@ import {
   updateOrderStatus,
   updateProduct,
   updateSiteSettings,
+  updateStaff,
+  updateStaffPermissions,
+  updateStaffStatus,
   uploadImage,
+  type Action,
   type AdminProductInput,
   type BannerInput,
   type CouponInput,
   type OrderStatus,
+  type PermissionMatrix,
+  type Role,
   type SiteSettings,
+  type UserStatus,
 } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 
@@ -328,4 +341,82 @@ export async function moveBannerAction(id: string, direction: "up" | "down") {
   ]);
   revalidatePath("/admin/banners");
   revalidatePath("/");
+}
+
+export async function createStaffAction(formData: FormData) {
+  const token = await requireToken();
+  await createStaff(
+    {
+      email: String(formData.get("email") ?? ""),
+      password: String(formData.get("password") ?? ""),
+      name: String(formData.get("name") ?? ""),
+      phone: optionalString(formData, "phone"),
+      jobTitle: optionalString(formData, "jobTitle"),
+      role: String(formData.get("role")) as Role,
+    },
+    token,
+  );
+  revalidatePath("/admin/utilizadores");
+}
+
+export async function updateStaffAction(id: string, formData: FormData) {
+  const token = await requireToken();
+  await updateStaff(
+    id,
+    {
+      name: String(formData.get("name") ?? ""),
+      phone: optionalString(formData, "phone"),
+      jobTitle: optionalString(formData, "jobTitle"),
+      role: String(formData.get("role")) as Role,
+    },
+    token,
+  );
+  revalidatePath("/admin/utilizadores");
+  revalidatePath(`/admin/utilizadores/${id}`);
+}
+
+export async function updateStaffStatusAction(id: string, status: UserStatus) {
+  const token = await requireToken();
+  await updateStaffStatus(id, status, token);
+  revalidatePath("/admin/utilizadores");
+}
+
+export async function forceStaffLogoutAction(id: string) {
+  const token = await requireToken();
+  await forceStaffLogout(id, token);
+  revalidatePath("/admin/utilizadores");
+}
+
+export async function forceStaffPasswordResetAction(id: string) {
+  const token = await requireToken();
+  const { tempPassword } = await forceStaffPasswordReset(id, token);
+  revalidatePath("/admin/utilizadores");
+  redirect(`/admin/utilizadores/${id}?tempPassword=${encodeURIComponent(tempPassword)}`);
+}
+
+export async function deleteStaffAction(id: string) {
+  const token = await requireToken();
+  await deleteStaff(id, token);
+  revalidatePath("/admin/utilizadores");
+}
+
+export async function updateStaffPermissionsAction(id: string, formData: FormData) {
+  const token = await requireToken();
+  const overrides = {} as PermissionMatrix;
+  for (const moduleKey of MODULES) {
+    overrides[moduleKey] = {} as Record<Action, boolean>;
+    for (const action of ACTIONS) {
+      overrides[moduleKey][action] = formData.get(`perm_${moduleKey}_${action}`) === "on";
+    }
+  }
+  await updateStaffPermissions(id, overrides, token);
+  revalidatePath("/admin/utilizadores");
+  revalidatePath(`/admin/utilizadores/${id}`);
+}
+
+export async function resetStaffPermissionsAction(id: string) {
+  const token = await requireToken();
+  await updateStaffPermissions(id, null, token);
+  revalidatePath("/admin/utilizadores");
+  revalidatePath(`/admin/utilizadores/${id}`);
 }

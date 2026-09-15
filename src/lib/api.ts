@@ -449,6 +449,175 @@ export function deleteBanner(id: string, token: string) {
   return apiFetch(`/banners/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
 }
 
+// --- Funcionários e permissões (RBAC) ---
+
+export const MODULES = [
+  "dashboard",
+  "produtos",
+  "categorias",
+  "marcas",
+  "stock",
+  "encomendas",
+  "clientes",
+  "mensagens",
+  "devolucoes",
+  "garantias",
+  "cupoes",
+  "promocoes",
+  "relatorios",
+  "configuracoes",
+  "utilizadores",
+  "auditoria",
+] as const;
+export type Module = (typeof MODULES)[number];
+
+export const ACTIONS = ["view", "create", "edit", "delete", "export"] as const;
+export type Action = (typeof ACTIONS)[number];
+
+export const MODULE_LABELS: Record<Module, string> = {
+  dashboard: "Dashboard",
+  produtos: "Produtos",
+  categorias: "Categorias",
+  marcas: "Marcas",
+  stock: "Stock",
+  encomendas: "Encomendas",
+  clientes: "Clientes",
+  mensagens: "Mensagens",
+  devolucoes: "Devoluções",
+  garantias: "Garantias",
+  cupoes: "Cupões",
+  promocoes: "Promoções",
+  relatorios: "Relatórios",
+  configuracoes: "Configurações",
+  utilizadores: "Utilizadores",
+  auditoria: "Auditoria",
+};
+
+export const ACTION_LABELS: Record<Action, string> = {
+  view: "Ver",
+  create: "Criar",
+  edit: "Editar",
+  delete: "Eliminar",
+  export: "Exportar",
+};
+
+export type Role =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "MANAGER"
+  | "STOCK_MANAGER"
+  | "CUSTOMER_SUPPORT"
+  | "MARKETING"
+  | "FINANCE"
+  | "OPERATOR"
+  | "CUSTOMER";
+
+export const STAFF_ROLES: Role[] = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "MANAGER",
+  "STOCK_MANAGER",
+  "CUSTOMER_SUPPORT",
+  "MARKETING",
+  "FINANCE",
+  "OPERATOR",
+];
+
+export const ROLE_LABELS: Record<Role, string> = {
+  SUPER_ADMIN: "Super Admin",
+  ADMIN: "Admin",
+  MANAGER: "Gestor",
+  STOCK_MANAGER: "Gestor de Stock",
+  CUSTOMER_SUPPORT: "Apoio ao Cliente",
+  MARKETING: "Marketing",
+  FINANCE: "Financeiro",
+  OPERATOR: "Operador",
+  CUSTOMER: "Cliente",
+};
+
+export type UserStatus = "ACTIVE" | "SUSPENDED" | "DISABLED";
+
+export type PermissionMatrix = Record<Module, Record<Action, boolean>>;
+
+export type Staff = {
+  id: string;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  jobTitle: string | null;
+  role: Role;
+  status: UserStatus;
+  permissionOverrides: PermissionMatrix | null;
+  effectivePermissions: PermissionMatrix;
+  lastLoginAt: string | null;
+  lastLoginIp: string | null;
+  mfaEnabled: boolean;
+  createdAt: string;
+};
+
+export type StaffInput = {
+  email: string;
+  password: string;
+  name: string;
+  phone?: string;
+  jobTitle?: string;
+  role: Role;
+};
+
+export type StaffUpdateInput = {
+  name?: string;
+  phone?: string;
+  jobTitle?: string;
+  role?: Role;
+};
+
+export function getStaff(token: string): Promise<Staff[]> {
+  return apiFetch<Staff[]>("/staff", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function createStaff(data: StaffInput, token: string): Promise<Staff> {
+  return apiFetch<Staff>("/staff", { method: "POST", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function updateStaff(id: string, data: StaffUpdateInput, token: string): Promise<Staff> {
+  return apiFetch<Staff>(`/staff/${id}`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function updateStaffStatus(id: string, status: UserStatus, token: string): Promise<Staff> {
+  return apiFetch<Staff>(`/staff/${id}/status`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function updateStaffPermissions(
+  id: string,
+  overrides: PermissionMatrix | null,
+  token: string,
+): Promise<Staff> {
+  return apiFetch<Staff>(`/staff/${id}/permissions`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify({ overrides }),
+  });
+}
+
+export function forceStaffPasswordReset(id: string, token: string): Promise<{ tempPassword: string }> {
+  return apiFetch<{ tempPassword: string }>(`/staff/${id}/force-password-reset`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function forceStaffLogout(id: string, token: string) {
+  return apiFetch(`/staff/${id}/force-logout`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function deleteStaff(id: string, token: string) {
+  return apiFetch(`/staff/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+}
+
 // --- Cupões ---
 
 export type Coupon = {

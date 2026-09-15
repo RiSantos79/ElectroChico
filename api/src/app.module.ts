@@ -20,6 +20,7 @@ import { NewsletterModule } from './newsletter/newsletter.module.js';
 import { SiteSettingsModule } from './site-settings/site-settings.module.js';
 import { ContentPagesModule } from './content-pages/content-pages.module.js';
 import { BannersModule } from './banners/banners.module.js';
+import { StaffModule } from './staff/staff.module.js';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { BannersModule } from './banners/banners.module.js';
     SiteSettingsModule,
     ContentPagesModule,
     BannersModule,
+    StaffModule,
   ],
 })
 export class AppModule {}

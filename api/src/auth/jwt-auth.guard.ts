@@ -19,7 +19,7 @@ export class JwtAuthGuard implements CanActivate {
     const token = request.headers.authorization?.replace(/^Bearer\s+/i, '');
     if (!token) throw new UnauthorizedException('Sessão não autenticada');
 
-    let payload: { sub: string; mfaPending?: boolean };
+    let payload: { sub: string; mfaPending?: boolean; tokenVersion?: number };
     try {
       payload = await this.jwt.verifyAsync(token);
     } catch {
@@ -29,6 +29,9 @@ export class JwtAuthGuard implements CanActivate {
 
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user || user.status !== 'ACTIVE') throw new UnauthorizedException('Sessão inválida ou expirada');
+    // "Forçar logout" incrementa tokenVersion — qualquer token emitido antes
+    // disso deixa de ser aceite, mesmo que ainda não tenha expirado.
+    if (payload.tokenVersion !== user.tokenVersion) throw new UnauthorizedException('Sessão inválida ou expirada');
 
     request.user = {
       sub: user.id,
