@@ -2,13 +2,15 @@ import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { ContentPagesService } from './content-pages.service.js';
 import { UpdateContentPageDto } from './dto/update-content-page.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
-import { AdminGuard } from '../auth/admin.guard.js';
+import { PermissionsGuard } from '../auth/permissions.guard.js';
+import { RequirePermission } from '../auth/require-permission.decorator.js';
 
 @Controller('content-pages')
 export class ContentPagesController {
   constructor(private readonly contentPagesService: ContentPagesService) {}
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('configuracoes', 'view')
   @Get()
   findAll() {
     return this.contentPagesService.findAll();
@@ -19,7 +21,8 @@ export class ContentPagesController {
     return this.contentPagesService.findBySlug(slug);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('configuracoes', 'edit')
   @Patch(':slug')
   update(@Param('slug') slug: string, @Body() dto: UpdateContentPageDto) {
     return this.contentPagesService.update(slug, dto);

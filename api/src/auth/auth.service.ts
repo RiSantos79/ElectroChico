@@ -28,6 +28,13 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
+    if (user.status !== 'ACTIVE') {
+      await this.audit.log('LOGIN_BLOCKED', { actor: email, ip });
+      throw new UnauthorizedException(
+        user.status === 'SUSPENDED' ? 'Conta suspensa — contacte um administrador.' : 'Conta desativada.',
+      );
+    }
+
     if (user.mfaEnabled) {
       // Token de curta duração e sem "role" — não serve para aceder a nada,
       // só para provar que a password já foi validada quando se chamar
@@ -36,9 +43,14 @@ export class AuthService {
       return { mfaRequired: true, mfaToken };
     }
 
-    await this.audit.log('LOGIN_SUCCESS', { actor: email, ip });
+    await this.recordLogin(user.id, email, ip);
     const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name });
     return { accessToken };
+  }
+
+  private async recordLogin(userId: string, email: string, ip?: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date(), lastLoginIp: ip } });
+    await this.audit.log('LOGIN_SUCCESS', { actor: email, ip });
   }
 
   async verifyMfa(mfaToken: string, code: string, ip?: string) {
@@ -54,6 +66,12 @@ export class AuthService {
     if (!user || !user.mfaEnabled || !user.mfaSecretEncrypted) {
       throw new UnauthorizedException('Conta sem verificação em duas etapas ativa.');
     }
+    if (user.status !== 'ACTIVE') {
+      await this.audit.log('LOGIN_BLOCKED', { actor: user.email, ip });
+      throw new UnauthorizedException(
+        user.status === 'SUSPENDED' ? 'Conta suspensa — contacte um administrador.' : 'Conta desativada.',
+      );
+    }
 
     const normalizedCode = code.trim().toUpperCase();
     const isTotpValid = authenticator.check(code.trim(), decryptSecret(user.mfaSecretEncrypted));
@@ -66,7 +84,7 @@ export class AuthService {
       }
     }
 
-    await this.audit.log('LOGIN_SUCCESS', { actor: user.email, ip });
+    await this.recordLogin(user.id, user.email, ip);
     const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name });
     return { accessToken };
   }

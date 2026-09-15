@@ -5,7 +5,8 @@ import { OrdersService } from './orders.service.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
 import { UpdateOrderDto } from './dto/update-order.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
-import { AdminGuard } from '../auth/admin.guard.js';
+import { PermissionsGuard } from '../auth/permissions.guard.js';
+import { RequirePermission } from '../auth/require-permission.decorator.js';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
 import { RateLimit } from '../common/rate-limit.guard.js';
 
@@ -38,13 +39,15 @@ export class OrdersController {
     return this.ordersService.findMine(user.sub);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('encomendas', 'view')
   @Get('orders')
   findRecent() {
     return this.ordersService.findRecent();
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('encomendas', 'view')
   @Get('orders/abandoned')
   findAbandoned() {
     return this.ordersService.findAbandoned();
@@ -55,13 +58,15 @@ export class OrdersController {
     return this.ordersService.findById(id);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('encomendas', 'edit')
   @Patch('orders/:id')
   update(@Param('id') id: string, @Body() dto: UpdateOrderDto, @CurrentUser() user: AuthenticatedUser) {
     return this.ordersService.updateStatus(id, dto, user.email);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('encomendas', 'edit')
   @Post('orders/:id/remind')
   sendReminder(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.ordersService.sendAbandonedCartReminder(id, user.email);

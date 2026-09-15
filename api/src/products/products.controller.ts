@@ -13,7 +13,8 @@ import { ProductsService } from './products.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
-import { AdminGuard } from '../auth/admin.guard.js';
+import { PermissionsGuard } from '../auth/permissions.guard.js';
+import { RequirePermission } from '../auth/require-permission.decorator.js';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
 
 @Controller('products')
@@ -44,25 +45,29 @@ export class ProductsController {
     return this.productsService.findBySlug(slug);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('produtos', 'create')
   @Post()
   create(@Body() dto: CreateProductDto, @CurrentUser() user: AuthenticatedUser) {
     return this.productsService.create(dto, user.email);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('produtos', 'create')
   @Post(':id/duplicate')
   duplicate(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.productsService.duplicate(id, user.email);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('produtos', 'edit')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateProductDto, @CurrentUser() user: AuthenticatedUser) {
     return this.productsService.update(id, dto, user.email);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('produtos', 'delete')
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.productsService.remove(id, user.email);

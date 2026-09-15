@@ -24,23 +24,42 @@ enum ProductBadge {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
+  MANAGER
+  STOCK_MANAGER
+  CUSTOMER_SUPPORT
+  MARKETING
+  FINANCE
+  OPERATOR
   CUSTOMER
 }
 
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
 model User {
-  id                 String    @id @default(cuid())
-  email              String    @unique
-  passwordHash       String
-  name               String?
-  role               Role      @default(CUSTOMER)
-  mfaEnabled         Boolean   @default(false)
-  mfaSecretEncrypted String?
-  mfaRecoveryCodes   String[]  @default([])
-  createdAt          DateTime  @default(now())
-  orders             Order[]
-  addresses          Address[]
-  contactMessages    ContactMessage[]
+  id                  String     @id @default(cuid())
+  email               String     @unique
+  passwordHash        String
+  name                String?
+  phone               String?
+  jobTitle            String?
+  role                Role       @default(CUSTOMER)
+  status              UserStatus @default(ACTIVE)
+  permissionOverrides Json?
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  mfaEnabled          Boolean    @default(false)
+  mfaSecretEncrypted  String?
+  mfaRecoveryCodes    String[]   @default([])
+  createdAt           DateTime   @default(now())
+  orders              Order[]
+  addresses           Address[]
+  contactMessages     ContactMessage[]
 }
 
 model Address {

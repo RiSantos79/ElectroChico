@@ -4,7 +4,8 @@ import { CreateCouponDto } from './dto/create-coupon.dto.js';
 import { UpdateCouponDto } from './dto/update-coupon.dto.js';
 import { ApplyCouponDto } from './dto/apply-coupon.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
-import { AdminGuard } from '../auth/admin.guard.js';
+import { PermissionsGuard } from '../auth/permissions.guard.js';
+import { RequirePermission } from '../auth/require-permission.decorator.js';
 import { RateLimit } from '../common/rate-limit.guard.js';
 
 @Controller('coupons')
@@ -20,25 +21,29 @@ export class CouponsController {
     return this.couponsService.apply(dto);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('cupoes', 'view')
   @Get()
   findAll() {
     return this.couponsService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('cupoes', 'create')
   @Post()
   create(@Body() dto: CreateCouponDto) {
     return this.couponsService.create(dto);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('cupoes', 'edit')
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateCouponDto) {
     return this.couponsService.update(id, dto);
   }
 
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('cupoes', 'delete')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.couponsService.remove(id);
