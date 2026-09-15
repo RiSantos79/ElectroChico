@@ -2,13 +2,17 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException, 
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { authenticator } from 'otplib';
-import type { User } from '../generated/prisma/client.js';
+import type { Role, User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { encryptSecret, decryptSecret } from '../common/mfa-crypto.js';
 import { generateRecoveryCodes } from '../common/recovery-codes.js';
 
 const MFA_TOKEN_TTL = '5m';
+const MFA_SETUP_TOKEN_TTL = '10m';
+const MFA_REQUIRED_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN'];
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -20,11 +24,20 @@ export class AuthService {
 
   async login(email: string, password: string, ip?: string, userAgent?: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (user?.lockedUntil && user.lockedUntil > new Date()) {
+      await this.audit.log('LOGIN_BLOCKED_LOCKOUT', { actor: email, ip });
+      throw new UnauthorizedException(
+        `Conta temporariamente bloqueada por demasiadas tentativas falhadas. Tente novamente às ${user.lockedUntil.toLocaleTimeString('pt-PT')}.`,
+      );
+    }
+
     // Verifica sempre um hash (mesmo que dummy) para não revelar por timing se o email existe.
     const hash = user?.passwordHash ?? DUMMY_HASH;
     const valid = await argon2.verify(hash, password).catch(() => false);
 
     if (!user || !valid) {
+      if (user) await this.registerFailedAttempt(user);
       await this.audit.log('LOGIN_FAILED', { actor: email, ip });
       throw new UnauthorizedException('Credenciais inválidas');
     }
@@ -36,6 +49,10 @@ export class AuthService {
       );
     }
 
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null } });
+    }
+
     if (user.mfaEnabled) {
       // Token de curta duração e sem "role" — não serve para aceder a nada,
       // só para provar que a password já foi validada quando se chamar
@@ -44,9 +61,29 @@ export class AuthService {
       return { mfaRequired: true, mfaToken };
     }
 
+    if (MFA_REQUIRED_ROLES.includes(user.role)) {
+      // SUPER_ADMIN/ADMIN sem MFA ainda ativo: em vez de bloquear o acesso
+      // (não haveria forma de o ativar), força a configuração aqui mesmo,
+      // com um token de curta duração que só serve para esse fim.
+      const mfaSetupToken = await this.jwt.signAsync({ sub: user.id, mfaSetupPending: true }, { expiresIn: MFA_SETUP_TOKEN_TTL });
+      return { mfaSetupRequired: true, mfaSetupToken };
+    }
+
     await this.recordLogin(user.id, email, ip);
     const accessToken = await this.issueToken(user, ip, userAgent);
     return { accessToken };
+  }
+
+  private async registerFailedAttempt(user: User) {
+    const attempts = user.failedLoginAttempts + 1;
+    if (attempts >= MAX_FAILED_ATTEMPTS) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, lockedUntil: new Date(Date.now() + LOCKOUT_DURATION_MS) },
+      });
+      return;
+    }
+    await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginAttempts: attempts } });
   }
 
   private async recordLogin(userId: string, email: string, ip?: string) {
@@ -162,6 +199,36 @@ export class AuthService {
     });
     await this.audit.log('MFA_ENABLED', { actor: user.email });
     return { recoveryCodes };
+  }
+
+  // --- Configuração de MFA obrigatória no próprio login (SUPER_ADMIN/ADMIN
+  // sem MFA ainda ativo) — usa um token de curta duração em vez de uma sessão
+  // normal, porque a conta ainda não cumpre o requisito para ter uma.
+
+  async setupMfaWithToken(mfaSetupToken: string) {
+    const { sub } = await this.verifyMfaSetupToken(mfaSetupToken);
+    return this.setupMfa(sub);
+  }
+
+  async enableMfaWithToken(mfaSetupToken: string, code: string, ip?: string, userAgent?: string) {
+    const { sub } = await this.verifyMfaSetupToken(mfaSetupToken);
+    const { recoveryCodes } = await this.enableMfa(sub, code);
+    const user = await this.prisma.user.findUnique({ where: { id: sub } });
+    if (!user) throw new NotFoundException('Utilizador não encontrado');
+    await this.recordLogin(user.id, user.email, ip);
+    const accessToken = await this.issueToken(user, ip, userAgent);
+    return { accessToken, recoveryCodes };
+  }
+
+  private async verifyMfaSetupToken(token: string): Promise<{ sub: string }> {
+    let payload: { sub: string; mfaSetupPending?: boolean };
+    try {
+      payload = await this.jwt.verifyAsync(token);
+    } catch {
+      throw new UnauthorizedException('Sessão de configuração inválida ou expirada — inicie sessão novamente.');
+    }
+    if (!payload.mfaSetupPending) throw new UnauthorizedException('Token inválido para este passo.');
+    return payload;
   }
 
   async disableMfa(userId: string, password: string) {

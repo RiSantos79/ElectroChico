@@ -13,7 +13,40 @@ export default function AdminLoginPage() {
       <h1 className="text-2xl font-bold text-foreground">Backoffice</h1>
       <p className="mt-1 text-sm text-muted">Acesso restrito à equipa ElectroChico.</p>
 
-      {state.step === "mfa" ? (
+      {state.step === "mfa-setup" ? (
+        <div className="mt-6 space-y-4">
+          <p className="text-sm text-muted">
+            Esta conta requer verificação em duas etapas. Configure-a agora para continuar.
+          </p>
+          <ol className="list-decimal space-y-2 pl-5 text-sm text-muted">
+            <li>Digitalize o código com uma app de autenticação (Google Authenticator, Microsoft Authenticator, etc.).</li>
+            <li>
+              Ou introduza manualmente esta chave: <code className="text-foreground">{state.secret}</code>
+            </li>
+            <li>Introduza abaixo o código de 6 dígitos gerado pela app.</li>
+          </ol>
+          {/* eslint-disable-next-line @next/next/no-img-element -- data URL gerado no servidor, não vale a pena otimizar */}
+          <img src={state.qrDataUrl} alt="Código QR para configurar a app de autenticação" className="size-48" />
+          <form action={formAction} className="space-y-4">
+            <input type="hidden" name="mfaSetupToken" value={state.mfaSetupToken} />
+            <input
+              name="code"
+              required
+              autoFocus
+              placeholder="123456"
+              className="input-field w-full"
+            />
+            {state.error && <p className="text-sm text-danger">{state.error}</p>}
+            <button
+              type="submit"
+              disabled={pending}
+              className="w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {pending ? "A confirmar..." : "Confirmar e entrar"}
+            </button>
+          </form>
+        </div>
+      ) : state.step === "mfa" ? (
         <form action={formAction} className="mt-6 space-y-4">
           <input type="hidden" name="mfaToken" value={state.mfaToken} />
           <p className="text-sm text-muted">

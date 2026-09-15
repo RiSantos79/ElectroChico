@@ -56,6 +56,8 @@ model User {
   mfaEnabled          Boolean    @default(false)
   mfaSecretEncrypted  String?
   mfaRecoveryCodes    String[]   @default([])
+  failedLoginAttempts Int        @default(0)
+  lockedUntil         DateTime?
   createdAt           DateTime   @default(now())
   orders              Order[]
   addresses           Address[]

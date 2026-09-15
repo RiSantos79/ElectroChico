@@ -8,6 +8,8 @@ import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { MfaVerifyDto } from './dto/mfa-verify.dto.js';
 import { MfaEnableDto } from './dto/mfa-enable.dto.js';
 import { MfaDisableDto } from './dto/mfa-disable.dto.js';
+import { MfaSetupRequiredDto } from './dto/mfa-setup-required.dto.js';
+import { MfaEnableRequiredDto } from './dto/mfa-enable-required.dto.js';
 import { RateLimit } from '../common/rate-limit.guard.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { CurrentUser, type AuthenticatedUser } from './current-user.decorator.js';
@@ -54,6 +56,23 @@ export class AuthController {
   async disableMfa(@Body() dto: MfaDisableDto, @CurrentUser() user: AuthenticatedUser) {
     await this.authService.disableMfa(user.sub, dto.password);
     return { ok: true };
+  }
+
+  // Passo intermédio quando o login exige MFA obrigatório (SUPER_ADMIN/ADMIN)
+  // mas a conta ainda não o tem configurado — usa o mfaSetupToken devolvido
+  // por /auth/login em vez de uma sessão normal.
+  @Post('mfa/setup-required')
+  @HttpCode(200)
+  @UseGuards(RateLimit({ windowMs: 60_000, max: 10 }))
+  setupMfaRequired(@Body() dto: MfaSetupRequiredDto) {
+    return this.authService.setupMfaWithToken(dto.mfaSetupToken);
+  }
+
+  @Post('mfa/enable-required')
+  @HttpCode(200)
+  @UseGuards(RateLimit({ windowMs: 60_000, max: 10 }))
+  enableMfaRequired(@Body() dto: MfaEnableRequiredDto, @Req() req: Request) {
+    return this.authService.enableMfaWithToken(dto.mfaSetupToken, dto.code, req.ip, req.headers['user-agent']);
   }
 
   @Post('register')
