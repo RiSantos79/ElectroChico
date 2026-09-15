@@ -618,6 +618,33 @@ export function deleteStaff(id: string, token: string) {
   return apiFetch(`/staff/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
 }
 
+// --- Sessões ---
+
+export type Session = {
+  id: string;
+  userAgent: string | null;
+  ip: string | null;
+  createdAt: string;
+  lastSeenAt: string;
+  current?: boolean;
+};
+
+export function getMySessions(token: string): Promise<Session[]> {
+  return apiFetch<Session[]>("/auth/sessions", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function revokeMySession(id: string, token: string) {
+  return apiFetch(`/auth/sessions/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function revokeOtherSessions(token: string) {
+  return apiFetch("/auth/sessions/revoke-others", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function getStaffSessions(id: string, token: string): Promise<Session[]> {
+  return apiFetch<Session[]>(`/staff/${id}/sessions`, { headers: { Authorization: `Bearer ${token}` } });
+}
+
 // --- Cupões ---
 
 export type Coupon = {

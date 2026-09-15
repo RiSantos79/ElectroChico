@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException, 
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { authenticator } from 'otplib';
+import type { User } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { encryptSecret, decryptSecret } from '../common/mfa-crypto.js';
@@ -17,7 +18,7 @@ export class AuthService {
     private readonly audit: AuditService,
   ) {}
 
-  async login(email: string, password: string, ip?: string) {
+  async login(email: string, password: string, ip?: string, userAgent?: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     // Verifica sempre um hash (mesmo que dummy) para não revelar por timing se o email existe.
     const hash = user?.passwordHash ?? DUMMY_HASH;
@@ -38,13 +39,13 @@ export class AuthService {
     if (user.mfaEnabled) {
       // Token de curta duração e sem "role" — não serve para aceder a nada,
       // só para provar que a password já foi validada quando se chamar
-      // /auth/mfa/verify a seguir.
+      // /auth/mfa/verify a seguir. A sessão só é criada nesse passo final.
       const mfaToken = await this.jwt.signAsync({ sub: user.id, mfaPending: true }, { expiresIn: MFA_TOKEN_TTL });
       return { mfaRequired: true, mfaToken };
     }
 
     await this.recordLogin(user.id, email, ip);
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name, tokenVersion: user.tokenVersion });
+    const accessToken = await this.issueToken(user, ip, userAgent);
     return { accessToken };
   }
 
@@ -53,7 +54,27 @@ export class AuthService {
     await this.audit.log('LOGIN_SUCCESS', { actor: email, ip });
   }
 
-  async verifyMfa(mfaToken: string, code: string, ip?: string) {
+  // Cria uma sessão nova (visível em "Sessões ativas") e assina um token que
+  // a referencia — revogar a sessão invalida o token de imediato, mesmo que
+  // ainda não tenha expirado.
+  private async issueToken(user: User, ip?: string, userAgent?: string) {
+    const session = await this.prisma.session.create({ data: { userId: user.id, ip, userAgent } });
+    return this.jwt.signAsync({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      sessionId: session.id,
+    });
+  }
+
+  // Reemite o token com dados atualizados (ex. nome mudou) sem criar uma
+  // sessão nova — continua a ser a mesma sessão do ponto de vista do utilizador.
+  private async reissueToken(user: User, sessionId: string) {
+    return this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name, sessionId });
+  }
+
+  async verifyMfa(mfaToken: string, code: string, ip?: string, userAgent?: string) {
     let payload: { sub: string; mfaPending?: boolean };
     try {
       payload = await this.jwt.verifyAsync(mfaToken);
@@ -85,7 +106,7 @@ export class AuthService {
     }
 
     await this.recordLogin(user.id, user.email, ip);
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name, tokenVersion: user.tokenVersion });
+    const accessToken = await this.issueToken(user, ip, userAgent);
     return { accessToken };
   }
 
@@ -157,7 +178,7 @@ export class AuthService {
     await this.audit.log('MFA_DISABLED', { actor: user.email });
   }
 
-  async register(email: string, password: string, name: string) {
+  async register(email: string, password: string, name: string, ip?: string, userAgent?: string) {
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) throw new ConflictException('Já existe uma conta com este email');
 
@@ -166,13 +187,13 @@ export class AuthService {
       data: { email, passwordHash, name, role: 'CUSTOMER' },
     });
 
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name, tokenVersion: user.tokenVersion });
+    const accessToken = await this.issueToken(user, ip, userAgent);
     return { accessToken };
   }
 
-  async updateName(userId: string, name: string) {
+  async updateName(userId: string, name: string, sessionId: string) {
     const user = await this.prisma.user.update({ where: { id: userId }, data: { name } });
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, name: user.name, tokenVersion: user.tokenVersion });
+    const accessToken = await this.reissueToken(user, sessionId);
     return { accessToken };
   }
 
@@ -185,6 +206,30 @@ export class AuthService {
 
     const passwordHash = await argon2.hash(newPassword);
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  }
+
+  // --- Sessões ---
+
+  async listSessions(userId: string, currentSessionId: string) {
+    const sessions = await this.prisma.session.findMany({
+      where: { userId, revokedAt: null },
+      orderBy: { lastSeenAt: 'desc' },
+    });
+    return sessions.map((s) => ({ ...s, current: s.id === currentSessionId }));
+  }
+
+  async revokeSession(userId: string, sessionId: string) {
+    const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
+    if (!session || session.userId !== userId) throw new NotFoundException('Sessão não encontrada');
+    if (session.revokedAt) return;
+    await this.prisma.session.update({ where: { id: sessionId }, data: { revokedAt: new Date() } });
+  }
+
+  async revokeOtherSessions(userId: string, currentSessionId: string) {
+    await this.prisma.session.updateMany({
+      where: { userId, revokedAt: null, id: { not: currentSessionId } },
+      data: { revokedAt: new Date() },
+    });
   }
 }
 

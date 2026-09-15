@@ -26,6 +26,12 @@ export class StaffController {
     return this.staffService.findOne(id);
   }
 
+  @RequirePermission('utilizadores', 'view')
+  @Get(':id/sessions')
+  listSessions(@Param('id') id: string) {
+    return this.staffService.listSessions(id);
+  }
+
   @RequirePermission('utilizadores', 'create')
   @Post()
   create(@Body() dto: CreateStaffDto, @CurrentUser() user: AuthenticatedUser) {

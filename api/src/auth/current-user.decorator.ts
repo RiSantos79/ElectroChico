@@ -4,6 +4,7 @@ import type { Role, UserStatus } from '../generated/prisma/client.js';
 
 export type AuthenticatedUser = {
   sub: string;
+  sessionId: string;
   email: string;
   role: Role;
   status: UserStatus;

@@ -1,8 +1,19 @@
 import { notFound, redirect } from "next/navigation";
 import { decodeJwt } from "jose";
-import { ACTIONS, ACTION_LABELS, getStaff, MODULES, MODULE_LABELS, ROLE_LABELS, STAFF_ROLES } from "@/lib/api";
-import { getSessionToken } from "@/lib/session";
 import {
+  ACTIONS,
+  ACTION_LABELS,
+  getStaff,
+  getStaffSessions,
+  MODULES,
+  MODULE_LABELS,
+  ROLE_LABELS,
+  STAFF_ROLES,
+} from "@/lib/api";
+import { getSessionToken } from "@/lib/session";
+import { parseUserAgent } from "@/lib/user-agent";
+import {
+  forceStaffLogoutAction,
   forceStaffPasswordResetAction,
   resetStaffPermissionsAction,
   updateStaffAction,
@@ -35,6 +46,7 @@ export default async function EditStaffPage({
   const person = staff.find((s) => s.id === id);
   if (!person) notFound();
   const isSelf = person.id === currentUserId;
+  const sessions = await getStaffSessions(person.id, token).catch(() => []);
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-10">
@@ -94,7 +106,34 @@ export default async function EditStaffPage({
               Forçar alteração de password
             </button>
           </form>
+          {!isSelf && sessions.length > 0 && (
+            <form action={forceStaffLogoutAction.bind(null, person.id)}>
+              <button type="submit" className="rounded-full border border-border px-4 py-2 text-sm font-medium text-danger hover:border-danger">
+                Forçar logout de todas as sessões
+              </button>
+            </form>
+          )}
         </div>
+
+        {sessions.length > 0 ? (
+          <ul className="mt-4 divide-y divide-border">
+            {sessions.map((s) => {
+              const { device, browser, os } = parseUserAgent(s.userAgent);
+              return (
+                <li key={s.id} className="py-3 text-sm">
+                  <p className="font-medium text-foreground">
+                    {device} · {browser} · {os}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {s.ip ?? "IP desconhecido"} — último acesso {new Date(s.lastSeenAt).toLocaleString("pt-PT")}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="mt-4 text-sm text-muted">Sem sessões ativas.</p>
+        )}
       </section>
 
       <section className="rounded-xl border border-border bg-surface-raised p-6">

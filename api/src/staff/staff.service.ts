@@ -111,18 +111,30 @@ export class StaffService {
     await this.ensureStaff(id);
     const tempPassword = this.generateTempPassword();
     const passwordHash = await argon2.hash(tempPassword);
-    await this.prisma.user.update({
-      where: { id },
-      data: { passwordHash, tokenVersion: { increment: 1 } },
-    });
+    await this.prisma.user.update({ where: { id }, data: { passwordHash } });
+    await this.revokeAllSessions(id);
     await this.audit.log('PASSWORD_RESET_FORCED', { entity: 'User', entityId: id, actor: actorEmail });
     return { tempPassword };
   }
 
   async forceLogout(id: string, actorEmail?: string) {
     await this.ensureStaff(id);
-    await this.prisma.user.update({ where: { id }, data: { tokenVersion: { increment: 1 } } });
+    await this.revokeAllSessions(id);
     await this.audit.log('FORCE_LOGOUT', { entity: 'User', entityId: id, actor: actorEmail });
+  }
+
+  listSessions(id: string) {
+    return this.prisma.session.findMany({
+      where: { userId: id, revokedAt: null },
+      orderBy: { lastSeenAt: 'desc' },
+    });
+  }
+
+  private revokeAllSessions(userId: string) {
+    return this.prisma.session.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
   }
 
   async remove(id: string, actorEmail?: string, currentUserId?: string) {

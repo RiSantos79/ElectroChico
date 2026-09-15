@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Patch, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -20,14 +20,14 @@ export class AuthController {
   @HttpCode(200)
   @UseGuards(RateLimit({ windowMs: 60_000, max: 5 }))
   login(@Body() dto: LoginDto, @Req() req: Request) {
-    return this.authService.login(dto.email, dto.password, req.ip);
+    return this.authService.login(dto.email, dto.password, req.ip, req.headers['user-agent']);
   }
 
   @Post('mfa/verify')
   @HttpCode(200)
   @UseGuards(RateLimit({ windowMs: 60_000, max: 10 }))
   verifyMfa(@Body() dto: MfaVerifyDto, @Req() req: Request) {
-    return this.authService.verifyMfa(dto.mfaToken, dto.code, req.ip);
+    return this.authService.verifyMfa(dto.mfaToken, dto.code, req.ip, req.headers['user-agent']);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -59,14 +59,14 @@ export class AuthController {
   @Post('register')
   @HttpCode(201)
   @UseGuards(RateLimit({ windowMs: 60_000, max: 5 }))
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto.email, dto.password, dto.name);
+  register(@Body() dto: RegisterDto, @Req() req: Request) {
+    return this.authService.register(dto.email, dto.password, dto.name, req.ip, req.headers['user-agent']);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch('me')
   updateProfile(@Body() dto: UpdateProfileDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.authService.updateName(user.sub, dto.name);
+    return this.authService.updateName(user.sub, dto.name, user.sessionId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -74,6 +74,28 @@ export class AuthController {
   @HttpCode(200)
   async changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: AuthenticatedUser) {
     await this.authService.changePassword(user.sub, dto.currentPassword, dto.newPassword);
+    return { ok: true };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('sessions')
+  listSessions(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.listSessions(user.sub, user.sessionId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('sessions/:id')
+  @HttpCode(200)
+  async revokeSession(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    await this.authService.revokeSession(user.sub, id);
+    return { ok: true };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('sessions/revoke-others')
+  @HttpCode(200)
+  async revokeOtherSessions(@CurrentUser() user: AuthenticatedUser) {
+    await this.authService.revokeOtherSessions(user.sub, user.sessionId);
     return { ok: true };
   }
 }

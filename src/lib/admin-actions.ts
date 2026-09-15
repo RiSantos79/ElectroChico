@@ -18,6 +18,8 @@ import {
   forceStaffPasswordReset,
   getBannersAdmin,
   MODULES,
+  revokeMySession,
+  revokeOtherSessions,
   sendCartReminder,
   updateBanner,
   updateBrand,
@@ -419,4 +421,16 @@ export async function resetStaffPermissionsAction(id: string) {
   await updateStaffPermissions(id, null, token);
   revalidatePath("/admin/utilizadores");
   revalidatePath(`/admin/utilizadores/${id}`);
+}
+
+export async function revokeMySessionAction(id: string) {
+  const token = await requireToken();
+  await revokeMySession(id, token);
+  revalidatePath("/admin/seguranca");
+}
+
+export async function revokeOtherSessionsAction() {
+  const token = await requireToken();
+  await revokeOtherSessions(token);
+  revalidatePath("/admin/seguranca");
 }

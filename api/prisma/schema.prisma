@@ -53,7 +53,6 @@ model User {
   permissionOverrides Json?
   lastLoginAt         DateTime?
   lastLoginIp         String?
-  tokenVersion        Int        @default(0)
   mfaEnabled          Boolean    @default(false)
   mfaSecretEncrypted  String?
   mfaRecoveryCodes    String[]   @default([])
@@ -61,6 +60,20 @@ model User {
   orders              Order[]
   addresses           Address[]
   contactMessages     ContactMessage[]
+  sessions            Session[]
+}
+
+model Session {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  userAgent  String?
+  ip         String?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+
+  @@index([userId])
 }
 
 model Address {
