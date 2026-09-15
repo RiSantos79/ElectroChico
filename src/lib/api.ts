@@ -237,8 +237,12 @@ export async function getProductById(id: string): Promise<AdminProduct> {
   return apiFetch<AdminProduct>(`/products/by-id/${encodeURIComponent(id)}`);
 }
 
-function authHeaders(token: string) {
-  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+function authHeaders(token: string, reauthToken?: string) {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+    ...(reauthToken ? { "X-Reauth-Token": reauthToken } : {}),
+  };
 }
 
 export function createProduct(data: AdminProductInput, token: string) {
@@ -249,8 +253,8 @@ export function updateProduct(id: string, data: Partial<AdminProductInput>, toke
   return apiFetch(`/products/${id}`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
 }
 
-export function deleteProduct(id: string, token: string) {
-  return apiFetch(`/products/${id}`, { method: "DELETE", headers: authHeaders(token) });
+export function deleteProduct(id: string, token: string, reauthToken?: string) {
+  return apiFetch(`/products/${id}`, { method: "DELETE", headers: authHeaders(token, reauthToken) });
 }
 
 export function duplicateProduct(id: string, token: string): Promise<AdminProduct> {
@@ -592,12 +596,25 @@ export function getStaff(token: string): Promise<Staff[]> {
   return apiFetch<Staff[]>("/staff", { headers: { Authorization: `Bearer ${token}` } });
 }
 
-export function createStaff(data: StaffInput, token: string): Promise<Staff> {
-  return apiFetch<Staff>("/staff", { method: "POST", headers: authHeaders(token), body: JSON.stringify(data) });
+export function createStaff(data: StaffInput, token: string, reauthToken?: string): Promise<Staff> {
+  return apiFetch<Staff>("/staff", {
+    method: "POST",
+    headers: authHeaders(token, reauthToken),
+    body: JSON.stringify(data),
+  });
 }
 
-export function updateStaff(id: string, data: StaffUpdateInput, token: string): Promise<Staff> {
-  return apiFetch<Staff>(`/staff/${id}`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
+export function updateStaff(
+  id: string,
+  data: StaffUpdateInput,
+  token: string,
+  reauthToken?: string,
+): Promise<Staff> {
+  return apiFetch<Staff>(`/staff/${id}`, {
+    method: "PATCH",
+    headers: authHeaders(token, reauthToken),
+    body: JSON.stringify(data),
+  });
 }
 
 export function updateStaffStatus(id: string, status: UserStatus, token: string): Promise<Staff> {
@@ -612,10 +629,11 @@ export function updateStaffPermissions(
   id: string,
   overrides: PermissionMatrix | null,
   token: string,
+  reauthToken?: string,
 ): Promise<Staff> {
   return apiFetch<Staff>(`/staff/${id}/permissions`, {
     method: "PATCH",
-    headers: authHeaders(token),
+    headers: authHeaders(token, reauthToken),
     body: JSON.stringify({ overrides }),
   });
 }
@@ -891,6 +909,16 @@ export function disableMfa(password: string, token: string): Promise<{ ok: boole
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ password }),
+  });
+}
+
+// Confirmação de ações críticas: reintroduzir a password (+ código MFA, se
+// ativo) devolve um token de curta duração exigido por essas ações.
+export function reauthVerify(password: string, code: string | undefined, token: string): Promise<{ reauthToken: string }> {
+  return apiFetch("/auth/reauth", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ password, code }),
   });
 }
 

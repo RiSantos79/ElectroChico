@@ -3,11 +3,15 @@ import * as argon2 from 'argon2';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { AuthService } from '../auth/auth.service.js';
 import { ACTIONS, effectivePermissions, MODULES } from '../common/permissions.js';
+import type { Role } from '../generated/prisma/client.js';
 import { CreateStaffDto } from './dto/create-staff.dto.js';
 import { UpdateStaffDto } from './dto/update-staff.dto.js';
 import { UpdateStatusDto } from './dto/update-status.dto.js';
 import { UpdatePermissionsDto } from './dto/update-permissions.dto.js';
+
+const ADMIN_TIER_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN'];
 
 const SAFE_SELECT = {
   id: true,
@@ -29,6 +33,7 @@ export class StaffService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly auth: AuthService,
   ) {}
 
   async findAll() {
@@ -46,8 +51,13 @@ export class StaffService {
     return withEffectivePermissions(user);
   }
 
-  async create(dto: CreateStaffDto, actorEmail?: string) {
+  async create(dto: CreateStaffDto, actorId: string, actorEmail?: string, reauthToken?: string) {
     if (dto.role === 'CUSTOMER') throw new BadRequestException('Role inválida para um funcionário');
+    // Criar um administrador (SUPER_ADMIN/ADMIN) é uma ação crítica — criar
+    // funcionários de outras roles não exige esta confirmação extra.
+    if (ADMIN_TIER_ROLES.includes(dto.role)) {
+      await this.auth.verifyReauthToken(actorId, reauthToken);
+    }
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Já existe uma conta com este email');
 
@@ -67,9 +77,14 @@ export class StaffService {
     return withEffectivePermissions(user);
   }
 
-  async update(id: string, dto: UpdateStaffDto, actorEmail?: string) {
+  async update(id: string, dto: UpdateStaffDto, actorId: string, actorEmail?: string, reauthToken?: string) {
     const before = await this.ensureStaff(id);
     if (dto.role === 'CUSTOMER') throw new BadRequestException('Role inválida para um funcionário');
+    // Promover alguém a SUPER_ADMIN/ADMIN é equivalente a criar um
+    // administrador — exige a mesma confirmação, mesmo vindo de uma edição.
+    if (dto.role && ADMIN_TIER_ROLES.includes(dto.role) && dto.role !== before.role) {
+      await this.auth.verifyReauthToken(actorId, reauthToken);
+    }
 
     const user = await this.prisma.user.update({
       where: { id },
@@ -93,7 +108,8 @@ export class StaffService {
     return withEffectivePermissions(user);
   }
 
-  async updatePermissions(id: string, dto: UpdatePermissionsDto, actorEmail?: string) {
+  async updatePermissions(id: string, dto: UpdatePermissionsDto, actorId: string, actorEmail?: string, reauthToken?: string) {
+    await this.auth.verifyReauthToken(actorId, reauthToken);
     await this.ensureStaff(id);
     if (dto.overrides != null) {
       this.validatePermissionMatrix(dto.overrides);

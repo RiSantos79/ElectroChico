@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { authenticator } from 'otplib';
@@ -10,6 +10,7 @@ import { generateRecoveryCodes } from '../common/recovery-codes.js';
 
 const MFA_TOKEN_TTL = '5m';
 const MFA_SETUP_TOKEN_TTL = '10m';
+const REAUTH_TOKEN_TTL = '10m';
 const MFA_REQUIRED_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN'];
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
@@ -297,6 +298,41 @@ export class AuthService {
       where: { userId, revokedAt: null, id: { not: currentSessionId } },
       data: { revokedAt: new Date() },
     });
+  }
+
+  // --- Confirmação de ações críticas ---
+  // Reintroduzir a password (+ código MFA, se ativo) devolve um token de
+  // curta duração que prova "confirmei mesmo agora que sou eu". As ações
+  // sensíveis (apagar produto, mudar permissões, criar administrador) exigem
+  // este token, sem ele nunca prosseguem — mesmo com uma sessão válida.
+  async reauth(userId: string, password: string, code?: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Utilizador não encontrado');
+
+    const valid = await argon2.verify(user.passwordHash, password).catch(() => false);
+    if (!valid) throw new UnauthorizedException('Palavra-passe incorreta.');
+
+    if (user.mfaEnabled) {
+      if (!user.mfaSecretEncrypted || !code || !authenticator.check(code.trim(), decryptSecret(user.mfaSecretEncrypted))) {
+        throw new UnauthorizedException('Código de verificação inválido.');
+      }
+    }
+
+    const reauthToken = await this.jwt.signAsync({ sub: user.id, reauthPending: true }, { expiresIn: REAUTH_TOKEN_TTL });
+    return { reauthToken };
+  }
+
+  async verifyReauthToken(userId: string, reauthToken?: string): Promise<void> {
+    if (!reauthToken) throw new ForbiddenException('Esta ação requer confirmação adicional.');
+    let payload: { sub: string; reauthPending?: boolean };
+    try {
+      payload = await this.jwt.verifyAsync(reauthToken);
+    } catch {
+      throw new ForbiddenException('Esta ação requer confirmação adicional.');
+    }
+    if (!payload.reauthPending || payload.sub !== userId) {
+      throw new ForbiddenException('Esta ação requer confirmação adicional.');
+    }
   }
 }
 

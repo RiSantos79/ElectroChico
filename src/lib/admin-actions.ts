@@ -18,6 +18,7 @@ import {
   forceStaffPasswordReset,
   getBannersAdmin,
   MODULES,
+  reauthVerify,
   revokeMySession,
   revokeOtherSessions,
   sendCartReminder,
@@ -136,11 +137,19 @@ export async function updateProductAction(id: string, formData: FormData) {
   redirect("/admin/produtos");
 }
 
-export async function deleteProductAction(id: string) {
-  const token = await requireToken();
-  await deleteProduct(id, token);
-  revalidatePath("/admin/produtos");
-  revalidatePath("/catalogo");
+export async function deleteProductAction(
+  id: string,
+  reauthToken: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    await deleteProduct(id, token, reauthToken);
+    revalidatePath("/admin/produtos");
+    revalidatePath("/catalogo");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível apagar o produto." };
+  }
 }
 
 export async function duplicateProductAction(id: string) {
@@ -345,36 +354,55 @@ export async function moveBannerAction(id: string, direction: "up" | "down") {
   revalidatePath("/");
 }
 
-export async function createStaffAction(formData: FormData) {
-  const token = await requireToken();
-  await createStaff(
-    {
-      email: String(formData.get("email") ?? ""),
-      password: String(formData.get("password") ?? ""),
-      name: String(formData.get("name") ?? ""),
-      phone: optionalString(formData, "phone"),
-      jobTitle: optionalString(formData, "jobTitle"),
-      role: String(formData.get("role")) as Role,
-    },
-    token,
-  );
-  revalidatePath("/admin/utilizadores");
+export async function createStaffAction(
+  formData: FormData,
+  reauthToken?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    await createStaff(
+      {
+        email: String(formData.get("email") ?? ""),
+        password: String(formData.get("password") ?? ""),
+        name: String(formData.get("name") ?? ""),
+        phone: optionalString(formData, "phone"),
+        jobTitle: optionalString(formData, "jobTitle"),
+        role: String(formData.get("role")) as Role,
+      },
+      token,
+      reauthToken,
+    );
+    revalidatePath("/admin/utilizadores");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível criar o funcionário." };
+  }
 }
 
-export async function updateStaffAction(id: string, formData: FormData) {
-  const token = await requireToken();
-  await updateStaff(
-    id,
-    {
-      name: String(formData.get("name") ?? ""),
-      phone: optionalString(formData, "phone"),
-      jobTitle: optionalString(formData, "jobTitle"),
-      role: String(formData.get("role")) as Role,
-    },
-    token,
-  );
-  revalidatePath("/admin/utilizadores");
-  revalidatePath(`/admin/utilizadores/${id}`);
+export async function updateStaffAction(
+  id: string,
+  formData: FormData,
+  reauthToken?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    await updateStaff(
+      id,
+      {
+        name: String(formData.get("name") ?? ""),
+        phone: optionalString(formData, "phone"),
+        jobTitle: optionalString(formData, "jobTitle"),
+        role: String(formData.get("role")) as Role,
+      },
+      token,
+      reauthToken,
+    );
+    revalidatePath("/admin/utilizadores");
+    revalidatePath(`/admin/utilizadores/${id}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível guardar as alterações." };
+  }
 }
 
 export async function updateStaffStatusAction(id: string, status: UserStatus) {
@@ -402,18 +430,27 @@ export async function deleteStaffAction(id: string) {
   revalidatePath("/admin/utilizadores");
 }
 
-export async function updateStaffPermissionsAction(id: string, formData: FormData) {
-  const token = await requireToken();
-  const overrides = {} as PermissionMatrix;
-  for (const moduleKey of MODULES) {
-    overrides[moduleKey] = {} as Record<Action, boolean>;
-    for (const action of ACTIONS) {
-      overrides[moduleKey][action] = formData.get(`perm_${moduleKey}_${action}`) === "on";
+export async function updateStaffPermissionsAction(
+  id: string,
+  formData: FormData,
+  reauthToken?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    const overrides = {} as PermissionMatrix;
+    for (const moduleKey of MODULES) {
+      overrides[moduleKey] = {} as Record<Action, boolean>;
+      for (const action of ACTIONS) {
+        overrides[moduleKey][action] = formData.get(`perm_${moduleKey}_${action}`) === "on";
+      }
     }
+    await updateStaffPermissions(id, overrides, token, reauthToken);
+    revalidatePath("/admin/utilizadores");
+    revalidatePath(`/admin/utilizadores/${id}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível guardar as permissões." };
   }
-  await updateStaffPermissions(id, overrides, token);
-  revalidatePath("/admin/utilizadores");
-  revalidatePath(`/admin/utilizadores/${id}`);
 }
 
 export async function resetStaffPermissionsAction(id: string) {
@@ -421,6 +458,19 @@ export async function resetStaffPermissionsAction(id: string) {
   await updateStaffPermissions(id, null, token);
   revalidatePath("/admin/utilizadores");
   revalidatePath(`/admin/utilizadores/${id}`);
+}
+
+export async function verifyReauthAction(
+  password: string,
+  code?: string,
+): Promise<{ ok: true; reauthToken: string } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    const { reauthToken } = await reauthVerify(password, code, token);
+    return { ok: true, reauthToken };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Confirmação falhou." };
+  }
 }
 
 export async function revokeMySessionAction(id: string) {

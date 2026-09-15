@@ -10,6 +10,7 @@ import { MfaEnableDto } from './dto/mfa-enable.dto.js';
 import { MfaDisableDto } from './dto/mfa-disable.dto.js';
 import { MfaSetupRequiredDto } from './dto/mfa-setup-required.dto.js';
 import { MfaEnableRequiredDto } from './dto/mfa-enable-required.dto.js';
+import { ReauthDto } from './dto/reauth.dto.js';
 import { RateLimit } from '../common/rate-limit.guard.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { CurrentUser, type AuthenticatedUser } from './current-user.decorator.js';
@@ -86,6 +87,13 @@ export class AuthController {
   @Patch('me')
   updateProfile(@Body() dto: UpdateProfileDto, @CurrentUser() user: AuthenticatedUser) {
     return this.authService.updateName(user.sub, dto.name, user.sessionId);
+  }
+
+  @Post('reauth')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard, RateLimit({ windowMs: 60_000, max: 10 }))
+  reauth(@Body() dto: ReauthDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.authService.reauth(user.sub, dto.password, dto.code);
   }
 
   @UseGuards(JwtAuthGuard)

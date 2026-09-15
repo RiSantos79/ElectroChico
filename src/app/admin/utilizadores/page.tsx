@@ -1,14 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { decodeJwt } from "jose";
-import { getStaff, ROLE_LABELS, STAFF_ROLES } from "@/lib/api";
+import { getStaff, ROLE_LABELS } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
-import {
-  createStaffAction,
-  deleteStaffAction,
-  forceStaffLogoutAction,
-  updateStaffStatusAction,
-} from "@/lib/admin-actions";
+import { deleteStaffAction, forceStaffLogoutAction, updateStaffStatusAction } from "@/lib/admin-actions";
+import { CreateStaffForm } from "@/components/admin/create-staff-form";
 
 export const metadata = { title: "Utilizadores — Backoffice" };
 
@@ -42,44 +38,7 @@ export default async function AdminStaffPage() {
 
       <section className="mb-8 max-w-2xl rounded-xl border border-border bg-surface-raised p-6">
         <h2 className="mb-4 text-lg font-semibold text-foreground">Novo funcionário</h2>
-        <form action={createStaffAction} className="grid gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-sm">
-            Nome
-            <input name="name" required className="input-field" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Email
-            <input type="email" name="email" required className="input-field" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Palavra-passe inicial
-            <input type="text" name="password" required minLength={8} className="input-field" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Role
-            <select name="role" required defaultValue="OPERATOR" className="input-field">
-              {STAFF_ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {ROLE_LABELS[role]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Telemóvel (opcional)
-            <input name="phone" className="input-field" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Função/Cargo (opcional)
-            <input name="jobTitle" className="input-field" />
-          </label>
-          <button
-            type="submit"
-            className="self-start rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-90 sm:col-span-2"
-          >
-            Criar funcionário
-          </button>
-        </form>
+        <CreateStaffForm />
       </section>
 
       <div className="overflow-x-auto rounded-xl border border-border">

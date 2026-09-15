@@ -1,24 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { decodeJwt } from "jose";
-import {
-  ACTIONS,
-  ACTION_LABELS,
-  getStaff,
-  getStaffSessions,
-  MODULES,
-  MODULE_LABELS,
-  ROLE_LABELS,
-  STAFF_ROLES,
-} from "@/lib/api";
+import { getStaff, getStaffSessions, ROLE_LABELS } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { parseUserAgent } from "@/lib/user-agent";
-import {
-  forceStaffLogoutAction,
-  forceStaffPasswordResetAction,
-  resetStaffPermissionsAction,
-  updateStaffAction,
-  updateStaffPermissionsAction,
-} from "@/lib/admin-actions";
+import { forceStaffLogoutAction, forceStaffPasswordResetAction, resetStaffPermissionsAction } from "@/lib/admin-actions";
+import { EditStaffForm } from "@/components/admin/edit-staff-form";
+import { PermissionsForm } from "@/components/admin/permissions-form";
 
 export const metadata = { title: "Editar funcionário — Backoffice" };
 
@@ -65,37 +52,14 @@ export default async function EditStaffPage({
 
       <section className="mb-8 rounded-xl border border-border bg-surface-raised p-6">
         <h2 className="mb-4 text-lg font-semibold text-foreground">Dados</h2>
-        <form action={updateStaffAction.bind(null, person.id)} className="grid gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-sm">
-            Nome
-            <input name="name" required defaultValue={person.name ?? ""} className="input-field" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Role
-            <select name="role" defaultValue={person.role} disabled={isSelf} className="input-field">
-              {STAFF_ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {ROLE_LABELS[role]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Telemóvel
-            <input name="phone" defaultValue={person.phone ?? ""} className="input-field" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Função/Cargo
-            <input name="jobTitle" defaultValue={person.jobTitle ?? ""} className="input-field" />
-          </label>
-          <button
-            type="submit"
-            className="self-start rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-90 sm:col-span-2"
-          >
-            Guardar
-          </button>
-        </form>
-        {isSelf && <p className="mt-2 text-xs text-muted">Não pode alterar a sua própria role.</p>}
+        <EditStaffForm
+          id={person.id}
+          name={person.name ?? ""}
+          role={person.role}
+          phone={person.phone ?? ""}
+          jobTitle={person.jobTitle ?? ""}
+          isSelf={isSelf}
+        />
       </section>
 
       <section className="mb-8 rounded-xl border border-border bg-surface-raised p-6">
@@ -157,45 +121,7 @@ export default async function EditStaffPage({
             &rdquo;.
           </p>
         )}
-        <form action={updateStaffPermissionsAction.bind(null, person.id)}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted">
-                <tr>
-                  <th className="px-2 py-2 font-medium">Módulo</th>
-                  {ACTIONS.map((action) => (
-                    <th key={action} className="px-2 py-2 text-center font-medium">
-                      {ACTION_LABELS[action]}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {MODULES.map((moduleKey) => (
-                  <tr key={moduleKey}>
-                    <td className="px-2 py-2 font-medium text-foreground">{MODULE_LABELS[moduleKey]}</td>
-                    {ACTIONS.map((action) => (
-                      <td key={action} className="px-2 py-2 text-center">
-                        <input
-                          type="checkbox"
-                          name={`perm_${moduleKey}_${action}`}
-                          defaultChecked={person.effectivePermissions[moduleKey][action]}
-                          className="size-4"
-                        />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button
-            type="submit"
-            className="mt-4 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-90"
-          >
-            Guardar permissões
-          </button>
-        </form>
+        <PermissionsForm id={person.id} effectivePermissions={person.effectivePermissions} />
       </section>
     </div>
   );

@@ -15,6 +15,6 @@ import { StaffGuard } from './staff.guard.js';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtAuthGuard, PermissionsGuard, StaffGuard],
-  exports: [JwtModule, JwtAuthGuard, PermissionsGuard, StaffGuard],
+  exports: [JwtModule, JwtAuthGuard, PermissionsGuard, StaffGuard, AuthService],
 })
 export class AuthModule {}

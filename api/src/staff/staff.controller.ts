@@ -8,6 +8,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
+import { ReauthToken } from '../auth/reauth-token.decorator.js';
 
 @Controller('staff')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -34,14 +35,19 @@ export class StaffController {
 
   @RequirePermission('utilizadores', 'create')
   @Post()
-  create(@Body() dto: CreateStaffDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.staffService.create(dto, user.email);
+  create(@Body() dto: CreateStaffDto, @CurrentUser() user: AuthenticatedUser, @ReauthToken() reauthToken?: string) {
+    return this.staffService.create(dto, user.sub, user.email, reauthToken);
   }
 
   @RequirePermission('utilizadores', 'edit')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateStaffDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.staffService.update(id, dto, user.email);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateStaffDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @ReauthToken() reauthToken?: string,
+  ) {
+    return this.staffService.update(id, dto, user.sub, user.email, reauthToken);
   }
 
   @RequirePermission('utilizadores', 'edit')
@@ -52,8 +58,13 @@ export class StaffController {
 
   @RequirePermission('utilizadores', 'edit')
   @Patch(':id/permissions')
-  updatePermissions(@Param('id') id: string, @Body() dto: UpdatePermissionsDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.staffService.updatePermissions(id, dto, user.email);
+  updatePermissions(
+    @Param('id') id: string,
+    @Body() dto: UpdatePermissionsDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @ReauthToken() reauthToken?: string,
+  ) {
+    return this.staffService.updatePermissions(id, dto, user.sub, user.email, reauthToken);
   }
 
   @RequirePermission('utilizadores', 'edit')

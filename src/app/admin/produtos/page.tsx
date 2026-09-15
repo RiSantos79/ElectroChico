@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { getProducts } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
-import { deleteProductAction, duplicateProductAction } from "@/lib/admin-actions";
+import { duplicateProductAction } from "@/lib/admin-actions";
 import { StockBar } from "@/components/stock-bar";
+import { DeleteProductButton } from "@/components/admin/delete-product-button";
 
 export const metadata = { title: "Produtos — Backoffice" };
 
@@ -71,11 +72,7 @@ export default async function AdminProductsPage() {
                         Duplicar
                       </button>
                     </form>
-                    <form action={deleteProductAction.bind(null, product.id)}>
-                      <button type="submit" className="font-medium text-danger hover:underline">
-                        Apagar
-                      </button>
-                    </form>
+                    <DeleteProductButton id={product.id} name={product.name} />
                   </div>
                 </td>
               </tr>
