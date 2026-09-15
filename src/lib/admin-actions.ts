@@ -12,6 +12,7 @@ import {
   deleteBanner,
   deleteCoupon,
   deleteProduct,
+  deleteProducts,
   deleteStaff,
   duplicateProduct,
   forceStaffLogout,
@@ -137,18 +138,27 @@ export async function updateProductAction(id: string, formData: FormData) {
   redirect("/admin/produtos");
 }
 
-export async function deleteProductAction(
-  id: string,
-  reauthToken: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function deleteProductAction(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const token = await requireToken();
-    await deleteProduct(id, token, reauthToken);
+    await deleteProduct(id, token);
     revalidatePath("/admin/produtos");
     revalidatePath("/catalogo");
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Não foi possível apagar o produto." };
+  }
+}
+
+export async function deleteProductsAction(ids: string[]): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    await deleteProducts(ids, token);
+    revalidatePath("/admin/produtos");
+    revalidatePath("/catalogo");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível apagar os produtos selecionados." };
   }
 }
 

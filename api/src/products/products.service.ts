@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
-import { AuthService } from '../auth/auth.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 import { sanitizeRichText } from '../common/sanitize-html.js';
@@ -25,7 +24,6 @@ export class ProductsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly stock: StockService,
-    private readonly auth: AuthService,
   ) {}
 
   findAll(params: { categorySlug?: string; brandSlug?: string; includeArchived?: boolean }) {
@@ -126,11 +124,16 @@ export class ProductsService {
     return product;
   }
 
-  async remove(id: string, actorId: string, actorEmail?: string, reauthToken?: string) {
-    await this.auth.verifyReauthToken(actorId, reauthToken);
+  async remove(id: string, actorEmail?: string) {
     await this.ensureExists(id);
     await this.prisma.product.delete({ where: { id } });
     await this.audit.log('PRODUCT_DELETE', { entity: 'Product', entityId: id, actor: actorEmail });
+  }
+
+  async removeMany(ids: string[], actorEmail?: string) {
+    for (const id of ids) {
+      await this.remove(id, actorEmail);
+    }
   }
 
   // A cópia fica arquivada por omissão — evita que um produto a meio de

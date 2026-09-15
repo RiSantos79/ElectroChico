@@ -1,9 +1,6 @@
 import Link from "next/link";
 import { getProducts } from "@/lib/api";
-import { formatPrice } from "@/lib/format";
-import { duplicateProductAction } from "@/lib/admin-actions";
-import { StockBar } from "@/components/stock-bar";
-import { DeleteProductButton } from "@/components/admin/delete-product-button";
+import { ProductsTable } from "@/components/admin/products-table";
 
 export const metadata = { title: "Produtos — Backoffice" };
 
@@ -30,56 +27,7 @@ export default async function AdminProductsPage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead className="bg-surface text-left text-muted">
-            <tr>
-              <th className="px-4 py-3 font-medium">Nome</th>
-              <th className="px-4 py-3 font-medium">Marca</th>
-              <th className="px-4 py-3 font-medium">Categoria</th>
-              <th className="px-4 py-3 font-medium">Preço</th>
-              <th className="px-4 py-3 font-medium">Stock</th>
-              <th className="px-4 py-3 font-medium" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {products.map((product) => (
-              <tr key={product.id}>
-                <td className="px-4 py-3 font-medium text-foreground">
-                  {product.name}
-                  {product.archived && (
-                    <span className="ml-2 rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-muted">
-                      Arquivado
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-muted">{product.brand}</td>
-                <td className="px-4 py-3 text-muted">{product.category}</td>
-                <td className="px-4 py-3 text-foreground">{formatPrice(product.price)}</td>
-                <td className="px-4 py-3">
-                  <StockBar quantity={product.stockQuantity} className="w-32" />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-3">
-                    <Link
-                      href={`/admin/produtos/${product.id}/editar`}
-                      className="font-medium text-accent hover:underline"
-                    >
-                      Editar
-                    </Link>
-                    <form action={duplicateProductAction.bind(null, product.id)}>
-                      <button type="submit" className="font-medium text-accent hover:underline">
-                        Duplicar
-                      </button>
-                    </form>
-                    <DeleteProductButton id={product.id} name={product.name} />
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ProductsTable products={products} />
     </div>
   );
 }

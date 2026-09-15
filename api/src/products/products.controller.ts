@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
-import { ReauthToken } from '../auth/reauth-token.decorator.js';
+import { BulkDeleteDto } from './dto/bulk-delete.dto.js';
 
 @Controller('products')
 export class ProductsController {
@@ -69,8 +69,15 @@ export class ProductsController {
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('produtos', 'delete')
+  @Delete('bulk')
+  removeMany(@Body() dto: BulkDeleteDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.productsService.removeMany(dto.ids, user.email);
+  }
+
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('produtos', 'delete')
   @Delete(':id')
-  remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @ReauthToken() reauthToken?: string) {
-    return this.productsService.remove(id, user.sub, user.email, reauthToken);
+  remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.productsService.remove(id, user.email);
   }
 }

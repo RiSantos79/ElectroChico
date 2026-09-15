@@ -253,8 +253,12 @@ export function updateProduct(id: string, data: Partial<AdminProductInput>, toke
   return apiFetch(`/products/${id}`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
 }
 
-export function deleteProduct(id: string, token: string, reauthToken?: string) {
-  return apiFetch(`/products/${id}`, { method: "DELETE", headers: authHeaders(token, reauthToken) });
+export function deleteProduct(id: string, token: string) {
+  return apiFetch(`/products/${id}`, { method: "DELETE", headers: authHeaders(token) });
+}
+
+export function deleteProducts(ids: string[], token: string) {
+  return apiFetch("/products/bulk", { method: "DELETE", headers: authHeaders(token), body: JSON.stringify({ ids }) });
 }
 
 export function duplicateProduct(id: string, token: string): Promise<AdminProduct> {
