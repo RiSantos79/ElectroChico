@@ -1,6 +1,7 @@
 import type { AdminBrand, AdminCategory, AdminProduct } from "@/lib/api";
 import { PriceStockFields } from "@/components/admin/price-stock-fields";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
+import { NameSlugFields } from "@/components/admin/name-slug-fields";
 
 function specsToText(specs: { label: string; value: string }[]) {
   return specs.map((s) => `${s.label}: ${s.value}`).join("\n");
@@ -22,14 +23,7 @@ export function ProductForm({
       <section className="rounded-xl border border-border bg-surface-raised p-6">
         <h2 className="mb-4 text-lg font-semibold text-foreground">Informação geral</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-            Nome
-            <input name="name" required defaultValue={product?.name} className="input-field" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-            Slug (URL)
-            <input name="slug" required defaultValue={product?.slug} className="input-field" />
-          </label>
+          <NameSlugFields defaultName={product?.name} defaultSlug={product?.slug} />
           <label className="flex flex-col gap-1 text-sm">
             Marca
             <select name="brandId" required defaultValue={product?.brandId} className="input-field">
