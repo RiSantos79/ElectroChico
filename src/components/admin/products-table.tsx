@@ -6,9 +6,13 @@ import type { Product } from "@/data/catalog";
 import { formatPrice } from "@/lib/format";
 import { deleteProductAction, deleteProductsAction, duplicateProductAction } from "@/lib/admin-actions";
 import { StockBar } from "@/components/stock-bar";
+import { ConfirmDialog } from "./confirm-dialog";
+
+type PendingDelete = { type: "one"; id: string; name: string } | { type: "bulk"; ids: string[] };
 
 export function ProductsTable({ products }: { products: Product[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [pending, setPending] = useState<PendingDelete | null>(null);
   const [busy, setBusy] = useState(false);
 
   const allSelected = products.length > 0 && selected.size === products.length;
@@ -17,35 +21,27 @@ export function ProductsTable({ products }: { products: Product[] }) {
     setSelected(allSelected ? new Set() : new Set(products.map((p) => p.id)));
   }
 
-  function toggleOne(slug: string) {
+  function toggleOne(id: string) {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
 
-  async function handleDeleteOne(id: string, name: string) {
-    if (!confirm(`Apagar "${name}"? Esta ação não pode ser desfeita.`)) return;
+  async function handleConfirm() {
+    if (!pending) return;
     setBusy(true);
-    const result = await deleteProductAction(id);
+    const result =
+      pending.type === "one" ? await deleteProductAction(pending.id) : await deleteProductsAction(pending.ids);
     setBusy(false);
-    if (!result.ok) alert(result.error);
-  }
-
-  async function handleDeleteSelected() {
-    const ids = products.filter((p) => selected.has(p.id)).map((p) => p.id);
-    if (ids.length === 0) return;
-    if (!confirm(`Apagar ${ids.length} produto(s) selecionado(s)? Esta ação não pode ser desfeita.`)) return;
-    setBusy(true);
-    const result = await deleteProductsAction(ids);
-    setBusy(false);
+    setPending(null);
     if (!result.ok) {
       alert(result.error);
       return;
     }
-    setSelected(new Set());
+    if (pending.type === "bulk") setSelected(new Set());
   }
 
   return (
@@ -55,11 +51,10 @@ export function ProductsTable({ products }: { products: Product[] }) {
           <span className="text-sm text-foreground">{selected.size} produto(s) selecionado(s)</span>
           <button
             type="button"
-            onClick={handleDeleteSelected}
-            disabled={busy}
-            className="text-sm font-semibold text-danger hover:underline disabled:opacity-50"
+            onClick={() => setPending({ type: "bulk", ids: products.filter((p) => selected.has(p.id)).map((p) => p.id) })}
+            className="text-sm font-semibold text-danger hover:underline"
           >
-            {busy ? "A apagar..." : "Apagar selecionados"}
+            Apagar selecionados
           </button>
         </div>
       )}
@@ -118,9 +113,8 @@ export function ProductsTable({ products }: { products: Product[] }) {
                     </form>
                     <button
                       type="button"
-                      onClick={() => handleDeleteOne(product.id, product.name)}
-                      disabled={busy}
-                      className="font-medium text-danger hover:underline disabled:opacity-50"
+                      onClick={() => setPending({ type: "one", id: product.id, name: product.name })}
+                      className="font-medium text-danger hover:underline"
                     >
                       Apagar
                     </button>
@@ -131,6 +125,21 @@ export function ProductsTable({ products }: { products: Product[] }) {
           </tbody>
         </table>
       </div>
+
+      {pending && (
+        <ConfirmDialog
+          message={
+            pending.type === "one"
+              ? `Apagar "${pending.name}"? Esta ação não pode ser desfeita.`
+              : `Apagar ${pending.ids.length} produto(s) selecionado(s)? Esta ação não pode ser desfeita.`
+          }
+          confirmLabel="Apagar"
+          danger
+          pending={busy}
+          onCancel={() => setPending(null)}
+          onConfirm={handleConfirm}
+        />
+      )}
     </div>
   );
 }

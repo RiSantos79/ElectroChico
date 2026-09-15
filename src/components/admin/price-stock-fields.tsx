@@ -109,6 +109,19 @@ export function PriceStockFields({ product }: { product?: AdminProduct }) {
         </select>
       </label>
 
+      <label className="flex flex-col gap-1 text-sm">
+        Cor de fundo (sem imagem)
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            name="color"
+            defaultValue={product?.color ?? "#1f2937"}
+            className="h-10 w-14 cursor-pointer rounded-md border border-border bg-transparent"
+          />
+          <span className="text-xs text-muted">Usada no cartão/página do produto quando não há foto.</span>
+        </div>
+      </label>
+
       <div className="flex flex-col gap-1 text-sm">
         Imagens
         <input type="hidden" name="existingImages" defaultValue={(product?.images ?? []).join(",")} />
