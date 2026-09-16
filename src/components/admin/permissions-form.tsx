@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ACTIONS, ACTION_LABELS, MODULES, MODULE_LABELS, ROLE_LABELS, type PermissionMatrix, type Role } from "@/lib/api";
 import { resetStaffPermissionsAction, updateStaffPermissionsAction } from "@/lib/admin-actions";
 import { ReauthModal } from "./reauth-modal";
+import { SuccessDialog } from "./success-dialog";
 
 type PendingAction = "save" | "reset";
 
@@ -24,6 +25,7 @@ export function PermissionsForm({
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,8 +46,7 @@ export function PermissionsForm({
       setError(result.error);
       return;
     }
-    alert(pendingAction === "save" ? "Permissões guardadas com sucesso." : "Permissões repostas para a role.");
-    router.push("/admin/utilizadores");
+    setSuccessMessage(pendingAction === "save" ? "Permissões guardadas com sucesso." : "Permissões repostas para a role.");
   }
 
   return (
@@ -120,6 +121,10 @@ export function PermissionsForm({
           onCancel={() => setPendingAction(null)}
           onConfirmed={confirmed}
         />
+      )}
+
+      {successMessage && (
+        <SuccessDialog message={successMessage} onClose={() => router.push("/admin/utilizadores")} />
       )}
     </>
   );
