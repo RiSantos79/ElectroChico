@@ -14,6 +14,7 @@ import {
   deleteProduct,
   deleteProducts,
   deleteStaff,
+  deleteStaffs,
   duplicateProduct,
   forceStaffLogout,
   forceStaffPasswordReset,
@@ -434,10 +435,26 @@ export async function forceStaffPasswordResetAction(id: string) {
   redirect(`/admin/utilizadores/${id}?tempPassword=${encodeURIComponent(tempPassword)}`);
 }
 
-export async function deleteStaffAction(id: string) {
-  const token = await requireToken();
-  await deleteStaff(id, token);
-  revalidatePath("/admin/utilizadores");
+export async function deleteStaffAction(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    await deleteStaff(id, token);
+    revalidatePath("/admin/utilizadores");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível apagar o funcionário." };
+  }
+}
+
+export async function deleteStaffsAction(ids: string[]): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    await deleteStaffs(ids, token);
+    revalidatePath("/admin/utilizadores");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível apagar os funcionários selecionados." };
+  }
 }
 
 export async function updateStaffPermissionsAction(

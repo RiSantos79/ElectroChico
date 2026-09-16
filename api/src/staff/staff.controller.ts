@@ -4,6 +4,7 @@ import { CreateStaffDto } from './dto/create-staff.dto.js';
 import { UpdateStaffDto } from './dto/update-staff.dto.js';
 import { UpdateStatusDto } from './dto/update-status.dto.js';
 import { UpdatePermissionsDto } from './dto/update-permissions.dto.js';
+import { BulkDeleteStaffDto } from './dto/bulk-delete-staff.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
@@ -77,6 +78,12 @@ export class StaffController {
   @Post(':id/force-logout')
   forceLogout(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.staffService.forceLogout(id, user.email);
+  }
+
+  @RequirePermission('utilizadores', 'delete')
+  @Delete('bulk')
+  removeMany(@Body() dto: BulkDeleteStaffDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.staffService.removeMany(dto.ids, user.email, user.sub);
   }
 
   @RequirePermission('utilizadores', 'delete')

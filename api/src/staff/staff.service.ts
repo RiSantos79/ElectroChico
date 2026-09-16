@@ -162,6 +162,12 @@ export class StaffService {
     await this.audit.log('STAFF_DELETE', { entity: 'User', entityId: id, actor: actorEmail });
   }
 
+  async removeMany(ids: string[], actorEmail?: string, currentUserId?: string) {
+    for (const id of ids) {
+      await this.remove(id, actorEmail, currentUserId);
+    }
+  }
+
   private async ensureStaff(id: string) {
     const user = await this.prisma.user.findFirst({ where: { id, role: { not: 'CUSTOMER' } } });
     if (!user) throw new NotFoundException('Funcionário não encontrado');

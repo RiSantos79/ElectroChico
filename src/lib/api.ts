@@ -658,6 +658,10 @@ export function deleteStaff(id: string, token: string) {
   return apiFetch(`/staff/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
 }
 
+export function deleteStaffs(ids: string[], token: string) {
+  return apiFetch("/staff/bulk", { method: "DELETE", headers: authHeaders(token), body: JSON.stringify({ ids }) });
+}
+
 // --- Sessões ---
 
 export type Session = {
