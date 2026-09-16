@@ -577,6 +577,7 @@ export type Staff = {
   lastLoginAt: string | null;
   lastLoginIp: string | null;
   mfaEnabled: boolean;
+  mustChangePassword: boolean;
   createdAt: string;
 };
 

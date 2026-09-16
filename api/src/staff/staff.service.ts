@@ -25,6 +25,7 @@ const SAFE_SELECT = {
   lastLoginAt: true,
   lastLoginIp: true,
   mfaEnabled: true,
+  mustChangePassword: true,
   createdAt: true,
 } as const;
 
@@ -70,6 +71,7 @@ export class StaffService {
         phone: dto.phone,
         jobTitle: dto.jobTitle,
         role: dto.role,
+        mustChangePassword: true,
       },
       select: SAFE_SELECT,
     });
@@ -127,7 +129,7 @@ export class StaffService {
     await this.ensureStaff(id);
     const tempPassword = this.generateTempPassword();
     const passwordHash = await argon2.hash(tempPassword);
-    await this.prisma.user.update({ where: { id }, data: { passwordHash } });
+    await this.prisma.user.update({ where: { id }, data: { passwordHash, mustChangePassword: true } });
     await this.revokeAllSessions(id);
     await this.audit.log('PASSWORD_RESET_FORCED', { entity: 'User', entityId: id, actor: actorEmail });
     return { tempPassword };

@@ -53,6 +53,7 @@ model User {
   permissionOverrides Json?
   lastLoginAt         DateTime?
   lastLoginIp         String?
+  mustChangePassword  Boolean    @default(false)
   mfaEnabled          Boolean    @default(false)
   mfaSecretEncrypted  String?
   mfaRecoveryCodes    String[]   @default([])

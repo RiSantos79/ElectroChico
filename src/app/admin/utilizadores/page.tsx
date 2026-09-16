@@ -68,7 +68,12 @@ export default async function AdminStaffPage() {
                     {s.jobTitle && <p>{s.jobTitle}</p>}
                     <p>{ROLE_LABELS[s.role]}</p>
                   </td>
-                  <td className={`px-4 py-3 font-medium ${statusColor[s.status]}`}>{statusLabel[s.status]}</td>
+                  <td className={`px-4 py-3 font-medium ${statusColor[s.status]}`}>
+                    {statusLabel[s.status]}
+                    {s.mustChangePassword && (
+                      <p className="text-xs font-normal text-amber-500">Password pendente de troca</p>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-muted">
                     {s.lastLoginAt ? new Date(s.lastLoginAt).toLocaleString("pt-PT") : "Nunca"}
                     {s.lastLoginIp && <p className="text-xs">{s.lastLoginIp}</p>}

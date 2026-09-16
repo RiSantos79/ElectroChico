@@ -54,6 +54,24 @@ export class AuthService {
       await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null } });
     }
 
+    return this.resolveLoginOutcome(user, ip, userAgent);
+  }
+
+  // Passo comum depois da password (e MFA já verificado, quando aplicável)
+  // — decide se falta trocar a password, configurar/confirmar MFA, ou se já
+  // pode mesmo entrar. Reutilizado pelo login normal e por quem acabou de
+  // trocar uma password temporária.
+  private async resolveLoginOutcome(user: User, ip?: string, userAgent?: string) {
+    if (user.mustChangePassword) {
+      // Conta nova ou com reset forçado: a password atual é temporária e não
+      // pode ser usada para entrar sem primeiro ser substituída.
+      const passwordChangeToken = await this.jwt.signAsync(
+        { sub: user.id, passwordChangePending: true },
+        { expiresIn: MFA_SETUP_TOKEN_TTL },
+      );
+      return { passwordChangeRequired: true, passwordChangeToken };
+    }
+
     if (user.mfaEnabled) {
       // Token de curta duração e sem "role" — não serve para aceder a nada,
       // só para provar que a password já foi validada quando se chamar
@@ -70,7 +88,7 @@ export class AuthService {
       return { mfaSetupRequired: true, mfaSetupToken };
     }
 
-    await this.recordLogin(user.id, email, ip);
+    await this.recordLogin(user.id, user.email, ip);
     const accessToken = await this.issueToken(user, ip, userAgent);
     return { accessToken };
   }
@@ -237,6 +255,35 @@ export class AuthService {
       throw new UnauthorizedException('Sessão de configuração inválida ou expirada — inicie sessão novamente.');
     }
     if (!payload.mfaSetupPending) throw new UnauthorizedException('Token inválido para este passo.');
+    return payload;
+  }
+
+  // --- Troca obrigatória de password (conta nova ou reset forçado) — a
+  // password temporária nunca chega a dar acesso, tem de ser substituída
+  // aqui antes de o login prosseguir para MFA/sessão normal.
+
+  async changePasswordRequired(passwordChangeToken: string, newPassword: string, ip?: string, userAgent?: string) {
+    const { sub } = await this.verifyPasswordChangeToken(passwordChangeToken);
+    const user = await this.prisma.user.findUnique({ where: { id: sub } });
+    if (!user) throw new NotFoundException('Utilizador não encontrado');
+
+    const passwordHash = await argon2.hash(newPassword);
+    const updated = await this.prisma.user.update({
+      where: { id: sub },
+      data: { passwordHash, mustChangePassword: false },
+    });
+    await this.audit.log('PASSWORD_CHANGED_FIRST_LOGIN', { actor: user.email, ip });
+    return this.resolveLoginOutcome(updated, ip, userAgent);
+  }
+
+  private async verifyPasswordChangeToken(token: string): Promise<{ sub: string }> {
+    let payload: { sub: string; passwordChangePending?: boolean };
+    try {
+      payload = await this.jwt.verifyAsync(token);
+    } catch {
+      throw new UnauthorizedException('Sessão de alteração de password inválida ou expirada — inicie sessão novamente.');
+    }
+    if (!payload.passwordChangePending) throw new UnauthorizedException('Token inválido para este passo.');
     return payload;
   }
 

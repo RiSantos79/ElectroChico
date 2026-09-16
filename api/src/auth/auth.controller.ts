@@ -11,6 +11,7 @@ import { MfaDisableDto } from './dto/mfa-disable.dto.js';
 import { MfaSetupRequiredDto } from './dto/mfa-setup-required.dto.js';
 import { MfaEnableRequiredDto } from './dto/mfa-enable-required.dto.js';
 import { ReauthDto } from './dto/reauth.dto.js';
+import { ChangePasswordRequiredDto } from './dto/change-password-required.dto.js';
 import { RateLimit } from '../common/rate-limit.guard.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { CurrentUser, type AuthenticatedUser } from './current-user.decorator.js';
@@ -74,6 +75,21 @@ export class AuthController {
   @UseGuards(RateLimit({ windowMs: 60_000, max: 10 }))
   enableMfaRequired(@Body() dto: MfaEnableRequiredDto, @Req() req: Request) {
     return this.authService.enableMfaWithToken(dto.mfaSetupToken, dto.code, req.ip, req.headers['user-agent']);
+  }
+
+  // Passo intermédio quando a conta tem uma password temporária (nova ou
+  // com reset forçado) — usa o passwordChangeToken devolvido por
+  // /auth/login em vez de uma sessão normal.
+  @Post('change-password-required')
+  @HttpCode(200)
+  @UseGuards(RateLimit({ windowMs: 60_000, max: 10 }))
+  changePasswordRequired(@Body() dto: ChangePasswordRequiredDto, @Req() req: Request) {
+    return this.authService.changePasswordRequired(
+      dto.passwordChangeToken,
+      dto.newPassword,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Post('register')

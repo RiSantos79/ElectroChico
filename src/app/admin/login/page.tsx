@@ -13,7 +13,41 @@ export default function AdminLoginPage() {
       <h1 className="text-2xl font-bold text-foreground">Backoffice</h1>
       <p className="mt-1 text-sm text-muted">Acesso restrito à equipa ElectroChico.</p>
 
-      {state.step === "mfa-setup" ? (
+      {state.step === "password-change" ? (
+        <div className="mt-6 space-y-4">
+          <p className="text-sm text-muted">
+            Esta conta tem uma palavra-passe temporária. Defina uma nova para continuar.
+          </p>
+          <form action={formAction} className="space-y-4">
+            <input type="hidden" name="passwordChangeToken" value={state.passwordChangeToken} />
+            <input
+              type="password"
+              name="newPassword"
+              required
+              minLength={8}
+              autoFocus
+              placeholder="Nova palavra-passe"
+              className="input-field w-full"
+            />
+            <input
+              type="password"
+              name="confirmPassword"
+              required
+              minLength={8}
+              placeholder="Confirmar nova palavra-passe"
+              className="input-field w-full"
+            />
+            {state.error && <p className="text-sm text-danger">{state.error}</p>}
+            <button
+              type="submit"
+              disabled={pending}
+              className="w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {pending ? "A guardar..." : "Definir palavra-passe"}
+            </button>
+          </form>
+        </div>
+      ) : state.step === "mfa-setup" ? (
         <div className="mt-6 space-y-4">
           <p className="text-sm text-muted">
             Esta conta requer verificação em duas etapas. Configure-a agora para continuar.
