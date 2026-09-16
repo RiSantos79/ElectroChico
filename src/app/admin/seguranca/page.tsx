@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
-import { getMfaStatus, getMySessions } from "@/lib/api";
+import { getMfaStatus, getMySessions, getSecurityAlerts } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { MfaSettings } from "@/components/admin/mfa-settings";
 import { parseUserAgent } from "@/lib/user-agent";
 import { revokeMySessionAction, revokeOtherSessionsAction } from "@/lib/admin-actions";
+import { SecurityAlertsTable } from "@/components/admin/security-alerts-table";
 
 export const metadata = { title: "Segurança — Backoffice" };
 
@@ -11,12 +12,25 @@ export default async function AdminSecurityPage() {
   const token = await getSessionToken();
   if (!token) redirect("/admin/login");
 
-  const [{ enabled }, sessions] = await Promise.all([getMfaStatus(token), getMySessions(token)]);
+  const [{ enabled }, sessions, alerts] = await Promise.all([
+    getMfaStatus(token),
+    getMySessions(token),
+    getSecurityAlerts(token).catch(() => null),
+  ]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-6 py-8 lg:px-10">
+    <div className="mx-auto max-w-4xl space-y-6 px-6 py-8 lg:px-10">
       <h1 className="text-2xl font-bold text-foreground">Segurança</h1>
       <MfaSettings initiallyEnabled={enabled} />
+
+      <section className="rounded-xl border border-border bg-surface-raised p-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Alertas de segurança — últimos 7 dias</h2>
+        {alerts === null ? (
+          <p className="text-sm text-muted">Não tem permissão para ver os alertas de segurança.</p>
+        ) : (
+          <SecurityAlertsTable alerts={alerts} />
+        )}
+      </section>
 
       <section className="rounded-xl border border-border bg-surface-raised p-6">
         <div className="mb-4 flex items-center justify-between">

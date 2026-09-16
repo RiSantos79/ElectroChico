@@ -1075,11 +1075,16 @@ export type DashboardSummary = {
   paymentMethods: { method: string; count: number }[];
   support: { total: number; responded: number; avgResponseHours: number | null };
   conversionRate: number | null;
-  securityAlerts: { type: string; message: string; actor: string | null; createdAt: string }[];
 };
 
 export function getDashboardSummary(token: string): Promise<DashboardSummary> {
   return apiFetch<DashboardSummary>("/dashboard/summary", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export type SecurityAlert = { type: string; message: string; actor: string | null; createdAt: string };
+
+export function getSecurityAlerts(token: string): Promise<SecurityAlert[]> {
+  return apiFetch<SecurityAlert[]>("/audit-logs/security-alerts", { headers: { Authorization: `Bearer ${token}` } });
 }
 
 // Regista uma exportação de dados para efeitos de auditoria/alertas de

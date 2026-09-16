@@ -44,6 +44,13 @@ export class AuditController {
     return this.auditService.listEntities();
   }
 
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('auditoria', 'view')
+  @Get('security-alerts')
+  securityAlerts() {
+    return this.auditService.securityAlerts();
+  }
+
   // Chamado pelas rotas de exportação (Next.js) depois de gerarem o CSV —
   // qualquer conta de staff pode registar a sua própria exportação, não
   // exige a permissão de auditoria (essa é só para ver o histórico completo).
