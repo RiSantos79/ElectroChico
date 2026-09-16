@@ -92,12 +92,21 @@ export function PermissionsForm({
                   <td className="px-2 py-2 font-medium text-foreground">{MODULE_LABELS[moduleKey]}</td>
                   {ACTIONS.map((action) => (
                     <td key={action} className="px-2 py-2 text-center">
-                      <input
-                        type="checkbox"
-                        name={`perm_${moduleKey}_${action}`}
-                        defaultChecked={effectivePermissions[moduleKey][action]}
-                        className="size-4"
-                      />
+                      <label className="relative inline-flex h-6 w-14 cursor-pointer items-center rounded-full bg-border transition-colors has-[:checked]:bg-accent">
+                        <input
+                          type="checkbox"
+                          name={`perm_${moduleKey}_${action}`}
+                          defaultChecked={effectivePermissions[moduleKey][action]}
+                          className="peer sr-only"
+                        />
+                        <span className="pointer-events-none absolute right-2 text-[9px] font-bold text-muted transition-opacity peer-checked:opacity-0">
+                          OFF
+                        </span>
+                        <span className="pointer-events-none absolute left-2 text-[9px] font-bold text-accent-foreground opacity-0 transition-opacity peer-checked:opacity-100">
+                          ON
+                        </span>
+                        <span className="pointer-events-none absolute left-0.5 size-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-8" />
+                      </label>
                     </td>
                   ))}
                 </tr>
