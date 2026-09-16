@@ -13,6 +13,8 @@ export function CreateStaffForm() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   async function submit(reauthToken?: string) {
     if (!formRef.current) return;
@@ -27,10 +29,17 @@ export function CreateStaffForm() {
     }
     formRef.current.reset();
     setRole("OPERATOR");
+    setPassword("");
+    setConfirmPassword("");
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      setError("As palavras-passe não coincidem.");
+      return;
+    }
+    setError(null);
     if (ADMIN_TIER_ROLES.includes(role)) {
       setShowConfirm(true);
       return;
@@ -51,7 +60,26 @@ export function CreateStaffForm() {
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Palavra-passe inicial
-          <input type="text" name="password" required minLength={8} className="input-field" />
+          <input
+            type="password"
+            name="password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input-field"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Confirmar palavra-passe
+          <input
+            type="password"
+            required
+            minLength={8}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="input-field"
+          />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Role
