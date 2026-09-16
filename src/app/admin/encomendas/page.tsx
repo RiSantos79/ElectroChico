@@ -2,31 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOrdersAdmin } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
-import { formatPrice } from "@/lib/format";
+import { OrdersTable } from "@/components/admin/orders-table";
 
 export const metadata = { title: "Encomendas — Backoffice" };
-
-const statusLabel: Record<string, string> = {
-  PENDING: "Pendente",
-  PAID: "Paga",
-  PROCESSING: "A preparar",
-  SHIPPED: "Enviada",
-  DELIVERED: "Entregue",
-  CANCELLED: "Cancelada",
-  REFUNDED: "Reembolsada",
-  FAILED: "Falhada",
-};
-
-const statusColor: Record<string, string> = {
-  PENDING: "text-muted",
-  PAID: "text-success",
-  PROCESSING: "text-accent",
-  SHIPPED: "text-accent",
-  DELIVERED: "text-success",
-  CANCELLED: "text-muted",
-  REFUNDED: "text-danger",
-  FAILED: "text-danger",
-};
 
 export default async function AdminOrdersPage() {
   const token = await getSessionToken();
@@ -45,50 +23,7 @@ export default async function AdminOrdersPage() {
           Exportar CSV
         </Link>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead className="bg-surface text-left text-muted">
-            <tr>
-              <th className="px-4 py-3 font-medium">Data</th>
-              <th className="px-4 py-3 font-medium">Cliente</th>
-              <th className="px-4 py-3 font-medium">Artigos</th>
-              <th className="px-4 py-3 font-medium">Total</th>
-              <th className="px-4 py-3 font-medium">Estado</th>
-              <th className="px-4 py-3 font-medium" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td className="px-4 py-3 text-muted">{new Date(order.createdAt).toLocaleString("pt-PT")}</td>
-                <td className="px-4 py-3">
-                  <div className="font-medium text-foreground">{order.customerName}</div>
-                  <div className="text-xs text-muted">{order.customerEmail}</div>
-                </td>
-                <td className="px-4 py-3 text-muted">
-                  {order.items.map((i) => `${i.productName} ×${i.quantity}`).join(", ")}
-                </td>
-                <td className="px-4 py-3 font-medium text-foreground">{formatPrice(Number(order.total))}</td>
-                <td className={`px-4 py-3 font-medium ${statusColor[order.status] ?? "text-muted"}`}>
-                  {statusLabel[order.status] ?? order.status}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/encomendas/${order.id}`} className="font-medium text-accent hover:underline">
-                    Ver
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {orders.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted">
-                  Ainda não há encomendas.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <OrdersTable orders={orders} />
     </div>
   );
 }

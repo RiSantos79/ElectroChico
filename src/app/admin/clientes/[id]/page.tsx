@@ -2,19 +2,9 @@ import { redirect } from "next/navigation";
 import { getAdminCustomerDetail, PAID_LIKE_STATUSES } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { formatPrice } from "@/lib/format";
+import { CustomerOrdersTable } from "@/components/admin/customer-orders-table";
 
 export const metadata = { title: "Cliente — Backoffice" };
-
-const statusLabel: Record<string, string> = {
-  PENDING: "Pendente",
-  PAID: "Paga",
-  PROCESSING: "A preparar",
-  SHIPPED: "Enviada",
-  DELIVERED: "Entregue",
-  CANCELLED: "Cancelada",
-  REFUNDED: "Reembolsada",
-  FAILED: "Falhada",
-};
 
 export default async function AdminCustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const token = await getSessionToken();
@@ -74,37 +64,7 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
 
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Encomendas</h2>
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-surface text-muted">
-              <tr>
-                <th className="px-4 py-3 font-medium">Data</th>
-                <th className="px-4 py-3 font-medium">Artigos</th>
-                <th className="px-4 py-3 font-medium">Total</th>
-                <th className="px-4 py-3 font-medium">Estado</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {orders.map((o) => (
-                <tr key={o.id}>
-                  <td className="px-4 py-3 text-muted">{new Date(o.createdAt).toLocaleString("pt-PT")}</td>
-                  <td className="px-4 py-3 text-muted">
-                    {o.items.map((i) => `${i.productName} ×${i.quantity}`).join(", ")}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-foreground">{formatPrice(Number(o.total))}</td>
-                  <td className="px-4 py-3 text-muted">{statusLabel[o.status] ?? o.status}</td>
-                </tr>
-              ))}
-              {orders.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-muted">
-                    Ainda não fez nenhuma encomenda.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <CustomerOrdersTable orders={orders} />
       </section>
     </div>
   );

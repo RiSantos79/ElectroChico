@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAuditActions, getAuditEntities, getAuditLogs } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
+import { ActivityTable } from "@/components/admin/activity-table";
 
 export const metadata = { title: "Atividade — Backoffice" };
 
@@ -115,41 +116,7 @@ export default async function ActivityPage({
         </button>
       </form>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead className="bg-surface text-left text-muted">
-            <tr>
-              <th className="px-4 py-3 font-medium">Data</th>
-              <th className="px-4 py-3 font-medium">Ação</th>
-              <th className="px-4 py-3 font-medium">Quem</th>
-              <th className="px-4 py-3 font-medium">Objeto afetado</th>
-              <th className="px-4 py-3 font-medium">IP</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {logs.map((log) => (
-              <tr key={log.id}>
-                <td className="px-4 py-3 text-muted">{new Date(log.createdAt).toLocaleString("pt-PT")}</td>
-                <td className="px-4 py-3 font-medium text-foreground">
-                  {actionLabels[log.action] ?? log.action}
-                </td>
-                <td className="px-4 py-3 text-muted">{log.actor ?? "—"}</td>
-                <td className="px-4 py-3 text-muted">
-                  {log.entity ? `${log.entity} ${log.entityId}` : "—"}
-                </td>
-                <td className="px-4 py-3 text-muted">{log.ip ?? "—"}</td>
-              </tr>
-            ))}
-            {logs.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted">
-                  Nenhum registo encontrado para estes filtros.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <ActivityTable logs={logs} actionLabels={actionLabels} />
     </div>
   );
 }

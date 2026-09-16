@@ -1,14 +1,10 @@
 import { redirect } from "next/navigation";
 import { getCouponsAdmin } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
-import { formatPrice } from "@/lib/format";
-import { createCouponAction, deleteCouponAction, toggleCouponAction } from "@/lib/admin-actions";
+import { createCouponAction } from "@/lib/admin-actions";
+import { CouponsTable } from "@/components/admin/coupons-table";
 
 export const metadata = { title: "Cupões — Backoffice" };
-
-function formatDiscount(coupon: { type: string; value: string }) {
-  return coupon.type === "PERCENTAGE" ? `${Number(coupon.value)}%` : formatPrice(Number(coupon.value));
-}
 
 export default async function AdminCouponsPage() {
   const token = await getSessionToken();
@@ -64,65 +60,7 @@ export default async function AdminCouponsPage() {
         </form>
       </section>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead className="bg-surface text-left text-muted">
-            <tr>
-              <th className="px-4 py-3 font-medium">Código</th>
-              <th className="px-4 py-3 font-medium">Desconto</th>
-              <th className="px-4 py-3 font-medium">Compra mínima</th>
-              <th className="px-4 py-3 font-medium">Utilizações</th>
-              <th className="px-4 py-3 font-medium">Validade</th>
-              <th className="px-4 py-3 font-medium">Estado</th>
-              <th className="px-4 py-3 font-medium" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {coupons.map((coupon) => (
-              <tr key={coupon.id}>
-                <td className="px-4 py-3 font-mono font-medium text-foreground">{coupon.code}</td>
-                <td className="px-4 py-3 text-muted">{formatDiscount(coupon)}</td>
-                <td className="px-4 py-3 text-muted">
-                  {coupon.minOrderValue ? formatPrice(Number(coupon.minOrderValue)) : "—"}
-                </td>
-                <td className="px-4 py-3 text-muted">
-                  {coupon.usesCount}
-                  {coupon.maxUses ? ` / ${coupon.maxUses}` : ""}
-                </td>
-                <td className="px-4 py-3 text-muted">
-                  {coupon.validFrom ? new Date(coupon.validFrom).toLocaleDateString("pt-PT") : "—"}
-                  {" – "}
-                  {coupon.validUntil ? new Date(coupon.validUntil).toLocaleDateString("pt-PT") : "—"}
-                </td>
-                <td className={`px-4 py-3 font-medium ${coupon.active ? "text-success" : "text-muted"}`}>
-                  {coupon.active ? "Ativo" : "Inativo"}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-3">
-                    <form action={toggleCouponAction.bind(null, coupon.id, !coupon.active)}>
-                      <button type="submit" className="font-medium text-accent hover:underline">
-                        {coupon.active ? "Desativar" : "Ativar"}
-                      </button>
-                    </form>
-                    <form action={deleteCouponAction.bind(null, coupon.id)}>
-                      <button type="submit" className="font-medium text-danger hover:underline">
-                        Apagar
-                      </button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {coupons.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted">
-                  Ainda não há cupões criados.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <CouponsTable coupons={coupons} />
     </div>
   );
 }

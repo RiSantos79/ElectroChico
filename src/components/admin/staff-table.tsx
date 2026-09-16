@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ROLE_LABELS, type Staff } from "@/lib/api";
 import {
@@ -10,6 +10,8 @@ import {
   updateStaffStatusAction,
 } from "@/lib/admin-actions";
 import { ConfirmDialog } from "./confirm-dialog";
+import { SortableHeader } from "./sortable-header";
+import { useSortable } from "@/lib/use-sortable";
 
 const statusLabel: Record<string, string> = { ACTIVE: "Ativo", SUSPENDED: "Suspenso", DISABLED: "Desativado" };
 const statusColor: Record<string, string> = {
@@ -18,37 +20,9 @@ const statusColor: Record<string, string> = {
   DISABLED: "text-danger",
 };
 
-type SortKey = "name" | "role" | "status" | "lastLoginAt" | "mfaEnabled";
 type PendingDelete = { type: "one"; id: string; name: string } | { type: "bulk"; ids: string[] };
 
-function SortHeader({
-  label,
-  sortKeyName,
-  activeKey,
-  ascending,
-  onSort,
-}: {
-  label: string;
-  sortKeyName: SortKey;
-  activeKey: SortKey | null;
-  ascending: boolean;
-  onSort: (key: SortKey) => void;
-}) {
-  return (
-    <th className="px-4 py-3 font-medium">
-      <button
-        type="button"
-        onClick={() => onSort(sortKeyName)}
-        className="flex items-center gap-1 hover:text-foreground"
-      >
-        {label}
-        {activeKey === sortKeyName && <span className="text-xs">{ascending ? "▲" : "▼"}</span>}
-      </button>
-    </th>
-  );
-}
-
-function sortValue(s: Staff, key: SortKey): string | number {
+function sortValue(s: Staff, key: string): string | number {
   switch (key) {
     case "name":
       return (s.name ?? s.email).toLowerCase();
@@ -60,34 +34,16 @@ function sortValue(s: Staff, key: SortKey): string | number {
       return s.lastLoginAt ?? "";
     case "mfaEnabled":
       return s.mfaEnabled ? 1 : 0;
+    default:
+      return "";
   }
 }
 
 export function StaffTable({ staff, currentUserId }: { staff: Staff[]; currentUserId: string }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [sortKey, setSortKey] = useState<SortKey | null>(null);
-  const [sortAsc, setSortAsc] = useState(true);
+  const { sorted, sortKey, ascending, toggleSort } = useSortable(staff, sortValue);
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const sorted = useMemo(() => {
-    if (!sortKey) return staff;
-    return [...staff].sort((a, b) => {
-      const av = sortValue(a, sortKey);
-      const bv = sortValue(b, sortKey);
-      if (av < bv) return sortAsc ? -1 : 1;
-      if (av > bv) return sortAsc ? 1 : -1;
-      return 0;
-    });
-  }, [staff, sortKey, sortAsc]);
-
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) setSortAsc((prev) => !prev);
-    else {
-      setSortKey(key);
-      setSortAsc(true);
-    }
-  }
 
   const selectableIds = staff.filter((s) => s.id !== currentUserId).map((s) => s.id);
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
@@ -139,17 +95,17 @@ export function StaffTable({ staff, currentUserId }: { staff: Staff[]; currentUs
               <th className="w-10 px-4 py-3">
                 <input type="checkbox" checked={allSelected} onChange={toggleAll} className="size-4" />
               </th>
-              <SortHeader label="Nome" sortKeyName="name" activeKey={sortKey} ascending={sortAsc} onSort={toggleSort} />
-              <SortHeader label="Cargo / Role" sortKeyName="role" activeKey={sortKey} ascending={sortAsc} onSort={toggleSort} />
-              <SortHeader label="Estado" sortKeyName="status" activeKey={sortKey} ascending={sortAsc} onSort={toggleSort} />
-              <SortHeader
+              <SortableHeader label="Nome" sortKey="name" activeKey={sortKey} ascending={ascending} onSort={toggleSort} />
+              <SortableHeader label="Cargo / Role" sortKey="role" activeKey={sortKey} ascending={ascending} onSort={toggleSort} />
+              <SortableHeader label="Estado" sortKey="status" activeKey={sortKey} ascending={ascending} onSort={toggleSort} />
+              <SortableHeader
                 label="Último login"
-                sortKeyName="lastLoginAt"
+                sortKey="lastLoginAt"
                 activeKey={sortKey}
-                ascending={sortAsc}
+                ascending={ascending}
                 onSort={toggleSort}
               />
-              <SortHeader label="MFA" sortKeyName="mfaEnabled" activeKey={sortKey} ascending={sortAsc} onSort={toggleSort} />
+              <SortableHeader label="MFA" sortKey="mfaEnabled" activeKey={sortKey} ascending={ascending} onSort={toggleSort} />
               <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>

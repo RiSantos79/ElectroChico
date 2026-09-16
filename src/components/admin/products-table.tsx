@@ -7,11 +7,31 @@ import { formatPrice } from "@/lib/format";
 import { deleteProductAction, deleteProductsAction, duplicateProductAction } from "@/lib/admin-actions";
 import { StockBar } from "@/components/stock-bar";
 import { ConfirmDialog } from "./confirm-dialog";
+import { SortableHeader } from "./sortable-header";
+import { useSortable } from "@/lib/use-sortable";
 
 type PendingDelete = { type: "one"; id: string; name: string } | { type: "bulk"; ids: string[] };
 
+function sortValue(p: Product, key: string): string | number {
+  switch (key) {
+    case "name":
+      return p.name.toLowerCase();
+    case "brand":
+      return p.brand.toLowerCase();
+    case "category":
+      return p.category.toLowerCase();
+    case "price":
+      return p.price;
+    case "stockQuantity":
+      return p.stockQuantity;
+    default:
+      return "";
+  }
+}
+
 export function ProductsTable({ products }: { products: Product[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const { sorted, sortKey, ascending, toggleSort } = useSortable(products, sortValue);
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -65,16 +85,28 @@ export function ProductsTable({ products }: { products: Product[] }) {
               <th className="w-10 px-4 py-3">
                 <input type="checkbox" checked={allSelected} onChange={toggleAll} className="size-4" />
               </th>
-              <th className="px-4 py-3 font-medium">Nome</th>
-              <th className="px-4 py-3 font-medium">Marca</th>
-              <th className="px-4 py-3 font-medium">Categoria</th>
-              <th className="px-4 py-3 font-medium">Preço</th>
-              <th className="px-4 py-3 font-medium">Stock</th>
+              <SortableHeader label="Nome" sortKey="name" activeKey={sortKey} ascending={ascending} onSort={toggleSort} />
+              <SortableHeader label="Marca" sortKey="brand" activeKey={sortKey} ascending={ascending} onSort={toggleSort} />
+              <SortableHeader
+                label="Categoria"
+                sortKey="category"
+                activeKey={sortKey}
+                ascending={ascending}
+                onSort={toggleSort}
+              />
+              <SortableHeader label="Preço" sortKey="price" activeKey={sortKey} ascending={ascending} onSort={toggleSort} />
+              <SortableHeader
+                label="Stock"
+                sortKey="stockQuantity"
+                activeKey={sortKey}
+                ascending={ascending}
+                onSort={toggleSort}
+              />
               <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {products.map((product) => (
+            {sorted.map((product) => (
               <tr key={product.id}>
                 <td className="px-4 py-3">
                   <input

@@ -3,12 +3,8 @@ import { redirect } from "next/navigation";
 import { getNewsletterCampaigns, getNewsletterSubscribers } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
-import {
-  createCampaignAction,
-  deleteCampaignAction,
-  sendCampaignAction,
-  unsubscribeAction,
-} from "@/lib/newsletter-actions";
+import { NewsletterSubscribersTable } from "@/components/admin/newsletter-subscribers-table";
+import { createCampaignAction, deleteCampaignAction, sendCampaignAction } from "@/lib/newsletter-actions";
 
 export const metadata = { title: "Newsletter — Backoffice" };
 
@@ -53,41 +49,7 @@ export default async function AdminNewsletterPage({
             Exportar CSV
           </Link>
         </div>
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-surface text-left text-muted">
-              <tr>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Nome</th>
-                <th className="px-4 py-3 font-medium">Subscrito em</th>
-                <th className="px-4 py-3 font-medium" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {subscribers.map((s) => (
-                <tr key={s.id}>
-                  <td className="px-4 py-3 text-foreground">{s.email}</td>
-                  <td className="px-4 py-3 text-muted">{s.name ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted">{new Date(s.subscribedAt).toLocaleDateString("pt-PT")}</td>
-                  <td className="px-4 py-3 text-right">
-                    <form action={unsubscribeAction.bind(null, s.id)}>
-                      <button type="submit" className="font-medium text-danger hover:underline">
-                        Remover
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-              ))}
-              {subscribers.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-muted">
-                    Ainda não há subscritores.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <NewsletterSubscribersTable subscribers={subscribers} />
       </section>
 
       <section className="rounded-xl border border-border bg-surface-raised p-6">
