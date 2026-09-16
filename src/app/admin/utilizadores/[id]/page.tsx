@@ -1,9 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { decodeJwt } from "jose";
-import { getStaff, getStaffSessions, ROLE_LABELS } from "@/lib/api";
+import { getStaff, getStaffSessions } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { parseUserAgent } from "@/lib/user-agent";
-import { forceStaffLogoutAction, forceStaffPasswordResetAction, resetStaffPermissionsAction } from "@/lib/admin-actions";
+import { forceStaffLogoutAction, forceStaffPasswordResetAction } from "@/lib/admin-actions";
 import { EditStaffForm } from "@/components/admin/edit-staff-form";
 import { PermissionsForm } from "@/components/admin/permissions-form";
 
@@ -101,27 +101,12 @@ export default async function EditStaffPage({
       </section>
 
       <section className="rounded-xl border border-border bg-surface-raised p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Permissões</h2>
-          <form action={resetStaffPermissionsAction.bind(null, person.id)}>
-            <button type="submit" className="text-sm font-medium text-accent hover:underline">
-              Repor permissões da role
-            </button>
-          </form>
-        </div>
-        {person.permissionOverrides == null && (
-          <p className="mb-4 text-xs text-muted">
-            A usar as permissões por omissão de &ldquo;{ROLE_LABELS[person.role]}&rdquo;. Marcar/desmarcar qualquer
-            caixa abaixo cria uma personalização só para este funcionário.
-          </p>
-        )}
-        {person.permissionOverrides != null && (
-          <p className="mb-4 text-xs text-amber-500">
-            Este funcionário tem permissões personalizadas, diferentes da role &ldquo;{ROLE_LABELS[person.role]}
-            &rdquo;.
-          </p>
-        )}
-        <PermissionsForm id={person.id} effectivePermissions={person.effectivePermissions} />
+        <PermissionsForm
+          id={person.id}
+          role={person.role}
+          effectivePermissions={person.effectivePermissions}
+          hasOverrides={person.permissionOverrides != null}
+        />
       </section>
     </div>
   );

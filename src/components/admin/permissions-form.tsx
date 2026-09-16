@@ -1,33 +1,77 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ACTIONS, ACTION_LABELS, MODULES, MODULE_LABELS, type PermissionMatrix } from "@/lib/api";
-import { updateStaffPermissionsAction } from "@/lib/admin-actions";
+import { useRouter } from "next/navigation";
+import { ACTIONS, ACTION_LABELS, MODULES, MODULE_LABELS, ROLE_LABELS, type PermissionMatrix, type Role } from "@/lib/api";
+import { resetStaffPermissionsAction, updateStaffPermissionsAction } from "@/lib/admin-actions";
 import { ReauthModal } from "./reauth-modal";
 
-export function PermissionsForm({ id, effectivePermissions }: { id: string; effectivePermissions: PermissionMatrix }) {
+type PendingAction = "save" | "reset";
+
+export function PermissionsForm({
+  id,
+  role,
+  effectivePermissions,
+  hasOverrides,
+}: {
+  id: string;
+  role: Role;
+  effectivePermissions: PermissionMatrix;
+  hasOverrides: boolean;
+}) {
+  const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [pending, setPending] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setShowConfirm(true);
+    setError(null);
+    setPendingAction("save");
   }
 
-  async function submit(reauthToken: string) {
-    if (!formRef.current) return;
-    setError(null);
-    setPending(true);
-    const formData = new FormData(formRef.current);
-    const result = await updateStaffPermissionsAction(id, formData, reauthToken);
-    setPending(false);
-    if (!result.ok) setError(result.error);
+  async function confirmed(reauthToken: string) {
+    if (!pendingAction) return;
+    setBusy(true);
+    const result =
+      pendingAction === "save" && formRef.current
+        ? await updateStaffPermissionsAction(id, new FormData(formRef.current), reauthToken)
+        : await resetStaffPermissionsAction(id, reauthToken);
+    setBusy(false);
+    setPendingAction(null);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    alert(pendingAction === "save" ? "Permissões guardadas com sucesso." : "Permissões repostas para a role.");
+    router.push("/admin/utilizadores");
   }
 
   return (
     <>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-foreground">Permissões</h2>
+        <button
+          type="button"
+          onClick={() => setPendingAction("reset")}
+          className="text-sm font-medium text-accent hover:underline"
+        >
+          Repor permissões da role
+        </button>
+      </div>
+      {!hasOverrides && (
+        <p className="mb-4 text-xs text-muted">
+          A usar as permissões por omissão de &ldquo;{ROLE_LABELS[role]}&rdquo;. Marcar/desmarcar qualquer caixa
+          abaixo cria uma personalização só para este funcionário.
+        </p>
+      )}
+      {hasOverrides && (
+        <p className="mb-4 text-xs text-amber-500">
+          Este funcionário tem permissões personalizadas, diferentes da role &ldquo;{ROLE_LABELS[role]}&rdquo;.
+        </p>
+      )}
+
       <form ref={formRef} onSubmit={handleSubmit}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -63,20 +107,18 @@ export function PermissionsForm({ id, effectivePermissions }: { id: string; effe
         {error && <p className="mt-2 text-sm text-danger">{error}</p>}
         <button
           type="submit"
-          disabled={pending}
+          disabled={busy}
           className="mt-4 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-90 disabled:opacity-50"
         >
-          {pending ? "A guardar..." : "Guardar permissões"}
+          {busy ? "A guardar..." : "Guardar permissões"}
         </button>
       </form>
-      {showConfirm && (
+
+      {pendingAction && (
         <ReauthModal
           message="Alterar permissões requer confirmação adicional."
-          onCancel={() => setShowConfirm(false)}
-          onConfirmed={async (reauthToken) => {
-            setShowConfirm(false);
-            await submit(reauthToken);
-          }}
+          onCancel={() => setPendingAction(null)}
+          onConfirmed={confirmed}
         />
       )}
     </>

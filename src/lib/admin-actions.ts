@@ -480,11 +480,19 @@ export async function updateStaffPermissionsAction(
   }
 }
 
-export async function resetStaffPermissionsAction(id: string) {
-  const token = await requireToken();
-  await updateStaffPermissions(id, null, token);
-  revalidatePath("/admin/utilizadores");
-  revalidatePath(`/admin/utilizadores/${id}`);
+export async function resetStaffPermissionsAction(
+  id: string,
+  reauthToken: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    await updateStaffPermissions(id, null, token, reauthToken);
+    revalidatePath("/admin/utilizadores");
+    revalidatePath(`/admin/utilizadores/${id}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível repor as permissões." };
+  }
 }
 
 export async function verifyReauthAction(
