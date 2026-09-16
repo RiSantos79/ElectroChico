@@ -1,82 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { logoutAction } from "@/lib/auth-actions";
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   if (pathname === "/admin/login") return <>{children}</>;
 
   return (
-    <div>
-      <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-3 lg:px-10">
-        <div className="flex items-center gap-6">
-          <Link href="/admin" className="text-sm font-semibold text-foreground">
-            ElectroChico — Backoffice
-          </Link>
-          <Link href="/admin" className="text-sm text-muted hover:text-foreground">
-            Dashboard
-          </Link>
-          <Link href="/admin/produtos" className="text-sm text-muted hover:text-foreground">
-            Produtos
-          </Link>
-          <Link href="/admin/marcas" className="text-sm text-muted hover:text-foreground">
-            Marcas
-          </Link>
-          <Link href="/admin/categorias" className="text-sm text-muted hover:text-foreground">
-            Categorias
-          </Link>
-          <Link href="/admin/encomendas" className="text-sm text-muted hover:text-foreground">
-            Encomendas
-          </Link>
-          <Link href="/admin/stock" className="text-sm text-muted hover:text-foreground">
-            Stock
-          </Link>
-          <Link href="/admin/cupoes" className="text-sm text-muted hover:text-foreground">
-            Cupões
-          </Link>
-          <Link href="/admin/carrinhos-abandonados" className="text-sm text-muted hover:text-foreground">
-            Carrinhos Abandonados
-          </Link>
-          <Link href="/admin/seguranca" className="text-sm text-muted hover:text-foreground">
-            Segurança
-          </Link>
-          <Link href="/admin/newsletter" className="text-sm text-muted hover:text-foreground">
-            Newsletter
-          </Link>
-          <Link href="/admin/definicoes" className="text-sm text-muted hover:text-foreground">
-            Definições
-          </Link>
-          <Link href="/admin/conteudos" className="text-sm text-muted hover:text-foreground">
-            Conteúdos
-          </Link>
-          <Link href="/admin/banners" className="text-sm text-muted hover:text-foreground">
-            Banners
-          </Link>
-          <Link href="/admin/utilizadores" className="text-sm text-muted hover:text-foreground">
-            Utilizadores
-          </Link>
-          <Link href="/admin/clientes" className="text-sm text-muted hover:text-foreground">
-            Clientes
-          </Link>
-          <Link href="/admin/atividade" className="text-sm text-muted hover:text-foreground">
-            Atividade
-          </Link>
-          <Link href="/admin/mensagens" className="text-sm text-muted hover:text-foreground">
-            Mensagens
-          </Link>
-          <Link href="/admin/cartoes-presente" className="text-sm text-muted hover:text-foreground">
-            Cartões Presente
-          </Link>
-        </div>
-        <form action={logoutAction}>
-          <button type="submit" className="text-sm text-muted hover:text-foreground">
-            Sair
-          </button>
-        </form>
-      </div>
-      {children}
+    <div className="flex min-h-screen">
+      <AdminSidebar />
+      <main className="min-w-0 flex-1 pl-16">{children}</main>
     </div>
   );
 }
