@@ -166,9 +166,12 @@ export class OrdersService {
     }
   }
 
+  // Stripe entrega webhooks "at least once" — pode repetir o mesmo evento.
+  // Só marca como paga se ainda estiver PENDING: assim que a encomenda muda
+  // de estado (manualmente ou não), uma entrega repetida nunca a reverte.
   private async markAsPaid(orderId: string, stripeSessionId?: string) {
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
-    if (!order || PAID_LIKE_STATUSES.includes(order.status)) return;
+    if (!order || order.status !== 'PENDING') return;
 
     const paymentMethod = stripeSessionId ? await this.fetchPaymentMethod(stripeSessionId) : null;
     await this.prisma.order.update({ where: { id: orderId }, data: { status: 'PAID', paymentMethod } });
