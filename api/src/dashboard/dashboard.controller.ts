@@ -1,5 +1,6 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { DashboardService } from './dashboard.service.js';
+import { DashboardFiltersDto } from './dto/dashboard-filters.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
@@ -11,7 +12,7 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('summary')
-  getSummary() {
-    return this.dashboardService.getSummary();
+  getSummary(@Query() filters: DashboardFiltersDto) {
+    return this.dashboardService.getSummary(filters);
   }
 }

@@ -1092,16 +1092,22 @@ export function redeemGiftCard(code: string, token: string): Promise<GiftCard> {
 
 export type SalesMetric = { total: number; count: number; averageTicket: number };
 
+export type DashboardFilters = {
+  from?: string;
+  to?: string;
+  status?: OrderStatus;
+  categoryId?: string;
+  brandId?: string;
+  channel?: "online" | "pickup";
+};
+
 export type DashboardSummary = {
-  sales: {
-    today: SalesMetric;
-    prevDay: SalesMetric;
-    month: SalesMetric;
-    prevMonth: SalesMetric;
-    year: SalesMetric;
-    prevYear: SalesMetric;
-  };
-  newCustomersThisMonth: number;
+  period: SalesMetric;
+  previousPeriod: SalesMetric;
+  newCustomers: number;
+  distinctCustomers: number;
+  productsSold: number;
+  conversionRate: number | null;
   recurringCustomers: number;
   loyalty: { recurring: number; oneTime: number };
   abandonedCarts: number;
@@ -1116,16 +1122,27 @@ export type DashboardSummary = {
   hourlyActivity: { hour: number; visits: number; salesCount: number; salesTotal: number }[];
   salesByWeekday: { weekday: string; total: number; count: number }[];
   revenueByCategory: { category: string; total: number }[];
+  revenueByBrand: { brand: string; total: number }[];
+  ordersByStatus: { status: OrderStatus; count: number }[];
   newCustomersOverTime: { date: string; count: number }[];
   topCities: { city: string; orderCount: number; total: number }[];
   giftCardStats: { activeCount: number; activeValue: number; redeemedCount: number; redeemedValue: number };
   paymentMethods: { method: string; count: number }[];
   support: { total: number; responded: number; avgResponseHours: number | null };
-  conversionRate: number | null;
 };
 
-export function getDashboardSummary(token: string): Promise<DashboardSummary> {
-  return apiFetch<DashboardSummary>("/dashboard/summary", { headers: { Authorization: `Bearer ${token}` } });
+export function getDashboardSummary(token: string, filters?: DashboardFilters): Promise<DashboardSummary> {
+  const query = new URLSearchParams();
+  if (filters?.from) query.set("from", filters.from);
+  if (filters?.to) query.set("to", filters.to);
+  if (filters?.status) query.set("status", filters.status);
+  if (filters?.categoryId) query.set("categoryId", filters.categoryId);
+  if (filters?.brandId) query.set("brandId", filters.brandId);
+  if (filters?.channel) query.set("channel", filters.channel);
+  const qs = query.toString();
+  return apiFetch<DashboardSummary>(`/dashboard/summary${qs ? `?${qs}` : ""}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }
 
 export type SecurityAlert = { type: string; message: string; actor: string | null; createdAt: string };

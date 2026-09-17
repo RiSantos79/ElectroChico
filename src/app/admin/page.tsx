@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getDashboardSummary } from "@/lib/api";
+import { getBrands, getCategoriesAdmin, getDashboardSummary, type OrderStatus } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { formatPrice } from "@/lib/format";
 import { coordsForCity } from "@/lib/pt-cities";
+import { PERIOD_OPTIONS, resolvePeriod, type PeriodPreset } from "@/lib/dashboard-periods";
 import { SalesBarChart } from "@/components/admin/sales-bar-chart";
 import { AvgTicketChart } from "@/components/admin/avg-ticket-chart";
+import { OrdersCountChart } from "@/components/admin/orders-count-chart";
 import { HourlyActivityChart } from "@/components/admin/hourly-activity-chart";
 import { WeekdayChart } from "@/components/admin/weekday-chart";
 import { TopBarChart } from "@/components/admin/top-bar-chart";
@@ -21,6 +23,18 @@ const paymentMethodLabels: Record<string, string> = {
   mb_way: "MB WAY",
   paypal: "PayPal",
 };
+
+const statusOptions: { value: OrderStatus; label: string }[] = [
+  { value: "PENDING", label: "Pendente" },
+  { value: "PAID", label: "Pago" },
+  { value: "PROCESSING", label: "Em preparação" },
+  { value: "SHIPPED", label: "Expedido" },
+  { value: "DELIVERED", label: "Entregue" },
+  { value: "CANCELLED", label: "Cancelado" },
+  { value: "REFUNDED", label: "Reembolsado" },
+  { value: "FAILED", label: "Falhado" },
+];
+const statusLabel: Record<string, string> = Object.fromEntries(statusOptions.map((o) => [o.value, o.label]));
 
 function formatResponseTime(hours: number | null): string {
   if (hours === null) return "—";
@@ -50,16 +64,18 @@ function MetricCard({
   value,
   current,
   previous,
+  danger,
 }: {
   title: string;
   value: string;
   current?: number;
   previous?: number;
+  danger?: boolean;
 }) {
   return (
     <div className="rounded-xl border border-border bg-surface-raised p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-muted">{title}</p>
-      <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
+      <p className={`mt-1 text-2xl font-bold ${danger ? "text-danger" : "text-foreground"}`}>{value}</p>
       {current !== undefined && previous !== undefined && (
         <div className="mt-1">
           <VariationBadge current={current} previous={previous} />
@@ -78,64 +94,188 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-export default async function AdminDashboardPage() {
+type DashboardSearchParams = {
+  periodo?: string;
+  from?: string;
+  to?: string;
+  status?: string;
+  categoria?: string;
+  marca?: string;
+  canal?: string;
+};
+
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<DashboardSearchParams>;
+}) {
   const token = await getSessionToken();
   if (!token) redirect("/admin/login");
 
-  const summary = await getDashboardSummary(token);
+  const sp = await searchParams;
+  const preset = (sp.periodo as PeriodPreset) || "30dias";
+  const { from, to } = resolvePeriod(preset, sp.from, sp.to);
+  const status = (sp.status as OrderStatus) || undefined;
+  const categoryId = sp.categoria || undefined;
+  const brandId = sp.marca || undefined;
+  const channel = (sp.canal as "online" | "pickup") || undefined;
+
+  const [summary, categories, brands] = await Promise.all([
+    getDashboardSummary(token, { from, to, status, categoryId, brandId, channel }),
+    getCategoriesAdmin(),
+    getBrands(),
+  ]);
 
   const unmatchedCities = summary.topCities.filter((c) => !coordsForCity(c.city));
 
   return (
     <div className="space-y-8 px-6 py-8 lg:px-10">
-      <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <Link
+          href={`/admin/export?${new URLSearchParams(
+            Object.fromEntries(Object.entries(sp).filter(([, v]) => v !== undefined)) as Record<string, string>,
+          ).toString()}`}
+          className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface"
+        >
+          Exportar CSV
+        </Link>
+      </div>
+
+      <form className="grid gap-3 rounded-xl border border-border bg-surface-raised p-4 sm:grid-cols-3 lg:grid-cols-6">
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Período
+          <select name="periodo" defaultValue={preset} className="input-field">
+            {PERIOD_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          De (se personalizado)
+          <input type="date" name="from" defaultValue={sp.from} className="input-field" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Até (se personalizado)
+          <input type="date" name="to" defaultValue={sp.to} className="input-field" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Estado da encomenda
+          <select name="status" defaultValue={sp.status ?? ""} className="input-field">
+            <option value="">Todos (vendas confirmadas)</option>
+            {statusOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Categoria
+          <select name="categoria" defaultValue={sp.categoria ?? ""} className="input-field">
+            <option value="">Todas</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Marca
+          <select name="marca" defaultValue={sp.marca ?? ""} className="input-field">
+            <option value="">Todas</option>
+            {brands.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted sm:col-span-3 lg:col-span-2">
+          Canal de venda
+          <select name="canal" defaultValue={sp.canal ?? ""} className="input-field">
+            <option value="">Todos</option>
+            <option value="online">Loja online</option>
+            <option value="pickup">Levantamento em loja</option>
+          </select>
+        </label>
+        <button
+          type="submit"
+          className="self-end rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-90 sm:col-span-3 sm:w-fit lg:col-span-1"
+        >
+          Filtrar
+        </button>
+      </form>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Vendas</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Indicadores do período</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
-            title="Hoje"
-            value={formatPrice(summary.sales.today.total)}
-            current={summary.sales.today.total}
-            previous={summary.sales.prevDay.total}
+            title="Receita total"
+            value={formatPrice(summary.period.total)}
+            current={summary.period.total}
+            previous={summary.previousPeriod.total}
           />
           <MetricCard
-            title="Este mês"
-            value={formatPrice(summary.sales.month.total)}
-            current={summary.sales.month.total}
-            previous={summary.sales.prevMonth.total}
+            title="Nº de encomendas"
+            value={String(summary.period.count)}
+            current={summary.period.count}
+            previous={summary.previousPeriod.count}
           />
           <MetricCard
-            title="Este ano"
-            value={formatPrice(summary.sales.year.total)}
-            current={summary.sales.year.total}
-            previous={summary.sales.prevYear.total}
+            title="Ticket médio"
+            value={formatPrice(summary.period.averageTicket)}
+            current={summary.period.averageTicket}
+            previous={summary.previousPeriod.averageTicket}
           />
-          <MetricCard title="Encomendas (mês)" value={String(summary.sales.month.count)} />
-          <MetricCard title="Ticket médio (mês)" value={formatPrice(summary.sales.month.averageTicket)} />
-          <MetricCard title="Clientes novos (mês)" value={String(summary.newCustomersThisMonth)} />
+          <MetricCard title="Nº de clientes" value={String(summary.distinctCustomers)} />
+          <MetricCard title="Novos clientes" value={String(summary.newCustomers)} />
+          <MetricCard title="Produtos vendidos" value={String(summary.productsSold)} />
+          <MetricCard
+            title="Taxa de conversão"
+            value={summary.conversionRate !== null ? `${summary.conversionRate.toFixed(1)}%` : "—"}
+          />
+          <MetricCard title="Carrinhos abandonados" value={String(summary.abandonedCarts)} />
+          <MetricCard
+            title="Produtos sem stock"
+            value={String(summary.stock.outOfStock)}
+            danger={summary.stock.outOfStock > 0}
+          />
+          <MetricCard title="Produtos com stock crítico" value={String(summary.stock.critical)} />
         </div>
       </section>
 
-      <Panel title="Vendas e visitas — últimos 30 dias">
+      <Panel title="Evolução das vendas">
         <SalesBarChart data={summary.dailyStats} />
       </Panel>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Ticket médio — últimos 30 dias">
+        <Panel title="Evolução das encomendas">
+          <OrdersCountChart data={summary.dailyStats} />
+        </Panel>
+        <Panel title="Evolução do ticket médio">
           <AvgTicketChart data={summary.dailyStats} />
         </Panel>
-        <Panel title="Atividade por hora do dia — últimos 30 dias">
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Evolução dos clientes">
+          <NewCustomersChart data={summary.newCustomersOverTime} />
+        </Panel>
+        <Panel title="Atividade por hora do dia">
           <HourlyActivityChart data={summary.hourlyActivity} />
         </Panel>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Vendas por dia da semana — últimos 90 dias">
+        <Panel title="Vendas por dia da semana">
           <WeekdayChart data={summary.salesByWeekday} />
         </Panel>
-        <Panel title="Novos clientes — últimos 90 dias">
-          <NewCustomersChart data={summary.newCustomersOverTime} />
+        <Panel title="Distribuição de estados das encomendas">
+          <DonutChart data={summary.ordersByStatus.map((s) => ({ name: statusLabel[s.status] ?? s.status, value: s.count }))} />
         </Panel>
       </div>
 
@@ -155,19 +295,11 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Panel title="Receita por categoria">
-          <DonutChart
-            data={summary.revenueByCategory.map((c) => ({ name: c.category, value: c.total }))}
-            variant="currency"
-          />
+        <Panel title="Categorias mais vendidas">
+          <DonutChart data={summary.revenueByCategory.map((c) => ({ name: c.category, value: c.total }))} variant="currency" />
         </Panel>
-        <Panel title="Clientes novos vs. recorrentes">
-          <DonutChart
-            data={[
-              { name: "Novos (1 compra)", value: summary.loyalty.oneTime },
-              { name: "Recorrentes (2+)", value: summary.loyalty.recurring },
-            ]}
-          />
+        <Panel title="Marcas mais vendidas">
+          <DonutChart data={summary.revenueByBrand.map((b) => ({ name: b.brand, value: b.total }))} variant="currency" />
         </Panel>
         <Panel title="Método de pagamento">
           <DonutChart
@@ -189,25 +321,15 @@ export default async function AdminDashboardPage() {
       </Panel>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Alertas">
+        <Panel title="Outros indicadores">
           <ul className="space-y-2 text-sm">
             <li className="flex justify-between">
-              <span className="text-muted">Clientes recorrentes</span>
+              <span className="text-muted">Clientes recorrentes (2+ compras)</span>
               <span className="font-medium text-foreground">{summary.recurringCustomers}</span>
             </li>
             <li className="flex justify-between">
-              <span className="text-muted">Carrinhos abandonados (+1h sem pagar)</span>
-              <span className="font-medium text-foreground">{summary.abandonedCarts}</span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-muted">Produtos sem stock</span>
-              <span className={`font-medium ${summary.stock.outOfStock > 0 ? "text-danger" : "text-foreground"}`}>
-                {summary.stock.outOfStock}
-              </span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-muted">Produtos com stock crítico</span>
-              <span className="font-medium text-foreground">{summary.stock.critical}</span>
+              <span className="text-muted">Clientes de compra única</span>
+              <span className="font-medium text-foreground">{summary.loyalty.oneTime}</span>
             </li>
           </ul>
           {summary.stock.criticalList.length > 0 && (
@@ -222,9 +344,6 @@ export default async function AdminDashboardPage() {
               ))}
             </ul>
           )}
-          <p className="mt-3 text-xs text-muted">
-            Taxa de conversão: não disponível — requer analítica de sessões, ainda não implementada.
-          </p>
         </Panel>
 
         <Panel title="Cartões-presente e suporte">
