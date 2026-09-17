@@ -1,6 +1,7 @@
 "use client";
 
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CHART_AXIS, CHART_GRID, CHART_TOOLTIP, GRAFANA_COLORS } from "./chart-theme";
 
 export function NewCustomersChart({ data }: { data: { date: string; count: number }[] }) {
   const formatted = data.map((d) => ({
@@ -11,11 +12,11 @@ export function NewCustomersChart({ data }: { data: { date: string; count: numbe
   return (
     <ResponsiveContainer width="100%" height={220}>
       <LineChart data={formatted}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={6} />
-        <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-        <Tooltip />
-        <Line type="monotone" dataKey="count" name="Novos clientes" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+        <CartesianGrid {...CHART_GRID} />
+        <XAxis dataKey="label" {...CHART_AXIS} interval={6} />
+        <YAxis {...CHART_AXIS} allowDecimals={false} />
+        <Tooltip {...CHART_TOOLTIP} />
+        <Line type="monotone" dataKey="count" name="Novos clientes" stroke={GRAFANA_COLORS[7]} strokeWidth={2} dot={false} />
       </LineChart>
     </ResponsiveContainer>
   );

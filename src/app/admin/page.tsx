@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { getBrands, getCategoriesAdmin, getDashboardSummary, type OrderStatus } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { formatPrice } from "@/lib/format";
-import { coordsForCity } from "@/lib/pt-cities";
 import { PERIOD_OPTIONS, resolvePeriod, type PeriodPreset } from "@/lib/dashboard-periods";
 import { SalesBarChart } from "@/components/admin/sales-bar-chart";
 import { AvgTicketChart } from "@/components/admin/avg-ticket-chart";
@@ -13,7 +12,7 @@ import { WeekdayChart } from "@/components/admin/weekday-chart";
 import { TopBarChart } from "@/components/admin/top-bar-chart";
 import { DonutChart } from "@/components/admin/donut-chart";
 import { NewCustomersChart } from "@/components/admin/new-customers-chart";
-import { CitiesMapLoader } from "@/components/admin/cities-map-loader";
+import { PortugalChoropleth } from "@/components/admin/portugal-choropleth";
 
 export const metadata = { title: "Dashboard — Backoffice" };
 
@@ -85,9 +84,17 @@ function MetricCard({
   );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({
+  title,
+  children,
+  className = "",
+}: {
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="rounded-xl border border-border bg-surface-raised p-4">
+    <div className={`flex flex-col rounded-xl border border-border bg-surface-raised p-4 ${className}`}>
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">{title}</h2>
       {children}
     </div>
@@ -126,7 +133,6 @@ export default async function AdminDashboardPage({
     getBrands(),
   ]);
 
-  const unmatchedCities = summary.topCities.filter((c) => !coordsForCity(c.city));
   // Dias anteriores ao início do tracking não tiveram "zero visitas" — não
   // há dados nenhuns, e convém dizê-lo em vez de deixar ler um zero.
   const visitsIncomplete =
@@ -283,34 +289,28 @@ export default async function AdminDashboardPage({
         <SalesBarChart data={summary.dailyStats} />
       </Panel>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Evolução das encomendas">
-          <OrdersCountChart data={summary.dailyStats} />
+      {/* Mapa numa coluna vertical própria, a acompanhar a altura das três
+          linhas de gráficos à direita — Portugal é duas vezes mais alto do
+          que largo, por isso desperdiça menos espaço assim. */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Panel title="Encomendas por concelho" className="lg:row-span-3">
+          <PortugalChoropleth cities={summary.topCities} />
         </Panel>
-        <Panel title="Evolução do ticket médio">
-          <AvgTicketChart data={summary.dailyStats} />
-        </Panel>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Evolução dos clientes">
           <NewCustomersChart data={summary.newCustomersOverTime} />
         </Panel>
         <Panel title="Atividade por hora do dia">
           <HourlyActivityChart data={summary.hourlyActivity} />
         </Panel>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Vendas por dia da semana">
           <WeekdayChart data={summary.salesByWeekday} />
         </Panel>
         <Panel title="Distribuição de estados das encomendas">
           <DonutChart data={summary.ordersByStatus.map((s) => ({ name: statusLabel[s.status] ?? s.status, value: s.count }))} />
         </Panel>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Produtos mais vendidos (top 10)">
           <TopBarChart
             data={summary.topProducts.map((p) => ({ label: p.productName, value: p.quantity }))}
@@ -326,11 +326,11 @@ export default async function AdminDashboardPage({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Panel title="Categorias mais vendidas">
-          <DonutChart data={summary.revenueByCategory.map((c) => ({ name: c.category, value: c.total }))} variant="currency" />
+        <Panel title="Evolução das encomendas">
+          <OrdersCountChart data={summary.dailyStats} />
         </Panel>
-        <Panel title="Marcas mais vendidas">
-          <DonutChart data={summary.revenueByBrand.map((b) => ({ name: b.brand, value: b.total }))} variant="currency" />
+        <Panel title="Evolução do ticket médio">
+          <AvgTicketChart data={summary.dailyStats} />
         </Panel>
         <Panel title="Método de pagamento">
           <DonutChart
@@ -342,14 +342,14 @@ export default async function AdminDashboardPage({
         </Panel>
       </div>
 
-      <Panel title="Clientes por cidade">
-        <CitiesMapLoader cities={summary.topCities} />
-        {unmatchedCities.length > 0 && (
-          <p className="mt-3 text-xs text-muted">
-            Sem coordenadas no mapa: {unmatchedCities.map((c) => `${c.city} (${c.orderCount})`).join(", ")}
-          </p>
-        )}
-      </Panel>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Categorias mais vendidas">
+          <DonutChart data={summary.revenueByCategory.map((c) => ({ name: c.category, value: c.total }))} variant="currency" />
+        </Panel>
+        <Panel title="Marcas mais vendidas">
+          <DonutChart data={summary.revenueByBrand.map((b) => ({ name: b.brand, value: b.total }))} variant="currency" />
+        </Panel>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Outros indicadores">
