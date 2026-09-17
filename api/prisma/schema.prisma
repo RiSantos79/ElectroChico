@@ -475,3 +475,23 @@ model AiUsageLog {
   @@index([createdAt])
   @@index([feature])
 }
+
+enum RecommendationStrategyKind {
+  RULES
+  ML
+}
+
+// Regras de recomendação configuráveis pelo administrador. A estratégia é
+// um campo (e não código fixo) para que um modelo de ML possa entrar mais
+// tarde por trás da mesma interface, sem mexer no resto da aplicação.
+model RecommendationSettings {
+  id                String                     @id @default("singleton")
+  strategy          RecommendationStrategyKind @default(RULES)
+  limit             Int                        @default(4)
+  preferSameBrand   Boolean                    @default(true)
+  priceTolerancePct Int                        @default(40)
+  useCoPurchase     Boolean                    @default(true)
+  mlEndpoint        String?
+  mlApiKeyEncrypted String?
+  updatedAt         DateTime                   @updatedAt
+}

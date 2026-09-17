@@ -1320,3 +1320,62 @@ export function aiGenerate(
 export function aiAssistant(question: string, token: string): Promise<{ text: string }> {
   return apiFetch("/ai/assistant", { method: "POST", headers: authHeaders(token), body: JSON.stringify({ question }) });
 }
+
+// --- Recomendações ---
+// A loja pede "recomendações para este produto" sem saber se vieram de
+// regras ou, no futuro, de um modelo — a API é que decide.
+
+export type RecommendationKind = "RELATED" | "CROSS_SELL" | "UPSELL" | "BOUGHT_TOGETHER";
+
+export async function getRecommendations(
+  productId: string,
+  kind: RecommendationKind = "RELATED",
+  limit?: number,
+): Promise<Product[]> {
+  const query = new URLSearchParams({ kind });
+  if (limit) query.set("limit", String(limit));
+  try {
+    const products = await apiFetch<ApiProduct[]>(
+      `/recommendations/product/${encodeURIComponent(productId)}?${query.toString()}`,
+    );
+    return products.map(mapProduct);
+  } catch {
+    // Recomendações nunca devem partir a ficha de produto.
+    return [];
+  }
+}
+
+export type RecommendationSettings = {
+  strategy: "RULES" | "ML";
+  limit: number;
+  preferSameBrand: boolean;
+  priceTolerancePct: number;
+  useCoPurchase: boolean;
+  mlEndpoint: string;
+  mlApiKeyMasked: string | null;
+  mlAvailable: boolean;
+  updatedAt: string | null;
+};
+
+export function getRecommendationSettings(token: string): Promise<RecommendationSettings> {
+  return apiFetch("/recommendations/settings", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function updateRecommendationSettings(
+  data: Partial<{
+    strategy: "RULES" | "ML";
+    limit: number;
+    preferSameBrand: boolean;
+    priceTolerancePct: number;
+    useCoPurchase: boolean;
+    mlEndpoint: string;
+    mlApiKey: string;
+  }>,
+  token: string,
+): Promise<RecommendationSettings> {
+  return apiFetch("/recommendations/settings", {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(data),
+  });
+}

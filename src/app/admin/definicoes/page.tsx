@@ -31,6 +31,21 @@ export default async function AdminSiteSettingsPage() {
         </span>
       </Link>
 
+      <Link
+        href="/admin/definicoes/recomendacoes"
+        className="flex items-center justify-between rounded-xl border border-border bg-surface-raised p-6 hover:bg-surface"
+      >
+        <span>
+          <span className="block text-lg font-semibold text-foreground">Recomendações de produtos</span>
+          <span className="block text-xs text-muted">
+            Regras dos blocos de produtos relacionados e comprados em conjunto.
+          </span>
+        </span>
+        <span aria-hidden className="text-accent">
+          →
+        </span>
+      </Link>
+
       <form action={updateSiteSettingsAction} className="space-y-8">
         <section className="rounded-xl border border-border bg-surface-raised p-6">
           <h2 className="mb-4 text-lg font-semibold text-foreground">Dados da empresa</h2>

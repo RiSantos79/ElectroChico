@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProductBySlug, getProducts, getReviews } from "@/lib/api";
+import { getProductBySlug, getRecommendations, getReviews } from "@/lib/api";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductCard } from "@/components/product-card";
 import { ProductActions } from "@/components/product-actions";
@@ -70,9 +70,14 @@ export default async function ProductPage({
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const categoryProducts = await getProducts({ category: product.category });
-  const related = categoryProducts.filter((p) => p.slug !== slug);
-  const reviews = await getReviews(product.id);
+  // Relacionados e "comprados em conjunto" vêm agora do motor de
+  // recomendações (regras hoje, modelo amanhã) em vez de "tudo o que está
+  // na mesma categoria".
+  const [related, boughtTogether, reviews] = await Promise.all([
+    getRecommendations(product.id, "RELATED", 6),
+    getRecommendations(product.id, "BOUGHT_TOGETHER", 4),
+    getReviews(product.id),
+  ]);
   const discount =
     product.oldPrice && product.oldPrice > product.price
       ? Math.round(100 - (product.price / product.oldPrice) * 100)
@@ -159,6 +164,17 @@ export default async function ProductPage({
         productId={product.id}
         productSlug={product.slug}
       />
+
+      {boughtTogether.length > 0 && (
+        <section className="mt-14">
+          <h2 className="mb-4 text-lg font-semibold">Frequentemente comprados em conjunto</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+            {boughtTogether.map((p) => (
+              <ProductCard key={p.slug} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {related.length > 0 && (
         <section className="mt-14">

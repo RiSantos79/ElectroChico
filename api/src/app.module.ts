@@ -22,6 +22,7 @@ import { ContentPagesModule } from './content-pages/content-pages.module.js';
 import { BannersModule } from './banners/banners.module.js';
 import { StaffModule } from './staff/staff.module.js';
 import { AiModule } from './ai/ai.module.js';
+import { RecommendationsModule } from './recommendations/recommendations.module.js';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { AiModule } from './ai/ai.module.js';
     BannersModule,
     StaffModule,
     AiModule,
+    RecommendationsModule,
   ],
 })
 export class AppModule {}
