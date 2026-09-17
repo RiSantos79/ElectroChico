@@ -20,7 +20,7 @@ function ModeToggle({ mode, onChange }: { mode: BulkPriceChangeMode; onChange: (
       onClick={() => onChange(isPercent ? "amount" : "percent")}
       aria-pressed={isPercent}
       aria-label="Alternar entre valor em euros e percentagem"
-      className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-sm"
+      className="flex w-fit shrink-0 items-center gap-2 self-start rounded-full border border-border bg-surface px-3 py-1.5 text-sm"
     >
       <span className={isPercent ? "text-muted" : "font-semibold text-foreground"}>€</span>
       <span className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-foreground/80">
@@ -120,6 +120,11 @@ export function BulkPriceChangeModal({
 
         {step === "form" && (
           <div className="space-y-4">
+            <div className="flex flex-col gap-1 text-sm">
+              <span>Tipo de alteração</span>
+              <ModeToggle mode={mode} onChange={setMode} />
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm">
                 Aplicar a
@@ -156,11 +161,6 @@ export function BulkPriceChangeModal({
                   />
                 </label>
               )}
-            </div>
-
-            <div className="flex flex-col gap-1 text-sm">
-              <span>Tipo de alteração</span>
-              <ModeToggle mode={mode} onChange={setMode} />
             </div>
 
             <label className="flex flex-col gap-1 text-sm">
