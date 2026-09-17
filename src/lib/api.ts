@@ -1067,6 +1067,10 @@ export type GiftCard = {
   createdAt: string;
 };
 
+export function getGiftCards(token: string): Promise<GiftCard[]> {
+  return apiFetch<GiftCard[]>("/gift-cards", { headers: { Authorization: `Bearer ${token}` } });
+}
+
 export async function getGiftCard(code: string, token: string): Promise<GiftCard | null> {
   try {
     return await apiFetch<GiftCard>(`/gift-cards/${encodeURIComponent(code)}`, {

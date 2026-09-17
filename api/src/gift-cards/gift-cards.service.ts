@@ -9,6 +9,10 @@ export class GiftCardsService {
     private readonly audit: AuditService,
   ) {}
 
+  findAll() {
+    return this.prisma.giftCard.findMany({ orderBy: { createdAt: 'desc' } });
+  }
+
   async findByCode(code: string) {
     const giftCard = await this.prisma.giftCard.findUnique({ where: { code } });
     if (!giftCard) throw new NotFoundException('Cartão presente não encontrado');

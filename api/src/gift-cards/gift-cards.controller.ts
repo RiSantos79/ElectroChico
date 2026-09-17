@@ -11,6 +11,12 @@ export class GiftCardsController {
   constructor(private readonly giftCardsService: GiftCardsService) {}
 
   @RequirePermission('cupoes', 'view')
+  @Get()
+  findAll() {
+    return this.giftCardsService.findAll();
+  }
+
+  @RequirePermission('cupoes', 'view')
   @Get(':code')
   findByCode(@Param('code') code: string) {
     return this.giftCardsService.findByCode(code);
