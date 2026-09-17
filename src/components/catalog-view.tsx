@@ -173,6 +173,7 @@ export function CatalogView({
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortOption)}
+                aria-label="Ordenar produtos"
                 className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
               >
                 <option value="relevancia">Relevância</option>

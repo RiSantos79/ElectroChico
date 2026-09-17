@@ -38,9 +38,9 @@ export function AddToCartButton({ product, className = "" }: { product: Product;
       disabled={outOfStock}
       className={`flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
         status === "added"
-          ? "bg-success text-white"
+          ? "bg-success text-success-foreground"
           : status === "limited"
-            ? "bg-danger text-white"
+            ? "bg-danger text-danger-foreground"
             : "bg-accent text-accent-foreground hover:opacity-90"
       } ${className}`}
     >

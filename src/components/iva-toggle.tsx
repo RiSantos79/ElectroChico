@@ -10,7 +10,6 @@ export function IvaToggle() {
       type="button"
       onClick={() => setShowWithIva(!showWithIva)}
       aria-pressed={showWithIva}
-      aria-label="Alternar entre preços com e sem IVA"
       className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs"
     >
       <span className={showWithIva ? "text-muted" : "font-semibold text-foreground"}>Sem IVA</span>

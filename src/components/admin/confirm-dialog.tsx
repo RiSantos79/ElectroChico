@@ -30,7 +30,7 @@ export function ConfirmDialog({
             disabled={pending}
             className={
               danger
-                ? "rounded-full bg-danger px-5 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                ? "rounded-full bg-danger px-5 py-2 text-sm font-semibold text-danger-foreground hover:opacity-90 disabled:opacity-50"
                 : "rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-foreground hover:opacity-90 disabled:opacity-50"
             }
           >

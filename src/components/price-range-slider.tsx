@@ -29,7 +29,7 @@ export function PriceRangeSlider({
 
   return (
     <div>
-      <div className="relative h-4">
+      <div className="relative h-6">
         <div className="absolute top-1/2 h-1.5 w-full -translate-y-1/2 rounded-full bg-border" />
         <div
           className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-accent"
@@ -41,6 +41,7 @@ export function PriceRangeSlider({
           max={max}
           value={low}
           onChange={(e) => onChange([Math.min(Number(e.target.value), high), high])}
+          aria-label="Preço mínimo"
           className={THUMB_CLASSES}
         />
         <input
@@ -49,6 +50,7 @@ export function PriceRangeSlider({
           max={max}
           value={high}
           onChange={(e) => onChange([low, Math.max(Number(e.target.value), low)])}
+          aria-label="Preço máximo"
           className={THUMB_CLASSES}
         />
       </div>

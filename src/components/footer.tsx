@@ -18,7 +18,7 @@ export async function Footer() {
       <div className="grid grid-cols-2 gap-6 px-6 py-10 sm:grid-cols-4 lg:px-10">
         {trustItems.map((item) => (
           <div key={item.title}>
-            <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
+            <h2 className="text-sm font-semibold text-foreground">{item.title}</h2>
             <p className="mt-1 text-sm text-muted">{item.desc}</p>
           </div>
         ))}

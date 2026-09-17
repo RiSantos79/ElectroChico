@@ -113,7 +113,7 @@ function HeroBanner({ banner, useH1 }: { banner: Banner; useH1: boolean }) {
         {banner.ctaLabel && (
           <Link
             href={banner.linkUrl}
-            className="w-fit rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-accent hover:opacity-90"
+            className="w-fit rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 hover:opacity-90"
           >
             {banner.ctaLabel}
           </Link>

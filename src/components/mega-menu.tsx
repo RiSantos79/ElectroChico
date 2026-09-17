@@ -18,7 +18,7 @@ export function MegaMenu({ categories }: { categories: Category[] }) {
           <li key={link.href}>
             <Link href={link.href} className="inline-flex items-center gap-1.5 font-semibold text-danger">
               {link.label}
-              <span className="rounded bg-danger px-1.5 py-0.5 text-[10px] font-bold text-white">HOT</span>
+              <span className="rounded bg-danger px-1.5 py-0.5 text-[10px] font-bold text-danger-foreground">HOT</span>
             </Link>
           </li>
         ))}
