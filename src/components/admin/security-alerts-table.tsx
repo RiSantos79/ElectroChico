@@ -3,6 +3,8 @@
 import type { SecurityAlert } from "@/lib/api";
 import { SortableHeader } from "./sortable-header";
 import { useSortable } from "@/lib/use-sortable";
+import { SearchBox } from "./search-box";
+import { useAdminSearch } from "@/lib/use-admin-search";
 
 const typeLabel: Record<string, string> = {
   LOGIN_BLOCKED_LOCKOUT: "Conta bloqueada",
@@ -29,10 +31,21 @@ function sortValue(a: SecurityAlert, key: string): string | number {
 }
 
 export function SecurityAlertsTable({ alerts }: { alerts: SecurityAlert[] }) {
-  const { sorted, sortKey, ascending, toggleSort } = useSortable(alerts, sortValue);
+  const { query, setQuery, filtered } = useAdminSearch(
+    alerts,
+    (a) => `${typeLabel[a.type] ?? a.type} ${a.message} ${a.actor ?? ""}`,
+  );
+  const { sorted, sortKey, ascending, toggleSort } = useSortable(filtered, sortValue);
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
+    <div>
+      <SearchBox
+        value={query}
+        onChange={setQuery}
+        placeholder="Pesquisar por tipo, mensagem ou quem..."
+        className="mb-3 max-w-sm"
+      />
+      <div className="overflow-x-auto rounded-xl border border-border">
       <table className="w-full text-sm">
         <thead className="bg-surface text-left text-muted">
           <tr>
@@ -57,15 +70,16 @@ export function SecurityAlertsTable({ alerts }: { alerts: SecurityAlert[] }) {
               <td className="px-4 py-3 text-muted">{new Date(a.createdAt).toLocaleString("pt-PT")}</td>
             </tr>
           ))}
-          {alerts.length === 0 && (
+          {filtered.length === 0 && (
             <tr>
               <td colSpan={4} className="px-4 py-8 text-center text-muted">
-                Sem alertas de segurança nos últimos 7 dias.
+                {query.trim() ? `Nenhum alerta encontrado para "${query}".` : "Sem alertas de segurança nos últimos 7 dias."}
               </td>
             </tr>
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
