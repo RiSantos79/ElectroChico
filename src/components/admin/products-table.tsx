@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Product } from "@/data/catalog";
+import type { Brand } from "@/lib/api";
+import type { Category, Product } from "@/data/catalog";
 import { formatPrice } from "@/lib/format";
 import { deleteProductAction, deleteProductsAction, duplicateProductAction } from "@/lib/admin-actions";
 import { StockBar } from "@/components/stock-bar";
@@ -30,7 +31,15 @@ function sortValue(p: Product, key: string): string | number {
   }
 }
 
-export function ProductsTable({ products }: { products: Product[] }) {
+export function ProductsTable({
+  products,
+  categories,
+  brands,
+}: {
+  products: Product[];
+  categories: Category[];
+  brands: Brand[];
+}) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const { sorted, sortKey, ascending, toggleSort } = useSortable(products, sortValue);
   const [pending, setPending] = useState<PendingDelete | null>(null);
@@ -191,6 +200,8 @@ export function ProductsTable({ products }: { products: Product[] }) {
       {priceChangeOpen && (
         <BulkPriceChangeModal
           products={products}
+          categories={categories}
+          brands={brands}
           selectedIds={[...selected]}
           onClose={() => {
             setPriceChangeOpen(false);

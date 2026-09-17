@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Product } from "@/data/catalog";
+import type { Brand } from "@/lib/api";
+import type { Category, Product } from "@/data/catalog";
 import { formatPrice } from "@/lib/format";
 import { bulkPriceChangeAction } from "@/lib/admin-actions";
 import { ReauthModal } from "./reauth-modal";
@@ -10,20 +11,26 @@ const REAUTH_THRESHOLD_PERCENT = 20;
 
 type Scope = "selected" | "category" | "brand" | "all";
 
+function selectedOptionValues(e: React.ChangeEvent<HTMLSelectElement>): string[] {
+  return Array.from(e.target.selectedOptions).map((o) => o.value);
+}
+
 export function BulkPriceChangeModal({
   products,
+  categories,
+  brands,
   selectedIds,
   onClose,
 }: {
   products: Product[];
+  categories: Category[];
+  brands: Brand[];
   selectedIds: string[];
   onClose: () => void;
 }) {
-  const categories = useMemo(() => [...new Set(products.map((p) => p.category))].sort(), [products]);
-  const brands = useMemo(() => [...new Set(products.map((p) => p.brand))].sort(), [products]);
-
   const [scope, setScope] = useState<Scope>(selectedIds.length > 0 ? "selected" : "category");
-  const [scopeValue, setScopeValue] = useState(categories[0] ?? "");
+  const [categorySlugs, setCategorySlugs] = useState<string[]>([]);
+  const [brandSlugs, setBrandSlugs] = useState<string[]>([]);
   const [percentInput, setPercentInput] = useState("10");
   const [step, setStep] = useState<"form" | "preview">("form");
   const [busy, setBusy] = useState(false);
@@ -38,13 +45,13 @@ export function BulkPriceChangeModal({
       case "selected":
         return products.filter((p) => selectedIds.includes(p.id));
       case "category":
-        return products.filter((p) => p.category === scopeValue);
+        return products.filter((p) => categorySlugs.includes(p.category));
       case "brand":
-        return products.filter((p) => p.brand === scopeValue);
+        return products.filter((p) => brandSlugs.includes(p.brandSlug));
       case "all":
         return products;
     }
-  }, [scope, scopeValue, products, selectedIds]);
+  }, [scope, categorySlugs, brandSlugs, products, selectedIds]);
 
   async function apply(reauthToken?: string) {
     setBusy(true);
@@ -94,11 +101,16 @@ export function BulkPriceChangeModal({
               </label>
               {scope === "category" && (
                 <label className="flex flex-col gap-1 text-sm">
-                  Categoria
-                  <select value={scopeValue} onChange={(e) => setScopeValue(e.target.value)} className="input-field">
+                  Categoria (Ctrl/Cmd+clique para escolher várias)
+                  <select
+                    multiple
+                    value={categorySlugs}
+                    onChange={(e) => setCategorySlugs(selectedOptionValues(e))}
+                    className="input-field h-32"
+                  >
                     {categories.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
+                      <option key={c.slug} value={c.slug}>
+                        {c.name}
                       </option>
                     ))}
                   </select>
@@ -106,11 +118,16 @@ export function BulkPriceChangeModal({
               )}
               {scope === "brand" && (
                 <label className="flex flex-col gap-1 text-sm">
-                  Marca
-                  <select value={scopeValue} onChange={(e) => setScopeValue(e.target.value)} className="input-field">
+                  Marca (Ctrl/Cmd+clique para escolher várias)
+                  <select
+                    multiple
+                    value={brandSlugs}
+                    onChange={(e) => setBrandSlugs(selectedOptionValues(e))}
+                    className="input-field h-32"
+                  >
                     {brands.map((b) => (
-                      <option key={b} value={b}>
-                        {b}
+                      <option key={b.slug} value={b.slug}>
+                        {b.name}
                       </option>
                     ))}
                   </select>

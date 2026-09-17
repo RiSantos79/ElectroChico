@@ -1,11 +1,15 @@
 import Link from "next/link";
-import { getProducts } from "@/lib/api";
+import { getBrands, getCategories, getProducts } from "@/lib/api";
 import { ProductsTable } from "@/components/admin/products-table";
 
 export const metadata = { title: "Produtos — Backoffice" };
 
 export default async function AdminProductsPage() {
-  const products = await getProducts({ includeArchived: true });
+  const [products, categories, brands] = await Promise.all([
+    getProducts({ includeArchived: true }),
+    getCategories(),
+    getBrands(),
+  ]);
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -33,7 +37,7 @@ export default async function AdminProductsPage() {
         </div>
       </div>
 
-      <ProductsTable products={products} />
+      <ProductsTable products={products} categories={categories} brands={brands} />
     </div>
   );
 }
