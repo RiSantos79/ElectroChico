@@ -6,6 +6,10 @@ import { CHART_AXIS, CHART_GRID, CHART_TOOLTIP, GRAFANA_COLORS } from "./chart-t
 
 // `variant` em vez de receber uma função de formatação por prop — Server
 // Components não podem passar funções a Client Components.
+function truncate(label: string): string {
+  return label.length > 20 ? `${label.slice(0, 19)}…` : label;
+}
+
 export function TopBarChart({
   data,
   variant,
@@ -19,11 +23,19 @@ export function TopBarChart({
 
   return (
     <ResponsiveContainer width="100%" height={Math.max(200, data.length * 36)}>
-      <BarChart data={data} layout="vertical" margin={{ left: 24, right: 24 }}>
+      <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
         <CartesianGrid {...CHART_GRID} vertical horizontal={false} />
         <XAxis type="number" hide />
-        <YAxis type="category" dataKey="label" width={170} {...CHART_AXIS} />
-        <Tooltip {...CHART_TOOLTIP} formatter={(value) => format(Number(value))} />
+        {/* Em três colunas o painel é estreito: um eixo largo com nomes
+            inteiros não deixava espaço para as barras. */}
+        <YAxis
+          type="category"
+          dataKey="label"
+          width={120}
+          tickFormatter={truncate}
+          {...CHART_AXIS}
+        />
+        <Tooltip {...CHART_TOOLTIP} formatter={(value) => format(Number(value))} labelFormatter={(label) => String(label)} />
         <Bar dataKey="value" fill={GRAFANA_COLORS[5]} radius={[0, 2, 2, 0]} />
       </BarChart>
     </ResponsiveContainer>

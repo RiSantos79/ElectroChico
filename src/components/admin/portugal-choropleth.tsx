@@ -44,36 +44,44 @@ export function PortugalChoropleth({ cities }: { cities: CityDatum[] }) {
 
   return (
     <div className="flex h-full flex-col">
-      <svg
-        viewBox={`0 0 ${PT_MAP.width} ${PT_MAP.height}`}
-        role="img"
-        aria-label="Mapa de encomendas por concelho"
-        className="w-full flex-1"
-        style={{ maxHeight: "100%" }}
-      >
-        {PT_MAP.shapes.map((shape) => {
-          const data = byConcelho.get(shape.k);
-          const orders = data?.orderCount ?? 0;
-          return (
-            <path
-              key={shape.k}
-              d={shape.p}
-              fill={shadeFor(orders, max)}
-              stroke="var(--border)"
-              strokeWidth={1}
-              className="transition-[stroke,stroke-width] hover:stroke-accent hover:[stroke-width:3]"
-            >
-              <title>
-                {`${shape.n} (${shape.d})${
-                  orders > 0
-                    ? ` — ${orders} encomenda${orders !== 1 ? "s" : ""}, ${formatPrice(data?.total ?? 0)}`
-                    : " — sem encomendas"
-                }`}
-              </title>
-            </path>
-          );
-        })}
-      </svg>
+      {/* min-h-0 é o que impede o mapa de ditar a altura da grelha: sendo
+          duas vezes mais alto do que largo, a largura da coluna dava-lhe uma
+          altura enorme e esticava as três linhas de gráficos ao lado. Assim
+          é o mapa que se ajusta ao espaço disponível, com preserveAspectRatio
+          a mantê-lo proporcional. A altura mínima só conta em ecrã estreito,
+          onde deixa de haver colunas para preencher. */}
+      <div className="min-h-[420px] flex-1 lg:min-h-0">
+        <svg
+          viewBox={`0 0 ${PT_MAP.width} ${PT_MAP.height}`}
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label="Mapa de encomendas por concelho"
+          className="h-full w-full"
+        >
+          {PT_MAP.shapes.map((shape) => {
+            const data = byConcelho.get(shape.k);
+            const orders = data?.orderCount ?? 0;
+            return (
+              <path
+                key={shape.k}
+                d={shape.p}
+                fill={shadeFor(orders, max)}
+                stroke="var(--border)"
+                strokeWidth={1}
+                className="transition-[stroke,stroke-width] hover:stroke-accent hover:[stroke-width:3]"
+              >
+                <title>
+                  {`${shape.n} (${shape.d})${
+                    orders > 0
+                      ? ` — ${orders} encomenda${orders !== 1 ? "s" : ""}, ${formatPrice(data?.total ?? 0)}`
+                      : " — sem encomendas"
+                  }`}
+                </title>
+              </path>
+            );
+          })}
+        </svg>
+      </div>
 
       <div className="mt-3 space-y-2 text-xs text-muted">
         <div className="flex items-center gap-2">
