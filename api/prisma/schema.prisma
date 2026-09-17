@@ -222,6 +222,10 @@ model Order {
   total           Decimal     @db.Decimal(10, 2)
   stripeSessionId String?     @unique
   paymentMethod   String?
+  // Momento em que o pagamento foi confirmado. É por esta data que as
+  // vendas contam no dashboard — `updatedAt` mudava a cada alteração de
+  // estado e fazia a receita saltar para o dia da edição.
+  paidAt          DateTime?
   trackingCarrier String?
   trackingCode    String?
   reminderSentAt  DateTime?

@@ -1137,6 +1137,14 @@ export type DashboardSummary = {
   giftCardStats: { activeCount: number; activeValue: number; redeemedCount: number; redeemedValue: number };
   paymentMethods: { method: string; count: number }[];
   support: { total: number; responded: number; avgResponseHours: number | null };
+  meta: {
+    /** paidAt para vendas confirmadas, createdAt quando se filtra por estados não pagos. */
+    dateField: "paidAt" | "createdAt";
+    statuses: OrderStatus[];
+    from: string;
+    to: string;
+    firstPageViewAt: string | null;
+  };
 };
 
 export function getDashboardSummary(token: string, filters?: DashboardFilters): Promise<DashboardSummary> {

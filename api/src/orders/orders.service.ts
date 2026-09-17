@@ -174,7 +174,10 @@ export class OrdersService {
     if (!order || order.status !== 'PENDING') return;
 
     const paymentMethod = stripeSessionId ? await this.fetchPaymentMethod(stripeSessionId) : null;
-    await this.prisma.order.update({ where: { id: orderId }, data: { status: 'PAID', paymentMethod } });
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'PAID', paymentMethod, paidAt: new Date() },
+    });
 
     // Só conta a utilização do cupão quando o pagamento é confirmado — um
     // checkout abandonado não deve gastar o limite de utilizações.
@@ -240,12 +243,18 @@ export class OrdersService {
       }
     }
 
+    // Se a encomenda passa a contar como venda e ainda não tem data de
+    // pagamento (ex. marcada à mão, sem passar pelo Stripe), regista-a agora
+    // — é essa data que o dashboard usa.
+    const becomesPaid = dto.status && PAID_LIKE_STATUSES.includes(dto.status) && !order.paidAt;
+
     const updated = await this.prisma.order.update({
       where: { id },
       data: {
         status: dto.status,
         trackingCarrier: dto.trackingCarrier,
         trackingCode: dto.trackingCode,
+        ...(becomesPaid ? { paidAt: new Date() } : {}),
       },
       include: { items: true },
     });

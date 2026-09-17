@@ -13,6 +13,8 @@ type ResolvedFilters = {
   from: Date;
   to: Date;
   statusList: OrderStatus[];
+  /** Campo usado para datar encomendas — ver resolveFilters(). */
+  dateField: 'paidAt' | 'createdAt';
   orderWhere: Prisma.OrderWhereInput;
   itemProductFilter?: string[];
   categoryId?: string;
@@ -25,11 +27,11 @@ export class DashboardService {
 
   async getSummary(filters: DashboardFiltersDto) {
     const resolved = await this.resolveFilters(filters);
-    const { from, to, orderWhere, itemProductFilter } = resolved;
+    const { from, to, orderWhere, itemProductFilter, dateField } = resolved;
     const periodLengthMs = to.getTime() - from.getTime();
     const prevFrom = new Date(from.getTime() - periodLengthMs);
     const prevTo = from;
-    const prevOrderWhere: Prisma.OrderWhereInput = { ...orderWhere, updatedAt: { gte: prevFrom, lt: prevTo } };
+    const prevOrderWhere: Prisma.OrderWhereInput = { ...orderWhere, [dateField]: { gte: prevFrom, lt: prevTo } };
 
     const [
       period,
@@ -54,6 +56,7 @@ export class DashboardService {
       giftCardStats,
       paymentMethods,
       support,
+      firstPageView,
     ] = await Promise.all([
       this.salesFor(orderWhere),
       this.salesFor(prevOrderWhere),
@@ -66,9 +69,9 @@ export class DashboardService {
       this.stockAlerts(resolved.categoryId, resolved.brandId),
       this.topProducts(orderWhere, itemProductFilter, 10),
       this.topCustomers(orderWhere, 10),
-      this.dailyStats(orderWhere, from, to),
-      this.hourlyActivity(orderWhere, from, to),
-      this.salesByWeekday(orderWhere, from, to),
+      this.dailyStats(orderWhere, from, to, dateField),
+      this.hourlyActivity(orderWhere, from, to, dateField),
+      this.salesByWeekday(orderWhere, dateField),
       this.revenueByCategory(orderWhere, itemProductFilter),
       this.revenueByBrand(orderWhere, itemProductFilter),
       this.ordersByStatus(orderWhere),
@@ -77,6 +80,9 @@ export class DashboardService {
       this.giftCardStats(),
       this.paymentMethodBreakdown(orderWhere),
       this.supportStats(),
+      // Para o dashboard poder avisar que os dias anteriores ao início do
+      // registo de tráfego não têm visitas (e não que tiveram zero).
+      this.prisma.pageView.findFirst({ orderBy: { createdAt: 'asc' }, select: { createdAt: true } }),
     ]);
 
     return {
@@ -103,6 +109,13 @@ export class DashboardService {
       giftCardStats,
       paymentMethods,
       support,
+      meta: {
+        dateField,
+        statuses: resolved.statusList,
+        from,
+        to,
+        firstPageViewAt: firstPageView?.createdAt ?? null,
+      },
     };
   }
 
@@ -142,14 +155,29 @@ export class DashboardService {
       orderIdFilter = items.map((i) => i.orderId);
     }
 
+    // Vendas confirmadas contam pela data do pagamento; estados que nunca
+    // foram pagos (pendente, cancelada, falhada) não têm paidAt, por isso
+    // esses contam pela data em que a encomenda foi feita.
+    const onlyPaidLike = statusList.every((s) => PAID_LIKE_STATUSES.includes(s));
+    const dateField: 'paidAt' | 'createdAt' = onlyPaidLike ? 'paidAt' : 'createdAt';
+
     const orderWhere: Prisma.OrderWhereInput = {
       status: { in: statusList },
-      updatedAt: { gte: from, lte: to },
+      [dateField]: { gte: from, lte: to },
       ...channelWhere,
       ...(orderIdFilter ? { id: { in: orderIdFilter } } : {}),
     };
 
-    return { from, to, statusList, orderWhere, itemProductFilter, categoryId: filters.categoryId, brandId: filters.brandId };
+    return {
+      from,
+      to,
+      statusList,
+      dateField,
+      orderWhere,
+      itemProductFilter,
+      categoryId: filters.categoryId,
+      brandId: filters.brandId,
+    };
   }
 
   private async salesFor(where: Prisma.OrderWhereInput) {
@@ -251,15 +279,20 @@ export class DashboardService {
 
   // Devolve, por dia entre `from` e `to`, vendas + ticket médio + visitas —
   // agrupado em memória em vez de SQL bruto, o volume atual não o justifica.
-  private async dailyStats(where: Prisma.OrderWhereInput, from: Date, to: Date) {
+  private async dailyStats(
+    where: Prisma.OrderWhereInput,
+    from: Date,
+    to: Date,
+    dateField: 'paidAt' | 'createdAt',
+  ) {
     const [orders, views] = await Promise.all([
-      this.prisma.order.findMany({ where, select: { total: true, updatedAt: true } }),
+      this.prisma.order.findMany({ where, select: { total: true, paidAt: true, createdAt: true } }),
       this.prisma.pageView.findMany({ where: { createdAt: { gte: from, lte: to } }, select: { createdAt: true } }),
     ]);
 
     const salesByDay = new Map<string, { total: number; count: number }>();
     for (const order of orders) {
-      const key = order.updatedAt.toISOString().slice(0, 10);
+      const key = (order[dateField] ?? order.createdAt).toISOString().slice(0, 10);
       const bucket = salesByDay.get(key) ?? { total: 0, count: 0 };
       bucket.total += Number(order.total);
       bucket.count += 1;
@@ -301,15 +334,20 @@ export class DashboardService {
   // Vendas e visitas por hora do dia (0-23), no período — mostra os horários
   // de maior atividade em vez de "acessos" (não há tracking de sessões, só
   // contagem anónima de páginas vistas).
-  private async hourlyActivity(where: Prisma.OrderWhereInput, from: Date, to: Date) {
+  private async hourlyActivity(
+    where: Prisma.OrderWhereInput,
+    from: Date,
+    to: Date,
+    dateField: 'paidAt' | 'createdAt',
+  ) {
     const [orders, views] = await Promise.all([
-      this.prisma.order.findMany({ where, select: { updatedAt: true, total: true } }),
+      this.prisma.order.findMany({ where, select: { paidAt: true, createdAt: true, total: true } }),
       this.prisma.pageView.findMany({ where: { createdAt: { gte: from, lte: to } }, select: { createdAt: true } }),
     ]);
 
     const hours = Array.from({ length: 24 }, (_, hour) => ({ hour, visits: 0, salesCount: 0, salesTotal: 0 }));
     for (const order of orders) {
-      const bucket = hours[order.updatedAt.getUTCHours()];
+      const bucket = hours[(order[dateField] ?? order.createdAt).getUTCHours()];
       bucket.salesCount += 1;
       bucket.salesTotal += Number(order.total);
     }
@@ -319,14 +357,12 @@ export class DashboardService {
     return hours;
   }
 
-  private async salesByWeekday(where: Prisma.OrderWhereInput, from: Date, to: Date) {
-    void from;
-    void to;
-    const orders = await this.prisma.order.findMany({ where, select: { updatedAt: true, total: true } });
+  private async salesByWeekday(where: Prisma.OrderWhereInput, dateField: 'paidAt' | 'createdAt') {
+    const orders = await this.prisma.order.findMany({ where, select: { paidAt: true, createdAt: true, total: true } });
 
     const totals = Array.from({ length: 7 }, () => ({ total: 0, count: 0 }));
     for (const order of orders) {
-      const bucket = totals[order.updatedAt.getUTCDay()];
+      const bucket = totals[(order[dateField] ?? order.createdAt).getUTCDay()];
       bucket.total += Number(order.total);
       bucket.count += 1;
     }

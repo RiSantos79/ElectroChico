@@ -127,6 +127,10 @@ export default async function AdminDashboardPage({
   ]);
 
   const unmatchedCities = summary.topCities.filter((c) => !coordsForCity(c.city));
+  // Dias anteriores ao início do tracking não tiveram "zero visitas" — não
+  // há dados nenhuns, e convém dizê-lo em vez de deixar ler um zero.
+  const visitsIncomplete =
+    summary.meta.firstPageViewAt !== null && new Date(from) < new Date(summary.meta.firstPageViewAt);
 
   return (
     <div className="space-y-8 px-6 py-8 lg:px-10">
@@ -209,6 +213,33 @@ export default async function AdminDashboardPage({
           Filtrar
         </button>
       </form>
+
+      {/* O que está a ser contado, em texto — evita ler números fora de
+          contexto e comparar com listas que mostram tudo. */}
+      <div className="rounded-xl border border-border bg-surface px-4 py-3 text-xs text-muted">
+        <p>
+          A mostrar{" "}
+          <span className="font-medium text-foreground">
+            {status ? `encomendas no estado "${statusLabel[status]}"` : "vendas confirmadas"}
+          </span>{" "}
+          {!status && <>(Paga, A preparar, Enviada, Entregue) </>}
+          entre{" "}
+          <span className="font-medium text-foreground">{new Date(from).toLocaleDateString("pt-PT")}</span> e{" "}
+          <span className="font-medium text-foreground">{new Date(to).toLocaleDateString("pt-PT")}</span>, por{" "}
+          <span className="font-medium text-foreground">
+            {summary.meta.dateField === "paidAt" ? "data de pagamento" : "data da encomenda"}
+          </span>
+          . Encomendas por pagar não contam como receita — por isso o total aqui é menor do que a lista de
+          Encomendas.
+        </p>
+        {visitsIncomplete && (
+          <p className="mt-1 text-amber-500">
+            O registo de visitas só começou a{" "}
+            {new Date(summary.meta.firstPageViewAt as string).toLocaleDateString("pt-PT")} — dias anteriores
+            aparecem com zero visitas por falta de dados, o que também afeta a taxa de conversão.
+          </p>
+        )}
+      </div>
 
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Indicadores do período</h2>
