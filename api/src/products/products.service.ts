@@ -6,6 +6,7 @@ import { AuthService } from '../auth/auth.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
 import type { BulkImportProductsDto } from './dto/bulk-import-product.dto.js';
+import { BulkPriceChangeMode } from './dto/bulk-price-change.dto.js';
 import { sanitizeRichText } from '../common/sanitize-html.js';
 import { StockService } from '../stock/stock.service.js';
 import { slugify } from '../common/slugify.js';
@@ -147,30 +148,41 @@ export class ProductsService {
     }
   }
 
-  // Aplica o mesmo valor fixo (em euros) a vários produtos de uma vez (ex.:
-  // +5€ numa categoria inteira) — evita os cêntimos estranhos que um aumento
-  // em percentagem produzia. A pré-visualização já foi mostrada no frontend
-  // com os mesmos preços atuais, por isso aqui só é preciso aplicar e registar.
-  async bulkPriceChange(ids: string[], amount: number, actorId: string, actorEmail?: string, reauthToken?: string) {
+  // Aplica a mesma alteração a vários produtos de uma vez — em euros fixos
+  // (evita os cêntimos estranhos que uma percentagem produz em preços já
+  // "redondos") ou em percentagem (mais previsível quando os preços dos
+  // produtos afetados variam muito). A pré-visualização já foi mostrada no
+  // frontend com os mesmos preços atuais, por isso aqui só é preciso aplicar
+  // e registar.
+  async bulkPriceChange(
+    ids: string[],
+    mode: BulkPriceChangeMode,
+    value: number,
+    actorId: string,
+    actorEmail?: string,
+    reauthToken?: string,
+  ) {
     const products = await this.prisma.product.findMany({
       where: { id: { in: ids } },
       select: { id: true, price: true },
     });
 
-    // O impacto de um valor fixo depende do preço de cada produto — um +5€
-    // é irrelevante numa TV de 800€ mas duplica o preço de um acessório de
-    // 5€. Exige confirmação extra se, para algum produto, isso ultrapassar
-    // a mesma percentagem-limite usada antes para alterações em massa.
-    const maxPercentImpact = products.length
-      ? Math.max(...products.map((p) => (Math.abs(amount) / Number(p.price)) * 100))
-      : 0;
+    // Em modo euros, o impacto depende do preço de cada produto — um +5€ é
+    // irrelevante numa TV de 800€ mas duplica o preço de um acessório de 5€.
+    // Em modo percentagem já é diretamente comparável. Exige confirmação
+    // extra se, para algum produto, isso ultrapassar o limite.
+    const effectivePercent = (price: number) =>
+      mode === BulkPriceChangeMode.PERCENT ? Math.abs(value) : (Math.abs(value) / price) * 100;
+    const maxPercentImpact = products.length ? Math.max(...products.map((p) => effectivePercent(Number(p.price)))) : 0;
     if (maxPercentImpact > BULK_PRICE_REAUTH_THRESHOLD_PERCENT) {
       await this.auth.verifyReauthToken(actorId, reauthToken);
     }
 
     await this.prisma.$transaction(
       products.map((p) => {
-        const newPrice = Math.max(0, Math.round((Number(p.price) + amount) * 100) / 100);
+        const current = Number(p.price);
+        const raw = mode === BulkPriceChangeMode.PERCENT ? current * (1 + value / 100) : current + value;
+        const newPrice = Math.max(0, Math.round(raw * 100) / 100);
         return this.prisma.product.update({ where: { id: p.id }, data: { price: newPrice } });
       }),
     );
@@ -178,7 +190,7 @@ export class ProductsService {
     await this.audit.log('PRODUCT_BULK_PRICE_CHANGE', {
       entity: 'Product',
       actor: actorEmail,
-      details: { amount, count: products.length },
+      details: { mode, value, count: products.length },
     });
 
     return { updated: products.length };

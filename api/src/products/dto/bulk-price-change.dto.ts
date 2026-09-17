@@ -1,4 +1,9 @@
-import { ArrayMinSize, IsArray, IsNumber, IsString, Max, Min } from 'class-validator';
+import { ArrayMinSize, IsArray, IsEnum, IsNumber, IsString, Max, Min } from 'class-validator';
+
+export enum BulkPriceChangeMode {
+  AMOUNT = 'amount',
+  PERCENT = 'percent',
+}
 
 export class BulkPriceChangeDto {
   @IsArray()
@@ -6,11 +11,13 @@ export class BulkPriceChangeDto {
   @IsString({ each: true })
   ids!: string[];
 
-  // Valor fixo (em euros) a somar ao preço atual — positivo para aumentar,
-  // negativo para reduzir (ex.: 5 = +5€, -5 = -5€). Evita os cêntimos
-  // estranhos que um aumento em percentagem produzia.
+  @IsEnum(BulkPriceChangeMode)
+  mode!: BulkPriceChangeMode;
+
+  // Em modo "amount": valor fixo em euros a somar (5 = +5€, -5 = -5€).
+  // Em modo "percent": percentagem a aplicar (10 = +10%, -5 = -5%).
   @IsNumber()
   @Min(-100000)
   @Max(100000)
-  amount!: number;
+  value!: number;
 }

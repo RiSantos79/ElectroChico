@@ -268,16 +268,19 @@ export function duplicateProduct(id: string, token: string): Promise<AdminProduc
   return apiFetch<AdminProduct>(`/products/${id}/duplicate`, { method: "POST", headers: authHeaders(token) });
 }
 
+export type BulkPriceChangeMode = "amount" | "percent";
+
 export function bulkPriceChange(
   ids: string[],
-  amount: number,
+  mode: BulkPriceChangeMode,
+  value: number,
   token: string,
   reauthToken?: string,
 ): Promise<{ updated: number }> {
   return apiFetch("/products/bulk-price", {
     method: "PATCH",
     headers: authHeaders(token, reauthToken),
-    body: JSON.stringify({ ids, amount }),
+    body: JSON.stringify({ ids, mode, value }),
   });
 }
 

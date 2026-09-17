@@ -78,7 +78,7 @@ export class ProductsController {
     @CurrentUser() user: AuthenticatedUser,
     @ReauthToken() reauthToken?: string,
   ) {
-    return this.productsService.bulkPriceChange(dto.ids, dto.amount, user.sub, user.email, reauthToken);
+    return this.productsService.bulkPriceChange(dto.ids, dto.mode, dto.value, user.sub, user.email, reauthToken);
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)

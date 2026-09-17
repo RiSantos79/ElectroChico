@@ -43,6 +43,7 @@ import {
   type BannerInput,
   type BulkImportProductRow,
   type BulkImportResult,
+  type BulkPriceChangeMode,
   type CouponInput,
   type OrderStatus,
   type PermissionMatrix,
@@ -185,12 +186,13 @@ export async function deleteProductsAction(ids: string[]): Promise<{ ok: true } 
 
 export async function bulkPriceChangeAction(
   ids: string[],
-  amount: number,
+  mode: BulkPriceChangeMode,
+  value: number,
   reauthToken?: string,
 ): Promise<{ ok: true; updated: number } | { ok: false; error: string }> {
   try {
     const token = await requireToken();
-    const result = await bulkPriceChange(ids, amount, token, reauthToken);
+    const result = await bulkPriceChange(ids, mode, value, token, reauthToken);
     revalidatePath("/admin/produtos");
     revalidatePath("/catalogo");
     return { ok: true, updated: result.updated };
