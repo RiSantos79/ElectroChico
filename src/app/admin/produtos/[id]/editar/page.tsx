@@ -1,16 +1,19 @@
 import { notFound } from "next/navigation";
 import { ProductForm } from "@/components/admin/product-form";
-import { getBrandsAdmin, getCategoriesAdmin, getProductById } from "@/lib/api";
+import { getAiStatus, getBrandsAdmin, getCategoriesAdmin, getProductById } from "@/lib/api";
+import { getSessionToken } from "@/lib/session";
 import { duplicateProductAction, updateProductAction } from "@/lib/admin-actions";
 
 export const metadata = { title: "Editar produto — Backoffice" };
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [categories, brands, product] = await Promise.all([
+  const token = await getSessionToken();
+  const [categories, brands, product, ai] = await Promise.all([
     getCategoriesAdmin(),
     getBrandsAdmin(),
     getProductById(id).catch(() => null),
+    token ? getAiStatus(token).catch(() => ({ enabled: false })) : Promise.resolve({ enabled: false }),
   ]);
   if (!product) notFound();
 
@@ -27,7 +30,13 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           </button>
         </form>
       </div>
-      <ProductForm categories={categories} brands={brands} product={product} action={updateProductAction.bind(null, id)} />
+      <ProductForm
+        categories={categories}
+        brands={brands}
+        product={product}
+        action={updateProductAction.bind(null, id)}
+        aiEnabled={ai.enabled}
+      />
     </div>
   );
 }

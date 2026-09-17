@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
+import { aiGenerateAction } from "@/lib/ai-actions";
+import { readProductContext } from "./ai-button";
+import type { AiFeatureKey } from "@/lib/api";
 
 function ToolbarButton({
   onClick,
@@ -107,7 +110,16 @@ function Toolbar({ editor }: { editor: Editor }) {
 // Cola texto de outros sites com a formatação (negrito, listas, links, etc.)
 // preservada — o TipTap interpreta o HTML da área de transferência por
 // omissão, não é preciso código extra para isso.
-export function RichTextEditor({ name, defaultValue = "" }: { name: string; defaultValue?: string }) {
+export function RichTextEditor({
+  name,
+  defaultValue = "",
+  ai = false,
+}: {
+  name: string;
+  defaultValue?: string;
+  /** Mostra as ações de IA por cima do editor (só quando a IA está ligada). */
+  ai?: boolean;
+}) {
   const [html, setHtml] = useState(defaultValue);
 
   const editor = useEditor({
@@ -124,10 +136,77 @@ export function RichTextEditor({ name, defaultValue = "" }: { name: string; defa
   });
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
-      {editor ? <Toolbar editor={editor} /> : <div className="h-[41px] border-b border-border bg-surface" />}
-      <EditorContent editor={editor} />
-      <input type="hidden" name={name} value={html} />
+    <div>
+      {ai && editor && (
+        <AiEditorActions
+          editor={editor}
+          onApply={(text) => {
+            editor.commands.setContent(text);
+            setHtml(editor.getHTML());
+          }}
+        />
+      )}
+      <div className="overflow-hidden rounded-lg border border-border">
+        {editor ? <Toolbar editor={editor} /> : <div className="h-[41px] border-b border-border bg-surface" />}
+        <EditorContent editor={editor} />
+        <input type="hidden" name={name} value={html} />
+      </div>
+    </div>
+  );
+}
+
+// As ações de IA vivem aqui dentro (e não no AiButton genérico) porque o
+// conteúdo do TipTap não se escreve num input — tem de passar pelo editor.
+function AiEditorActions({ editor, onApply }: { editor: Editor; onApply: (text: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const actions: { feature: AiFeatureKey; label: string; needsText: boolean }[] = [
+    { feature: "PRODUCT_LONG_DESCRIPTION", label: "Gerar descrição", needsText: false },
+    { feature: "TEXT_IMPROVE", label: "Melhorar", needsText: true },
+    { feature: "TEXT_SPELLCHECK", label: "Corrigir ortografia", needsText: true },
+    { feature: "TEXT_REWRITE", label: "Reescrever", needsText: true },
+  ];
+
+  async function run(feature: AiFeatureKey, needsText: boolean) {
+    const form = ref.current?.closest("form");
+    if (!form) return;
+
+    const currentText = editor.getText().trim();
+    if (needsText && !currentText) {
+      setError("Escreva algo primeiro.");
+      return;
+    }
+
+    setBusy(feature);
+    setError(null);
+    const context = readProductContext(form);
+    if (needsText) context.text = editor.getHTML();
+
+    const result = await aiGenerateAction(feature, context);
+    setBusy(null);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    onApply(result.text);
+  }
+
+  return (
+    <div ref={ref} className="mb-2 flex flex-wrap items-center gap-2">
+      {actions.map((a) => (
+        <button
+          key={a.feature}
+          type="button"
+          onClick={() => run(a.feature, a.needsText)}
+          disabled={busy !== null}
+          className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs font-medium text-accent hover:bg-accent/20 disabled:opacity-50"
+        >
+          {busy === a.feature ? "A gerar..." : `✨ ${a.label}`}
+        </button>
+      ))}
+      {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   );
 }

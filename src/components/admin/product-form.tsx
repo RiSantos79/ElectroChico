@@ -2,6 +2,7 @@ import type { AdminBrand, AdminCategory, AdminProduct } from "@/lib/api";
 import { PriceStockFields } from "@/components/admin/price-stock-fields";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import { NameSlugFields } from "@/components/admin/name-slug-fields";
+import { AiButton } from "@/components/admin/ai-button";
 
 function specsToText(specs: { label: string; value: string }[]) {
   return specs.map((s) => `${s.label}: ${s.value}`).join("\n");
@@ -16,11 +17,14 @@ export function ProductForm({
   brands,
   product,
   action,
+  aiEnabled = false,
 }: {
   categories: AdminCategory[];
   brands: AdminBrand[];
   product?: AdminProduct;
   action: (formData: FormData) => void;
+  /** Os botões de IA só aparecem quando a IA está ligada nas definições. */
+  aiEnabled?: boolean;
 }) {
   return (
     <form action={action} className="max-w-3xl space-y-6">
@@ -79,9 +83,14 @@ export function ProductForm({
         <h2 className="mb-4 text-lg font-semibold text-foreground">Descrição e especificações</h2>
         <div className="flex flex-col gap-1 text-sm">
           Descrição
-          <RichTextEditor name="description" defaultValue={product?.description} />
+          <RichTextEditor name="description" defaultValue={product?.description} ai={aiEnabled} />
         </div>
-        <label className="mt-4 flex flex-col gap-1 text-sm">
+        {aiEnabled && (
+          <div className="mt-4">
+            <AiButton feature="PRODUCT_SPECS" label="Gerar especificações" targetName="specs" />
+          </div>
+        )}
+        <label className="mt-2 flex flex-col gap-1 text-sm">
           Especificações técnicas — uma por linha, no formato <code>Nome: Valor</code> (também aceita colar
           diretamente de uma tabela ou folha de cálculo, com colunas separadas por tab)
           <textarea
@@ -92,7 +101,12 @@ export function ProductForm({
             className="input-field resize-none font-mono text-xs"
           />
         </label>
-        <label className="mt-4 flex flex-col gap-1 text-sm">
+        {aiEnabled && (
+          <div className="mt-4">
+            <AiButton feature="FAQ_GENERATE" label="Gerar FAQs" targetName="faqs" />
+          </div>
+        )}
+        <label className="mt-2 flex flex-col gap-1 text-sm">
           Perguntas frequentes (opcional) — uma por linha, no formato <code>Pergunta | Resposta</code>
           <textarea
             name="faqs"
@@ -177,10 +191,14 @@ export function ProductForm({
         <div className="flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-sm">
             Meta título (opcional — usa o nome do produto se ficar vazio)
+            {aiEnabled && <AiButton feature="SEO_TITLE" label="Gerar meta título" targetName="metaTitle" />}
             <input name="metaTitle" defaultValue={product?.metaTitle ?? ""} className="input-field" />
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Meta descrição (opcional — usa o início da descrição se ficar vazio)
+            {aiEnabled && (
+              <AiButton feature="SEO_DESCRIPTION" label="Gerar meta descrição" targetName="metaDescription" />
+            )}
             <textarea
               name="metaDescription"
               rows={2}
