@@ -11,6 +11,8 @@ import { ConfirmDialog } from "./confirm-dialog";
 import { BulkPriceChangeModal } from "./bulk-price-change-modal";
 import { SortableHeader } from "./sortable-header";
 import { useSortable } from "@/lib/use-sortable";
+import { SearchBox } from "./search-box";
+import { useAdminSearch } from "@/lib/use-admin-search";
 
 type PendingDelete = { type: "one"; id: string; name: string } | { type: "bulk"; ids: string[] };
 
@@ -41,15 +43,24 @@ export function ProductsTable({
   brands: Brand[];
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const { sorted, sortKey, ascending, toggleSort } = useSortable(products, sortValue);
+  const { query, setQuery, filtered } = useAdminSearch(
+    products,
+    (p) => `${p.name} ${p.sku ?? ""} ${p.ean ?? ""} ${p.brand}`,
+  );
+  const { sorted, sortKey, ascending, toggleSort } = useSortable(filtered, sortValue);
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const [busy, setBusy] = useState(false);
   const [priceChangeOpen, setPriceChangeOpen] = useState(false);
 
-  const allSelected = products.length > 0 && selected.size === products.length;
+  const allSelected = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
 
   function toggleAll() {
-    setSelected(allSelected ? new Set() : new Set(products.map((p) => p.id)));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) filtered.forEach((p) => next.delete(p.id));
+      else filtered.forEach((p) => next.add(p.id));
+      return next;
+    });
   }
 
   function toggleOne(id: string) {
@@ -77,6 +88,12 @@ export function ProductsTable({
 
   return (
     <div>
+      <SearchBox
+        value={query}
+        onChange={setQuery}
+        placeholder="Pesquisar por nome, SKU, EAN ou marca..."
+        className="mb-3 max-w-sm"
+      />
       <div className="mb-3 flex items-center justify-between">
         <div>
           {selected.size > 0 && <span className="text-sm text-foreground">{selected.size} produto(s) selecionado(s)</span>}
@@ -178,6 +195,13 @@ export function ProductsTable({
                 </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-muted">
+                  {query.trim() ? `Nenhum produto encontrado para "${query}".` : "Ainda não há produtos."}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

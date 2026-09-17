@@ -31,11 +31,17 @@ function wordMatches(word: string, haystack: string): boolean {
   return haystack.split(/\s+/).some((token) => levenshtein(word, token) <= maxDistance);
 }
 
-export function matchesSearch(product: Product, query: string): boolean {
+// Motor genérico por trás de matchesSearch (catálogo público) e da pesquisa
+// rápida do backoffice — o "haystack" é o texto de todos os campos
+// pesquisáveis de uma linha, já concatenado por quem chama.
+export function fuzzyMatch(haystack: string, query: string): boolean {
   const q = normalize(query).trim();
   if (!q) return true;
-
-  const haystack = normalize(`${product.name} ${product.brand} ${product.description} ${product.category}`);
+  const h = normalize(haystack);
   const words = q.split(/\s+/).filter(Boolean);
-  return words.every((word) => wordMatches(word, haystack));
+  return words.every((word) => wordMatches(word, h));
+}
+
+export function matchesSearch(product: Product, query: string): boolean {
+  return fuzzyMatch(`${product.name} ${product.brand} ${product.description} ${product.category}`, query);
 }

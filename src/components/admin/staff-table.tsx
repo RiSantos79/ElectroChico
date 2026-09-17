@@ -12,6 +12,8 @@ import {
 import { ConfirmDialog } from "./confirm-dialog";
 import { SortableHeader } from "./sortable-header";
 import { useSortable } from "@/lib/use-sortable";
+import { SearchBox } from "./search-box";
+import { useAdminSearch } from "@/lib/use-admin-search";
 
 const statusLabel: Record<string, string> = { ACTIVE: "Ativo", SUSPENDED: "Suspenso", DISABLED: "Desativado" };
 const statusColor: Record<string, string> = {
@@ -41,11 +43,15 @@ function sortValue(s: Staff, key: string): string | number {
 
 export function StaffTable({ staff, currentUserId }: { staff: Staff[]; currentUserId: string }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const { sorted, sortKey, ascending, toggleSort } = useSortable(staff, sortValue);
+  const { query, setQuery, filtered } = useAdminSearch(
+    staff,
+    (s) => `${s.name ?? ""} ${s.email} ${ROLE_LABELS[s.role]}`,
+  );
+  const { sorted, sortKey, ascending, toggleSort } = useSortable(filtered, sortValue);
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const selectableIds = staff.filter((s) => s.id !== currentUserId).map((s) => s.id);
+  const selectableIds = filtered.filter((s) => s.id !== currentUserId).map((s) => s.id);
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
 
   function toggleAll() {
@@ -76,6 +82,12 @@ export function StaffTable({ staff, currentUserId }: { staff: Staff[]; currentUs
 
   return (
     <div>
+      <SearchBox
+        value={query}
+        onChange={setQuery}
+        placeholder="Pesquisar por nome, email ou role..."
+        className="mb-3 max-w-sm"
+      />
       {selected.size > 0 && (
         <div className="mb-3 flex items-center justify-between rounded-xl border border-danger/40 bg-danger/10 px-4 py-2.5">
           <span className="text-sm text-foreground">{selected.size} selecionado(s)</span>
@@ -185,6 +197,13 @@ export function StaffTable({ staff, currentUserId }: { staff: Staff[]; currentUs
                 </tr>
               );
             })}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-muted">
+                  {query.trim() ? `Nenhum utilizador encontrado para "${query}".` : "Ainda não há utilizadores."}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

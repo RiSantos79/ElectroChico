@@ -3,6 +3,8 @@
 import type { AuditLog } from "@/lib/api";
 import { SortableHeader } from "./sortable-header";
 import { useSortable } from "@/lib/use-sortable";
+import { SearchBox } from "./search-box";
+import { useAdminSearch } from "@/lib/use-admin-search";
 
 function sortValue(log: AuditLog, key: string, actionLabels: Record<string, string>): string | number {
   switch (key) {
@@ -28,12 +30,23 @@ export function ActivityTable({
   logs: AuditLog[];
   actionLabels: Record<string, string>;
 }) {
-  const { sorted, sortKey, ascending, toggleSort } = useSortable(logs, (log, key) =>
+  const { query, setQuery, filtered } = useAdminSearch(
+    logs,
+    (log) => `${log.actor ?? ""} ${actionLabels[log.action] ?? log.action} ${log.entity ?? ""} ${log.entityId ?? ""} ${log.ip ?? ""}`,
+  );
+  const { sorted, sortKey, ascending, toggleSort } = useSortable(filtered, (log, key) =>
     sortValue(log, key, actionLabels),
   );
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
+    <div>
+      <SearchBox
+        value={query}
+        onChange={setQuery}
+        placeholder="Pesquisa rápida dentro destes resultados..."
+        className="mb-3 max-w-sm"
+      />
+      <div className="overflow-x-auto rounded-xl border border-border">
       <table className="w-full text-sm">
         <thead className="bg-surface text-left text-muted">
           <tr>
@@ -60,7 +73,7 @@ export function ActivityTable({
               <td className="px-4 py-3 text-muted">{log.ip ?? "—"}</td>
             </tr>
           ))}
-          {logs.length === 0 && (
+          {filtered.length === 0 && (
             <tr>
               <td colSpan={5} className="px-4 py-8 text-center text-muted">
                 Nenhum registo encontrado para estes filtros.
@@ -69,6 +82,7 @@ export function ActivityTable({
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

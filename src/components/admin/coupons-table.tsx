@@ -5,6 +5,8 @@ import { formatPrice } from "@/lib/format";
 import { deleteCouponAction, toggleCouponAction } from "@/lib/admin-actions";
 import { SortableHeader } from "./sortable-header";
 import { useSortable } from "@/lib/use-sortable";
+import { SearchBox } from "./search-box";
+import { useAdminSearch } from "@/lib/use-admin-search";
 
 function formatDiscount(coupon: { type: string; value: string }) {
   return coupon.type === "PERCENTAGE" ? `${Number(coupon.value)}%` : formatPrice(Number(coupon.value));
@@ -30,10 +32,13 @@ function sortValue(c: Coupon, key: string): string | number {
 }
 
 export function CouponsTable({ coupons }: { coupons: Coupon[] }) {
-  const { sorted, sortKey, ascending, toggleSort } = useSortable(coupons, sortValue);
+  const { query, setQuery, filtered } = useAdminSearch(coupons, (c) => c.code);
+  const { sorted, sortKey, ascending, toggleSort } = useSortable(filtered, sortValue);
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
+    <div>
+      <SearchBox value={query} onChange={setQuery} placeholder="Pesquisar por código..." className="mb-3 max-w-sm" />
+      <div className="overflow-x-auto rounded-xl border border-border">
       <table className="w-full text-sm">
         <thead className="bg-surface text-left text-muted">
           <tr>
@@ -100,15 +105,16 @@ export function CouponsTable({ coupons }: { coupons: Coupon[] }) {
               </td>
             </tr>
           ))}
-          {coupons.length === 0 && (
+          {filtered.length === 0 && (
             <tr>
               <td colSpan={7} className="px-4 py-8 text-center text-muted">
-                Ainda não há cupões criados.
+                {query.trim() ? `Nenhum cupão encontrado para "${query}".` : "Ainda não há cupões criados."}
               </td>
             </tr>
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

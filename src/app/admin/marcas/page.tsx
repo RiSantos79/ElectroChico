@@ -1,5 +1,6 @@
 import { getBrandsAdmin } from "@/lib/api";
-import { createBrandAction, updateBrandAction } from "@/lib/admin-actions";
+import { createBrandAction } from "@/lib/admin-actions";
+import { BrandsGrid } from "@/components/admin/brands-grid";
 
 export const metadata = { title: "Marcas — Backoffice" };
 
@@ -30,37 +31,7 @@ export default async function AdminBrandsPage() {
         </form>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {brands.map((brand) => (
-          <form
-            key={brand.id}
-            action={updateBrandAction.bind(null, brand.id)}
-            className="flex flex-col gap-3 rounded-xl border border-border bg-surface-raised p-4"
-          >
-            <div className="flex items-center gap-3">
-              {brand.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- logótipo de marca vindo da API, não vale a pena otimizar
-                <img src={brand.logoUrl} alt={brand.name} className="size-10 rounded-lg object-contain" />
-              ) : (
-                <div className="flex size-10 items-center justify-center rounded-lg bg-surface text-xs text-muted">
-                  {brand.name.slice(0, 2).toUpperCase()}
-                </div>
-              )}
-              <p className="text-xs text-muted">
-                {brand.productCount} {brand.productCount === 1 ? "produto" : "produtos"}
-              </p>
-            </div>
-            <input name="name" defaultValue={brand.name} className="input-field text-sm" />
-            <input type="file" name="logo" accept="image/*" className="text-xs" />
-            <button
-              type="submit"
-              className="self-start text-sm font-medium text-accent hover:underline"
-            >
-              Guardar
-            </button>
-          </form>
-        ))}
-      </div>
+      <BrandsGrid brands={brands} />
     </div>
   );
 }

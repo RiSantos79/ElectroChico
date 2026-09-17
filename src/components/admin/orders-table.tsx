@@ -5,6 +5,8 @@ import type { Order } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { SortableHeader } from "./sortable-header";
 import { useSortable } from "@/lib/use-sortable";
+import { SearchBox } from "./search-box";
+import { useAdminSearch } from "@/lib/use-admin-search";
 
 const statusLabel: Record<string, string> = {
   PENDING: "Pendente",
@@ -48,10 +50,21 @@ function sortValue(order: Order, key: string): string | number {
 }
 
 export function OrdersTable({ orders }: { orders: Order[] }) {
-  const { sorted, sortKey, ascending, toggleSort } = useSortable(orders, sortValue);
+  const { query, setQuery, filtered } = useAdminSearch(
+    orders,
+    (o) => `${o.id} ${o.customerName} ${o.customerEmail} ${statusLabel[o.status] ?? o.status}`,
+  );
+  const { sorted, sortKey, ascending, toggleSort } = useSortable(filtered, sortValue);
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
+    <div>
+      <SearchBox
+        value={query}
+        onChange={setQuery}
+        placeholder="Pesquisar por nº, cliente, email ou estado..."
+        className="mb-3 max-w-sm"
+      />
+      <div className="overflow-x-auto rounded-xl border border-border">
       <table className="w-full text-sm">
         <thead className="bg-surface text-left text-muted">
           <tr>
@@ -107,15 +120,16 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
               </td>
             </tr>
           ))}
-          {orders.length === 0 && (
+          {filtered.length === 0 && (
             <tr>
               <td colSpan={8} className="px-4 py-8 text-center text-muted">
-                Ainda não há encomendas.
+                {query.trim() ? `Nenhuma encomenda encontrada para "${query}".` : "Ainda não há encomendas."}
               </td>
             </tr>
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
