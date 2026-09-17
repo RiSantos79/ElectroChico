@@ -174,8 +174,16 @@ export function createBrand(data: { name: string; logoUrl?: string }, token: str
   return apiFetch<Brand>("/brands", { method: "POST", headers: authHeaders(token), body: JSON.stringify(data) });
 }
 
-export function updateBrand(id: string, data: { name?: string; logoUrl?: string }, token: string) {
+export function updateBrand(id: string, data: { name?: string; logoUrl?: string | null }, token: string) {
   return apiFetch<Brand>(`/brands/${id}`, { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function deleteBrand(id: string, token: string) {
+  return apiFetch(`/brands/${id}`, { method: "DELETE", headers: authHeaders(token) });
+}
+
+export function deleteBrands(ids: string[], token: string) {
+  return apiFetch("/brands/bulk", { method: "DELETE", headers: authHeaders(token), body: JSON.stringify({ ids }) });
 }
 
 // --- Avaliações ---

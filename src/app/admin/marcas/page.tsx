@@ -1,6 +1,6 @@
 import { getBrandsAdmin } from "@/lib/api";
 import { createBrandAction } from "@/lib/admin-actions";
-import { BrandsGrid } from "@/components/admin/brands-grid";
+import { BrandsTable } from "@/components/admin/brands-table";
 
 export const metadata = { title: "Marcas — Backoffice" };
 
@@ -31,7 +31,7 @@ export default async function AdminBrandsPage() {
         </form>
       </section>
 
-      <BrandsGrid brands={brands} />
+      <BrandsTable brands={brands} />
     </div>
   );
 }

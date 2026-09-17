@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { slugify } from '../common/slugify.js';
@@ -48,5 +48,23 @@ export class BrandsService {
     const brand = await this.prisma.brand.update({ where: { id }, data: { ...dto, slug } });
     await this.audit.log('BRAND_UPDATE', { entity: 'Brand', entityId: id, actor: actorEmail });
     return brand;
+  }
+
+  async remove(id: string, actorEmail?: string) {
+    const brand = await this.prisma.brand.findUnique({ where: { id }, include: { _count: { select: { products: true } } } });
+    if (!brand) throw new NotFoundException(`Marca com id "${id}" não encontrada`);
+    if (brand._count.products > 0) {
+      throw new BadRequestException(
+        `Não é possível apagar "${brand.name}" — tem ${brand._count.products} produto(s) associado(s).`,
+      );
+    }
+    await this.prisma.brand.delete({ where: { id } });
+    await this.audit.log('BRAND_DELETE', { entity: 'Brand', entityId: id, actor: actorEmail });
+  }
+
+  async removeMany(ids: string[], actorEmail?: string) {
+    for (const id of ids) {
+      await this.remove(id, actorEmail);
+    }
   }
 }

@@ -12,6 +12,8 @@ import {
   createProduct,
   createStaff,
   deleteBanner,
+  deleteBrand,
+  deleteBrands,
   deleteCoupon,
   deleteProduct,
   deleteProducts,
@@ -242,6 +244,40 @@ export async function updateBrandAction(id: string, formData: FormData) {
   const logoUrl = await uploadedLogoUrl(formData, token);
   await updateBrand(id, { name: String(formData.get("name")), ...(logoUrl ? { logoUrl } : {}) }, token);
   revalidatePath("/admin/marcas");
+  redirect("/admin/marcas");
+}
+
+export async function removeBrandLogoAction(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    await updateBrand(id, { logoUrl: null }, token);
+    revalidatePath("/admin/marcas");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível remover a imagem." };
+  }
+}
+
+export async function deleteBrandAction(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    await deleteBrand(id, token);
+    revalidatePath("/admin/marcas");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível apagar a marca." };
+  }
+}
+
+export async function deleteBrandsAction(ids: string[]): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    await deleteBrands(ids, token);
+    revalidatePath("/admin/marcas");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível apagar as marcas selecionadas." };
+  }
 }
 
 export async function updateCategoryImageAction(id: string, formData: FormData) {
