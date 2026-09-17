@@ -2,20 +2,9 @@ import { notFound, redirect } from "next/navigation";
 import { getOrder } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { formatPrice } from "@/lib/format";
-import { updateOrderAction } from "@/lib/admin-actions";
+import { OrderStatusForm } from "@/components/admin/order-status-form";
 
 export const metadata = { title: "Encomenda — Backoffice" };
-
-const statusOptions: { value: string; label: string }[] = [
-  { value: "PENDING", label: "Pendente" },
-  { value: "PAID", label: "Paga" },
-  { value: "PROCESSING", label: "A preparar" },
-  { value: "SHIPPED", label: "Enviada" },
-  { value: "DELIVERED", label: "Entregue" },
-  { value: "CANCELLED", label: "Cancelada" },
-  { value: "REFUNDED", label: "Reembolsada" },
-  { value: "FAILED", label: "Falhada" },
-];
 
 export default async function AdminOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const token = await getSessionToken();
@@ -70,37 +59,12 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
 
       <section className="rounded-xl border border-border bg-surface-raised p-6">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">Estado e envio</h2>
-        <form action={updateOrderAction.bind(null, order.id)} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1 text-sm">
-            Estado
-            <select name="status" defaultValue={order.status} className="input-field">
-              {statusOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
-              Transportadora
-              <input name="trackingCarrier" defaultValue={order.trackingCarrier ?? ""} className="input-field" />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              Código de rastreio
-              <input name="trackingCode" defaultValue={order.trackingCode ?? ""} className="input-field" />
-            </label>
-          </div>
-          <p className="text-xs text-muted">
-            Cancelar ou reembolsar uma encomenda já paga devolve automaticamente o stock reservado dos artigos.
-          </p>
-          <button
-            type="submit"
-            className="self-start rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-90"
-          >
-            Guardar
-          </button>
-        </form>
+        <OrderStatusForm
+          id={order.id}
+          status={order.status}
+          trackingCarrier={order.trackingCarrier ?? ""}
+          trackingCode={order.trackingCode ?? ""}
+        />
       </section>
     </div>
   );

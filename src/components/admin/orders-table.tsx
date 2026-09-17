@@ -38,6 +38,10 @@ function sortValue(order: Order, key: string): string | number {
       return Number(order.total);
     case "status":
       return statusLabel[order.status] ?? order.status;
+    case "trackingCarrier":
+      return order.trackingCarrier ?? "";
+    case "trackingCode":
+      return order.trackingCode ?? "";
     default:
       return "";
   }
@@ -62,6 +66,20 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
             <th className="px-4 py-3 font-medium">Artigos</th>
             <SortableHeader label="Total" sortKey="total" activeKey={sortKey} ascending={ascending} onSort={toggleSort} />
             <SortableHeader label="Estado" sortKey="status" activeKey={sortKey} ascending={ascending} onSort={toggleSort} />
+            <SortableHeader
+              label="Transportadora"
+              sortKey="trackingCarrier"
+              activeKey={sortKey}
+              ascending={ascending}
+              onSort={toggleSort}
+            />
+            <SortableHeader
+              label="Código de rastreio"
+              sortKey="trackingCode"
+              activeKey={sortKey}
+              ascending={ascending}
+              onSort={toggleSort}
+            />
             <th className="px-4 py-3 font-medium" />
           </tr>
         </thead>
@@ -80,6 +98,8 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
               <td className={`px-4 py-3 font-medium ${statusColor[order.status] ?? "text-muted"}`}>
                 {statusLabel[order.status] ?? order.status}
               </td>
+              <td className="px-4 py-3 text-muted">{order.trackingCarrier ?? "—"}</td>
+              <td className="px-4 py-3 text-muted">{order.trackingCode ?? "—"}</td>
               <td className="px-4 py-3 text-right">
                 <Link href={`/admin/encomendas/${order.id}`} className="font-medium text-accent hover:underline">
                   Ver
@@ -89,7 +109,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
           ))}
           {orders.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-4 py-8 text-center text-muted">
+              <td colSpan={8} className="px-4 py-8 text-center text-muted">
                 Ainda não há encomendas.
               </td>
             </tr>

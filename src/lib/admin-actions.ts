@@ -215,19 +215,27 @@ export async function updateCategoryImageAction(id: string, formData: FormData) 
   revalidatePath("/admin/categorias");
 }
 
-export async function updateOrderAction(id: string, formData: FormData) {
-  const token = await requireToken();
-  await updateOrderStatus(
-    id,
-    {
-      status: String(formData.get("status")) as OrderStatus,
-      trackingCarrier: optionalString(formData, "trackingCarrier"),
-      trackingCode: optionalString(formData, "trackingCode"),
-    },
-    token,
-  );
-  revalidatePath("/admin/encomendas");
-  revalidatePath(`/admin/encomendas/${id}`);
+export async function updateOrderAction(
+  id: string,
+  formData: FormData,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    await updateOrderStatus(
+      id,
+      {
+        status: String(formData.get("status")) as OrderStatus,
+        trackingCarrier: optionalString(formData, "trackingCarrier"),
+        trackingCode: optionalString(formData, "trackingCode"),
+      },
+      token,
+    );
+    revalidatePath("/admin/encomendas");
+    revalidatePath(`/admin/encomendas/${id}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível guardar a encomenda." };
+  }
 }
 
 function isoOrUndefined(formData: FormData, key: string): string | undefined {
