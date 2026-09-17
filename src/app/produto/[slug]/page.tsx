@@ -9,6 +9,7 @@ import { ProductStockBar } from "@/components/product-stock-bar";
 import { StickyBuyBar } from "@/components/sticky-buy-bar";
 import { ProductTabs } from "@/components/product-tabs";
 import { Price } from "@/components/price";
+import { InstallmentSimulator } from "@/components/installment-simulator";
 import { SITE_URL } from "@/lib/site";
 
 // A descrição é HTML (editor de texto do admin) — para metadados/SEO
@@ -125,12 +126,14 @@ export default async function ProductPage({
             <Price amount={product.price} className="text-3xl font-bold text-foreground" />
             {product.oldPrice && <Price amount={product.oldPrice} className="text-lg text-muted line-through" />}
             {discount && (
-              <span className="rounded-full bg-danger px-2.5 py-1 text-xs font-semibold text-white">
+              <span className="rounded-full bg-danger px-2.5 py-1 text-xs font-semibold text-danger-foreground">
                 -{discount}%
               </span>
             )}
           </div>
           <p className="mt-1 text-sm font-medium text-muted">Classe energética {product.energyClass}</p>
+
+          <InstallmentSimulator price={product.price} />
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-border bg-surface px-4 py-3 text-xs font-medium text-muted">
             <span className="inline-flex items-center gap-1.5">
@@ -151,6 +154,7 @@ export default async function ProductPage({
       <ProductTabs
         description={product.description}
         specs={buildDisplaySpecs(product)}
+        faqs={product.faqs}
         reviews={reviews}
         productId={product.id}
         productSlug={product.slug}

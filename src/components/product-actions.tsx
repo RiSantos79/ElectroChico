@@ -5,15 +5,18 @@ import { useState } from "react";
 import type { Product } from "@/data/catalog";
 import { useCart } from "@/lib/cart-context";
 import { useFavorites } from "@/lib/favorites-context";
+import { useComparison } from "@/lib/comparison-context";
 
 export function ProductActions({ product }: { product: Product }) {
   const { addItem, getCartQty } = useCart();
   const { toggle, isFavorite } = useFavorites();
+  const { toggle: toggleCompare, isComparing } = useComparison();
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const remaining = Math.max(0, product.stockQuantity - getCartQty(product.slug));
   const outOfStock = remaining <= 0;
   const favorite = isFavorite(product.slug);
+  const comparing = isComparing(product.slug);
 
   function handleAdd() {
     const { limited } = addItem(product);
@@ -52,6 +55,14 @@ export function ProductActions({ product }: { product: Product }) {
           className="flex items-center gap-2 rounded-full border border-border px-4 py-3 text-sm font-medium hover:bg-surface"
         >
           <span className={favorite ? "text-accent" : ""}>{favorite ? "♥" : "♡"}</span> Favoritos
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleCompare(product.slug)}
+          aria-pressed={comparing}
+          className="flex items-center gap-2 rounded-full border border-border px-4 py-3 text-sm font-medium hover:bg-surface"
+        >
+          <span className={comparing ? "text-accent" : ""}>⇄</span> Comparar
         </button>
       </div>
       {message && (

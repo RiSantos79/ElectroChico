@@ -7,6 +7,10 @@ function specsToText(specs: { label: string; value: string }[]) {
   return specs.map((s) => `${s.label}: ${s.value}`).join("\n");
 }
 
+function faqsToText(faqs: { question: string; answer: string }[]) {
+  return faqs.map((f) => `${f.question} | ${f.answer}`).join("\n");
+}
+
 export function ProductForm({
   categories,
   brands,
@@ -85,6 +89,16 @@ export function ProductForm({
             rows={5}
             defaultValue={product ? specsToText(product.specs) : ""}
             placeholder={"Capacidade: 9 kg\nClasse energética: B"}
+            className="input-field resize-none font-mono text-xs"
+          />
+        </label>
+        <label className="mt-4 flex flex-col gap-1 text-sm">
+          Perguntas frequentes (opcional) — uma por linha, no formato <code>Pergunta | Resposta</code>
+          <textarea
+            name="faqs"
+            rows={4}
+            defaultValue={product ? faqsToText(product.faqs ?? []) : ""}
+            placeholder={"A máquina é reversível? | Sim, a porta pode ser invertida no local."}
             className="input-field resize-none font-mono text-xs"
           />
         </label>

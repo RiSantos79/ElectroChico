@@ -84,12 +84,13 @@ export class ProductsService {
   }
 
   async create(dto: CreateProductDto, actorEmail?: string) {
-    const { categoryId, brandId, specs, ...rest } = dto;
+    const { categoryId, brandId, specs, faqs, ...rest } = dto;
     const product = await this.prisma.product.create({
       data: {
         ...rest,
         description: sanitizeRichText(rest.description),
         specs: specs as unknown as Prisma.InputJsonValue,
+        faqs: faqs as unknown as Prisma.InputJsonValue,
         category: { connect: { id: categoryId } },
         brand: { connect: { id: brandId } },
       },
@@ -100,13 +101,14 @@ export class ProductsService {
 
   async update(id: string, dto: UpdateProductDto, actorEmail?: string) {
     const before = await this.ensureExists(id);
-    const { categoryId, brandId, specs, ...rest } = dto;
+    const { categoryId, brandId, specs, faqs, ...rest } = dto;
     const product = await this.prisma.product.update({
       where: { id },
       data: {
         ...rest,
         description: rest.description !== undefined ? sanitizeRichText(rest.description) : undefined,
         specs: specs !== undefined ? (specs as unknown as Prisma.InputJsonValue) : undefined,
+        faqs: faqs !== undefined ? (faqs as unknown as Prisma.InputJsonValue) : undefined,
         category: categoryId ? { connect: { id: categoryId } } : undefined,
         brand: brandId ? { connect: { id: brandId } } : undefined,
       },
@@ -164,6 +166,7 @@ export class ProductsService {
         color: original.color,
         description: original.description,
         specs: original.specs as unknown as Prisma.InputJsonValue,
+        faqs: original.faqs as unknown as Prisma.InputJsonValue,
         sku: original.sku,
         ean: original.ean,
         weightKg: original.weightKg,

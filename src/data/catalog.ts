@@ -25,6 +25,7 @@ export type Product = {
   images: string[];
   description: string;
   specs: { label: string; value: string }[];
+  faqs: { question: string; answer: string }[];
   sku?: string;
   ean?: string;
   weightKg?: number;

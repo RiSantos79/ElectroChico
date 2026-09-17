@@ -7,6 +7,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { CartProvider } from "@/lib/cart-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
+import { ComparisonProvider } from "@/lib/comparison-context";
 import { IvaProvider } from "@/lib/iva-context";
 import { getCategories } from "@/lib/api";
 import { getCustomerSessionToken } from "@/lib/customer-session";
@@ -64,20 +65,22 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <IvaProvider>
             <FavoritesProvider key={`fav-${customerId ?? "guest"}`} customerKey={customerId}>
-              <CartProvider key={`cart-${customerId ?? "guest"}`} customerKey={customerId}>
-                <ShopChrome
-                  header={
-                    <Header
-                      categories={categories}
-                      customerName={customerPayload ? (customerPayload.name ?? customerPayload.email) : null}
-                    />
-                  }
-                  footer={<Footer />}
-                  cookieConsent={<CookieConsent />}
-                >
-                  <main className="flex-1">{children}</main>
-                </ShopChrome>
-              </CartProvider>
+              <ComparisonProvider>
+                <CartProvider key={`cart-${customerId ?? "guest"}`} customerKey={customerId}>
+                  <ShopChrome
+                    header={
+                      <Header
+                        categories={categories}
+                        customerName={customerPayload ? (customerPayload.name ?? customerPayload.email) : null}
+                      />
+                    }
+                    footer={<Footer />}
+                    cookieConsent={<CookieConsent />}
+                  >
+                    <main className="flex-1">{children}</main>
+                  </ShopChrome>
+                </CartProvider>
+              </ComparisonProvider>
             </FavoritesProvider>
           </IvaProvider>
         </ThemeProvider>

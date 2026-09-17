@@ -4,6 +4,7 @@ import { ProductMedia } from "@/components/product-media";
 import { ProductStockBar } from "@/components/product-stock-bar";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { FavoriteButton } from "@/components/favorite-button";
+import { CompareButton } from "@/components/compare-button";
 import { Price } from "@/components/price";
 
 const badgeLabel: Record<NonNullable<Product["badge"]>, string> = {
@@ -34,7 +35,7 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           )}
           {discount && (
-            <span className="absolute right-2 top-2 rounded-full bg-danger px-2.5 py-1 text-xs font-semibold text-white">
+            <span className="absolute right-2 top-2 rounded-full bg-danger px-2.5 py-1 text-xs font-semibold text-danger-foreground">
               -{discount}%
             </span>
           )}
@@ -62,6 +63,7 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="mt-3 flex gap-2">
         <AddToCartButton product={product} className="flex-1" />
         <FavoriteButton slug={product.slug} className="size-10" />
+        <CompareButton slug={product.slug} className="size-10" />
       </div>
     </div>
   );

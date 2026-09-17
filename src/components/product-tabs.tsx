@@ -7,17 +7,19 @@ import { ReviewForm } from "@/components/review-form";
 export function ProductTabs({
   description,
   specs,
+  faqs,
   reviews,
   productId,
   productSlug,
 }: {
   description: string;
   specs: { label: string; value: string }[];
+  faqs: { question: string; answer: string }[];
   reviews: Review[];
   productId: string;
   productSlug: string;
 }) {
-  const [tab, setTab] = useState<"descricao" | "specs" | "avaliacoes">("descricao");
+  const [tab, setTab] = useState<"descricao" | "specs" | "faq" | "avaliacoes">("descricao");
 
   return (
     <section className="mt-14 max-w-2xl">
@@ -26,6 +28,7 @@ export function ProductTabs({
           [
             ["descricao", "Descrição"],
             ["specs", "Especificações técnicas"],
+            ...(faqs.length > 0 ? [["faq", "Perguntas frequentes"] as const] : []),
             ["avaliacoes", `Avaliações (${reviews.length})`],
           ] as const
         ).map(([value, label]) => (
@@ -70,6 +73,17 @@ export function ProductTabs({
         ) : (
           <p className="text-sm text-muted">Sem especificações.</p>
         ))}
+
+      {tab === "faq" && (
+        <div className="space-y-2">
+          {faqs.map((faq, i) => (
+            <details key={i} className="rounded-xl border border-border bg-surface-raised p-4">
+              <summary className="cursor-pointer text-sm font-medium text-foreground">{faq.question}</summary>
+              <p className="mt-2 text-sm text-muted">{faq.answer}</p>
+            </details>
+          ))}
+        </div>
+      )}
 
       {tab === "avaliacoes" && (
         <div>

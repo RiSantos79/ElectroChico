@@ -21,6 +21,14 @@ class SpecDto {
   value!: string;
 }
 
+class FaqDto {
+  @IsString()
+  question!: string;
+
+  @IsString()
+  answer!: string;
+}
+
 export class CreateProductDto {
   @IsString()
   @Transform(({ value }) => (typeof value === 'string' ? slugify(value) : value))
@@ -65,6 +73,12 @@ export class CreateProductDto {
   @ValidateNested({ each: true })
   @Type(() => SpecDto)
   specs!: SpecDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FaqDto)
+  faqs?: FaqDto[];
 
   @IsOptional()
   @IsArray()

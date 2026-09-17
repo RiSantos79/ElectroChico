@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
 import { useFavorites } from "@/lib/favorites-context";
+import { useComparison } from "@/lib/comparison-context";
 import { AccountMenu } from "@/components/account-menu";
 import { Price } from "@/components/price";
 
 export function HeaderIcons({ customerName }: { customerName?: string | null }) {
   const { count, total } = useCart();
   const { slugs } = useFavorites();
+  const { slugs: compareSlugs } = useComparison();
 
   return (
     <div className="flex items-center gap-2">
@@ -26,10 +28,24 @@ export function HeaderIcons({ customerName }: { customerName?: string | null }) 
           </span>
         )}
       </Link>
+      <Link
+        href="/comparar"
+        aria-label="Comparar produtos"
+        className="relative flex size-9 items-center justify-center rounded-full border border-border hover:bg-surface"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-4.5">
+          <path d="M4 6h6M4 12h10M4 18h6" strokeLinecap="round" />
+          <path d="M17 6l3 3-3 3M20 9h-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        {compareSlugs.length > 0 && (
+          <span className="absolute -right-1 -top-1 flex size-4.5 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-accent-foreground">
+            {compareSlugs.length}
+          </span>
+        )}
+      </Link>
       <AccountMenu customerName={customerName} />
       <Link
         href="/carrinho"
-        aria-label="Carrinho"
         className="flex items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:opacity-90"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-4.5">

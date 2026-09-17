@@ -72,6 +72,21 @@ function parseSpecs(text: string) {
     });
 }
 
+// Uma pergunta por linha, no formato "Pergunta | Resposta" (também aceita
+// tab, para colar de uma folha de cálculo com duas colunas).
+function parseFaqs(text: string) {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const sep = line.includes("\t") ? "\t" : "|";
+      const [question, ...rest] = line.split(sep);
+      return { question: question.trim(), answer: rest.join(sep).trim() };
+    })
+    .filter((faq) => faq.question && faq.answer);
+}
+
 function optionalNumber(formData: FormData, key: string): number | undefined {
   const raw = formData.get(key);
   if (!raw || raw === "") return undefined;
@@ -110,6 +125,7 @@ async function formToInput(formData: FormData, token: string): Promise<AdminProd
     images: [...keptImages, ...uploadedUrls],
     description: String(formData.get("description")),
     specs: parseSpecs(String(formData.get("specs") || "")),
+    faqs: parseFaqs(String(formData.get("faqs") || "")),
     sku: optionalString(formData, "sku"),
     ean: optionalString(formData, "ean"),
     weightKg: optionalNumber(formData, "weightKg"),

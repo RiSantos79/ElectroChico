@@ -27,6 +27,7 @@ type ApiProduct = {
   color: string;
   description: string;
   specs: { label: string; value: string }[];
+  faqs: { question: string; answer: string }[] | null;
   sku: string | null;
   ean: string | null;
   weightKg: number | null;
@@ -64,6 +65,7 @@ function mapProduct(p: ApiProduct): Product {
     images: p.images.map(absoluteMediaUrl),
     description: p.description,
     specs: p.specs,
+    faqs: p.faqs ?? [],
     sku: p.sku ?? undefined,
     ean: p.ean ?? undefined,
     weightKg: p.weightKg ?? undefined,
@@ -221,6 +223,7 @@ export type AdminProductInput = {
   images: string[];
   description: string;
   specs: { label: string; value: string }[];
+  faqs?: { question: string; answer: string }[];
   sku?: string;
   ean?: string;
   weightKg?: number;
