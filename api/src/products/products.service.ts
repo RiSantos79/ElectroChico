@@ -2,10 +2,18 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { AuthService } from '../auth/auth.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
 import { UpdateProductDto } from './dto/update-product.dto.js';
+import type { BulkImportProductsDto } from './dto/bulk-import-product.dto.js';
 import { sanitizeRichText } from '../common/sanitize-html.js';
 import { StockService } from '../stock/stock.service.js';
+import { slugify } from '../common/slugify.js';
+
+// Alterações de preço acima disto exigem confirmação extra (reauth), tal como
+// promover um funcionário a administrador — o impacto financeiro é grande
+// demais para bastar um único clique.
+const BULK_PRICE_REAUTH_THRESHOLD_PERCENT = 20;
 
 // Postgres `contains`/`mode: insensitive` ignora maiúsculas/minúsculas mas
 // não acentos — "maq" não bate com "máquina". Normalizamos em memória em vez
@@ -24,6 +32,7 @@ export class ProductsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly stock: StockService,
+    private readonly auth: AuthService,
   ) {}
 
   findAll(params: { categorySlug?: string; brandSlug?: string; includeArchived?: boolean }) {
@@ -138,6 +147,35 @@ export class ProductsService {
     }
   }
 
+  // Aplica a mesma percentagem a vários produtos de uma vez (ex.: +10% numa
+  // categoria inteira). A pré-visualização já foi mostrada no frontend com
+  // os mesmos preços atuais, por isso aqui só é preciso aplicar e registar.
+  async bulkPriceChange(ids: string[], percent: number, actorId: string, actorEmail?: string, reauthToken?: string) {
+    if (Math.abs(percent) > BULK_PRICE_REAUTH_THRESHOLD_PERCENT) {
+      await this.auth.verifyReauthToken(actorId, reauthToken);
+    }
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, price: true },
+    });
+
+    await this.prisma.$transaction(
+      products.map((p) => {
+        const newPrice = Math.round(Number(p.price) * (1 + percent / 100) * 100) / 100;
+        return this.prisma.product.update({ where: { id: p.id }, data: { price: newPrice } });
+      }),
+    );
+
+    await this.audit.log('PRODUCT_BULK_PRICE_CHANGE', {
+      entity: 'Product',
+      actor: actorEmail,
+      details: { percent, count: products.length },
+    });
+
+    return { updated: products.length };
+  }
+
   // A cópia fica arquivada por omissão — evita que um produto a meio de
   // edição apareça de repente no catálogo com o mesmo preço/stock do original.
   async duplicate(id: string, actorEmail?: string) {
@@ -181,6 +219,92 @@ export class ProductsService {
     });
     await this.audit.log('PRODUCT_DUPLICATE', { entity: 'Product', entityId: copy.id, actor: actorEmail });
     return copy;
+  }
+
+  // Cada linha é criada/atualizada isoladamente: uma linha inválida (marca
+  // desconhecida, etc.) fica reportada em `errors` sem impedir as restantes.
+  async bulkImport(dto: BulkImportProductsDto, actorEmail?: string) {
+    const [brands, categories] = await Promise.all([
+      this.prisma.brand.findMany(),
+      this.prisma.category.findMany(),
+    ]);
+    const brandBySlug = new Map(brands.map((b) => [b.slug, b.id]));
+    const categoryBySlug = new Map(categories.map((c) => [c.slug, c.id]));
+
+    let created = 0;
+    let updated = 0;
+    const errors: { row: number; message: string }[] = [];
+
+    for (let i = 0; i < dto.rows.length; i++) {
+      const row = dto.rows[i];
+      try {
+        if (row.id) {
+          await this.ensureExists(row.id);
+          const brandId = brandBySlug.get(row.brand);
+          const categoryId = categoryBySlug.get(row.category);
+          if (!brandId) throw new Error(`Marca "${row.brand}" não encontrada`);
+          if (!categoryId) throw new Error(`Categoria "${row.category}" não encontrada`);
+          await this.prisma.product.update({
+            where: { id: row.id },
+            data: {
+              name: row.name,
+              brandId,
+              categoryId,
+              sku: row.sku,
+              ean: row.ean,
+              price: row.price,
+              oldPrice: row.oldPrice,
+              stockQuantity: row.stockQuantity,
+              energyClass: row.energyClass,
+              archived: row.archived,
+            },
+          });
+          updated++;
+        } else {
+          const brandId = brandBySlug.get(row.brand);
+          const categoryId = categoryBySlug.get(row.category);
+          if (!brandId) throw new Error(`Marca "${row.brand}" não encontrada`);
+          if (!categoryId) throw new Error(`Categoria "${row.category}" não encontrada`);
+
+          const baseSlug = slugify(row.name);
+          let slug = baseSlug;
+          let suffix = 2;
+          while (await this.prisma.product.findUnique({ where: { slug } })) {
+            slug = `${baseSlug}-${suffix++}`;
+          }
+
+          await this.prisma.product.create({
+            data: {
+              slug,
+              name: row.name,
+              brandId,
+              categoryId,
+              sku: row.sku,
+              ean: row.ean,
+              price: row.price,
+              oldPrice: row.oldPrice,
+              stockQuantity: row.stockQuantity ?? 0,
+              energyClass: row.energyClass ?? 'A',
+              color: '#1f2937',
+              description: '',
+              specs: [],
+              archived: row.archived ?? false,
+            },
+          });
+          created++;
+        }
+      } catch (e) {
+        errors.push({ row: i + 1, message: e instanceof Error ? e.message : 'Erro desconhecido' });
+      }
+    }
+
+    await this.audit.log('PRODUCT_BULK_IMPORT', {
+      entity: 'Product',
+      actor: actorEmail,
+      details: { created, updated, errors: errors.length },
+    });
+
+    return { created, updated, errors };
   }
 
   private async ensureExists(id: string) {

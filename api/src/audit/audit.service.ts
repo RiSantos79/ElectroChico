@@ -14,7 +14,10 @@ export type AuditSearchParams = {
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  log(action: string, options?: { entity?: string; entityId?: string; actor?: string; ip?: string }) {
+  log(
+    action: string,
+    options?: { entity?: string; entityId?: string; actor?: string; ip?: string; details?: object },
+  ) {
     return this.prisma.auditLog.create({
       data: {
         action,
@@ -22,6 +25,7 @@ export class AuditService {
         entityId: options?.entityId,
         actor: options?.actor,
         ip: options?.ip,
+        details: options?.details,
       },
     });
   }

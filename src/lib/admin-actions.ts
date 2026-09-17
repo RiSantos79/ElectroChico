@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
   ACTIONS,
+  bulkImportProducts,
+  bulkPriceChange,
   createBanner,
   createBrand,
   createCoupon,
@@ -39,6 +41,8 @@ import {
   type Action,
   type AdminProductInput,
   type BannerInput,
+  type BulkImportProductRow,
+  type BulkImportResult,
   type CouponInput,
   type OrderStatus,
   type PermissionMatrix,
@@ -176,6 +180,36 @@ export async function deleteProductsAction(ids: string[]): Promise<{ ok: true } 
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Não foi possível apagar os produtos selecionados." };
+  }
+}
+
+export async function bulkPriceChangeAction(
+  ids: string[],
+  percent: number,
+  reauthToken?: string,
+): Promise<{ ok: true; updated: number } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    const result = await bulkPriceChange(ids, percent, token, reauthToken);
+    revalidatePath("/admin/produtos");
+    revalidatePath("/catalogo");
+    return { ok: true, updated: result.updated };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível alterar os preços." };
+  }
+}
+
+export async function bulkImportProductsAction(
+  rows: BulkImportProductRow[],
+): Promise<{ ok: true; result: BulkImportResult } | { ok: false; error: string }> {
+  try {
+    const token = await requireToken();
+    const result = await bulkImportProducts(rows, token);
+    revalidatePath("/admin/produtos");
+    revalidatePath("/catalogo");
+    return { ok: true, result };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Não foi possível importar os produtos." };
   }
 }
 

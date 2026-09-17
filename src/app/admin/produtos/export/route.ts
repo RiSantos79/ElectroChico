@@ -10,14 +10,16 @@ export async function GET() {
   const products = await getProducts({ includeArchived: true });
   await logDataExport("Product", products.length, token);
   const csv = toCsv<Product>(products, [
+    { label: "ID", value: (p) => p.id },
     { label: "Nome", value: (p) => p.name },
-    { label: "Marca", value: (p) => p.brand },
-    { label: "Categoria", value: (p) => p.category },
+    { label: "Marca (slug)", value: (p) => p.brandSlug },
+    { label: "Categoria (slug)", value: (p) => p.category },
     { label: "SKU", value: (p) => p.sku ?? "" },
     { label: "EAN", value: (p) => p.ean ?? "" },
     { label: "Preço", value: (p) => p.price },
     { label: "Preço Antigo", value: (p) => p.oldPrice ?? "" },
     { label: "Stock", value: (p) => p.stockQuantity },
+    { label: "Classe Energética", value: (p) => p.energyClass },
     { label: "Arquivado", value: (p) => (p.archived ? "Sim" : "Não") },
   ]);
 

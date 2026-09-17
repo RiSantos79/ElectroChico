@@ -13,6 +13,12 @@ export default async function AdminProductsPage() {
         <h1 className="text-2xl font-bold text-foreground">Produtos ({products.length})</h1>
         <div className="flex items-center gap-3">
           <Link
+            href="/admin/produtos/importar"
+            className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface"
+          >
+            Importar CSV
+          </Link>
+          <Link
             href="/admin/produtos/export"
             className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface"
           >

@@ -16,7 +16,10 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
+import { ReauthToken } from '../auth/reauth-token.decorator.js';
 import { BulkDeleteDto } from './dto/bulk-delete.dto.js';
+import { BulkPriceChangeDto } from './dto/bulk-price-change.dto.js';
+import { BulkImportProductsDto } from './dto/bulk-import-product.dto.js';
 
 @Controller('products')
 export class ProductsController {
@@ -55,9 +58,27 @@ export class ProductsController {
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('produtos', 'create')
+  @Post('bulk-import')
+  bulkImport(@Body() dto: BulkImportProductsDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.productsService.bulkImport(dto, user.email);
+  }
+
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('produtos', 'create')
   @Post(':id/duplicate')
   duplicate(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.productsService.duplicate(id, user.email);
+  }
+
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('produtos', 'edit')
+  @Patch('bulk-price')
+  bulkPriceChange(
+    @Body() dto: BulkPriceChangeDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @ReauthToken() reauthToken?: string,
+  ) {
+    return this.productsService.bulkPriceChange(dto.ids, dto.percent, user.sub, user.email, reauthToken);
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)

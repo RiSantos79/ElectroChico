@@ -429,6 +429,7 @@ model AuditLog {
   entityId  String?
   actor     String?
   ip        String?
+  details   Json?
   createdAt DateTime @default(now())
 
   @@index([createdAt])

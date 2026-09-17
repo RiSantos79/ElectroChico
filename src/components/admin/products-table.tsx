@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/format";
 import { deleteProductAction, deleteProductsAction, duplicateProductAction } from "@/lib/admin-actions";
 import { StockBar } from "@/components/stock-bar";
 import { ConfirmDialog } from "./confirm-dialog";
+import { BulkPriceChangeModal } from "./bulk-price-change-modal";
 import { SortableHeader } from "./sortable-header";
 import { useSortable } from "@/lib/use-sortable";
 
@@ -34,6 +35,7 @@ export function ProductsTable({ products }: { products: Product[] }) {
   const { sorted, sortKey, ascending, toggleSort } = useSortable(products, sortValue);
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const [busy, setBusy] = useState(false);
+  const [priceChangeOpen, setPriceChangeOpen] = useState(false);
 
   const allSelected = products.length > 0 && selected.size === products.length;
 
@@ -66,18 +68,31 @@ export function ProductsTable({ products }: { products: Product[] }) {
 
   return (
     <div>
-      {selected.size > 0 && (
-        <div className="mb-3 flex items-center justify-between rounded-xl border border-danger/40 bg-danger/10 px-4 py-2.5">
-          <span className="text-sm text-foreground">{selected.size} produto(s) selecionado(s)</span>
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          {selected.size > 0 && <span className="text-sm text-foreground">{selected.size} produto(s) selecionado(s)</span>}
+        </div>
+        <div className="flex items-center gap-4">
+          {selected.size > 0 && (
+            <button
+              type="button"
+              onClick={() =>
+                setPending({ type: "bulk", ids: products.filter((p) => selected.has(p.id)).map((p) => p.id) })
+              }
+              className="text-sm font-semibold text-danger hover:underline"
+            >
+              Apagar selecionados
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => setPending({ type: "bulk", ids: products.filter((p) => selected.has(p.id)).map((p) => p.id) })}
-            className="text-sm font-semibold text-danger hover:underline"
+            onClick={() => setPriceChangeOpen(true)}
+            className="text-sm font-semibold text-accent hover:underline"
           >
-            Apagar selecionados
+            Alteração de preços em massa
           </button>
         </div>
-      )}
+      </div>
       <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-sm">
           <thead className="bg-surface text-left text-muted">
@@ -170,6 +185,17 @@ export function ProductsTable({ products }: { products: Product[] }) {
           pending={busy}
           onCancel={() => setPending(null)}
           onConfirm={handleConfirm}
+        />
+      )}
+
+      {priceChangeOpen && (
+        <BulkPriceChangeModal
+          products={products}
+          selectedIds={[...selected]}
+          onClose={() => {
+            setPriceChangeOpen(false);
+            setSelected(new Set());
+          }}
         />
       )}
     </div>

@@ -268,6 +268,43 @@ export function duplicateProduct(id: string, token: string): Promise<AdminProduc
   return apiFetch<AdminProduct>(`/products/${id}/duplicate`, { method: "POST", headers: authHeaders(token) });
 }
 
+export function bulkPriceChange(
+  ids: string[],
+  percent: number,
+  token: string,
+  reauthToken?: string,
+): Promise<{ updated: number }> {
+  return apiFetch("/products/bulk-price", {
+    method: "PATCH",
+    headers: authHeaders(token, reauthToken),
+    body: JSON.stringify({ ids, percent }),
+  });
+}
+
+export type BulkImportProductRow = {
+  id?: string;
+  name: string;
+  brand: string;
+  category: string;
+  sku?: string;
+  ean?: string;
+  price: number;
+  oldPrice?: number;
+  stockQuantity?: number;
+  energyClass?: EnergyClass;
+  archived?: boolean;
+};
+
+export type BulkImportResult = { created: number; updated: number; errors: { row: number; message: string }[] };
+
+export function bulkImportProducts(rows: BulkImportProductRow[], token: string): Promise<BulkImportResult> {
+  return apiFetch("/products/bulk-import", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ rows }),
+  });
+}
+
 export type AuditLog = {
   id: string;
   action: string;
