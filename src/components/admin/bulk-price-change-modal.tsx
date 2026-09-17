@@ -6,14 +6,11 @@ import type { Category, Product } from "@/data/catalog";
 import { formatPrice } from "@/lib/format";
 import { bulkPriceChangeAction } from "@/lib/admin-actions";
 import { ReauthModal } from "./reauth-modal";
+import { MultiSelectDropdown } from "./multi-select-dropdown";
 
 const REAUTH_THRESHOLD_PERCENT = 20;
 
 type Scope = "selected" | "category" | "brand" | "all";
-
-function selectedOptionValues(e: React.ChangeEvent<HTMLSelectElement>): string[] {
-  return Array.from(e.target.selectedOptions).map((o) => o.value);
-}
 
 export function BulkPriceChangeModal({
   products,
@@ -101,36 +98,24 @@ export function BulkPriceChangeModal({
               </label>
               {scope === "category" && (
                 <label className="flex flex-col gap-1 text-sm">
-                  Categoria (Ctrl/Cmd+clique para escolher várias)
-                  <select
-                    multiple
-                    value={categorySlugs}
-                    onChange={(e) => setCategorySlugs(selectedOptionValues(e))}
-                    className="input-field h-32"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.slug} value={c.slug}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  Categoria
+                  <MultiSelectDropdown
+                    options={categories.map((c) => ({ value: c.slug, label: c.name }))}
+                    selected={categorySlugs}
+                    onChange={setCategorySlugs}
+                    placeholder="Escolher categorias"
+                  />
                 </label>
               )}
               {scope === "brand" && (
                 <label className="flex flex-col gap-1 text-sm">
-                  Marca (Ctrl/Cmd+clique para escolher várias)
-                  <select
-                    multiple
-                    value={brandSlugs}
-                    onChange={(e) => setBrandSlugs(selectedOptionValues(e))}
-                    className="input-field h-32"
-                  >
-                    {brands.map((b) => (
-                      <option key={b.slug} value={b.slug}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
+                  Marca
+                  <MultiSelectDropdown
+                    options={brands.map((b) => ({ value: b.slug, label: b.name }))}
+                    selected={brandSlugs}
+                    onChange={setBrandSlugs}
+                    placeholder="Escolher marcas"
+                  />
                 </label>
               )}
             </div>
