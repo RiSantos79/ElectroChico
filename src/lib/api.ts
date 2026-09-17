@@ -1203,3 +1203,120 @@ export function getAdminCustomerDetail(id: string, token: string): Promise<Admin
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+// --- Inteligência Artificial (opcional) ---
+// A chave nunca chega ao frontend: estas funções só transportam estado,
+// configuração mascarada e os textos gerados pela API.
+
+export type AiProviderKey =
+  | "OPENAI"
+  | "AZURE_OPENAI"
+  | "ANTHROPIC"
+  | "GEMINI"
+  | "OLLAMA"
+  | "OPENROUTER"
+  | "COPILOT";
+
+export type AiProviderOption = {
+  value: AiProviderKey;
+  label: string;
+  defaultModel: string;
+  defaultBaseUrl?: string;
+  requiresApiKey: boolean;
+};
+
+export type AiSettings = {
+  enabled: boolean;
+  provider: AiProviderKey;
+  model: string;
+  baseUrl: string;
+  apiKeyMasked: string | null;
+  configured: boolean;
+  updatedAt: string | null;
+  providers: AiProviderOption[];
+};
+
+export type AiUsage = {
+  recent: {
+    id: string;
+    feature: string;
+    featureLabel: string;
+    provider: string;
+    model: string;
+    promptTokens: number;
+    completionTokens: number;
+    estimatedCostUsd: number;
+    success: boolean;
+    errorMessage: string | null;
+    actor: string | null;
+    createdAt: string;
+  }[];
+  byFeature: {
+    feature: string;
+    featureLabel: string;
+    calls: number;
+    promptTokens: number;
+    completionTokens: number;
+    estimatedCostUsd: number;
+  }[];
+};
+
+export type AiFeatureKey =
+  | "PRODUCT_SHORT_DESCRIPTION"
+  | "PRODUCT_LONG_DESCRIPTION"
+  | "PRODUCT_SPECS"
+  | "TEXT_IMPROVE"
+  | "TEXT_SPELLCHECK"
+  | "TEXT_REWRITE"
+  | "SEO_TITLE"
+  | "SEO_DESCRIPTION"
+  | "SEO_KEYWORDS"
+  | "SEO_CONTENT"
+  | "SEO_SUGGESTIONS"
+  | "FAQ_GENERATE"
+  | "MARKETING_CAMPAIGN"
+  | "MARKETING_BANNER"
+  | "MARKETING_NEWSLETTER"
+  | "MARKETING_SEASONAL"
+  | "MARKETING_LANDING_PAGE"
+  | "RELATED_PRODUCTS"
+  | "ASSISTANT";
+
+export function getAiStatus(token: string): Promise<{ enabled: boolean }> {
+  return apiFetch("/ai/status", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function getAiSettings(token: string): Promise<AiSettings> {
+  return apiFetch("/ai/settings", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function updateAiSettings(
+  data: { enabled?: boolean; provider?: AiProviderKey; apiKey?: string; model?: string; baseUrl?: string },
+  token: string,
+): Promise<AiSettings> {
+  return apiFetch("/ai/settings", { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function removeAiKey(token: string): Promise<AiSettings> {
+  return apiFetch("/ai/settings/key", { method: "DELETE", headers: authHeaders(token) });
+}
+
+export function testAiConnection(token: string): Promise<{ ok: boolean; message: string }> {
+  return apiFetch("/ai/test", { method: "POST", headers: authHeaders(token) });
+}
+
+export function getAiUsage(token: string): Promise<AiUsage> {
+  return apiFetch("/ai/usage", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function aiGenerate(
+  feature: AiFeatureKey,
+  context: Record<string, string>,
+  token: string,
+): Promise<{ text: string }> {
+  return apiFetch("/ai/generate", { method: "POST", headers: authHeaders(token), body: JSON.stringify({ feature, context }) });
+}
+
+export function aiAssistant(question: string, token: string): Promise<{ text: string }> {
+  return apiFetch("/ai/assistant", { method: "POST", headers: authHeaders(token), body: JSON.stringify({ question }) });
+}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSiteSettings } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
@@ -14,6 +15,22 @@ export default async function AdminSiteSettingsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-6 py-8 lg:px-10">
       <h1 className="text-2xl font-bold text-foreground">Definições do site</h1>
+
+      <Link
+        href="/admin/definicoes/ia"
+        className="flex items-center justify-between rounded-xl border border-border bg-surface-raised p-6 hover:bg-surface"
+      >
+        <span>
+          <span className="block text-lg font-semibold text-foreground">Inteligência Artificial</span>
+          <span className="block text-xs text-muted">
+            Opcional — ativar geração de textos, SEO e FAQs com uma chave de API própria.
+          </span>
+        </span>
+        <span aria-hidden className="text-accent">
+          →
+        </span>
+      </Link>
+
       <form action={updateSiteSettingsAction} className="space-y-8">
         <section className="rounded-xl border border-border bg-surface-raised p-6">
           <h2 className="mb-4 text-lg font-semibold text-foreground">Dados da empresa</h2>
