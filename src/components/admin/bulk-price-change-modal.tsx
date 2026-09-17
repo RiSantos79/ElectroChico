@@ -28,14 +28,14 @@ export function BulkPriceChangeModal({
   const [scope, setScope] = useState<Scope>(selectedIds.length > 0 ? "selected" : "category");
   const [categorySlugs, setCategorySlugs] = useState<string[]>([]);
   const [brandSlugs, setBrandSlugs] = useState<string[]>([]);
-  const [percentInput, setPercentInput] = useState("10");
+  const [amountInput, setAmountInput] = useState("5");
   const [step, setStep] = useState<"form" | "preview">("form");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reauthing, setReauthing] = useState(false);
 
-  const percent = Number(percentInput);
-  const validPercent = Number.isFinite(percent) && percent !== 0 && percent >= -90 && percent <= 1000;
+  const amount = Number(amountInput);
+  const validAmount = Number.isFinite(amount) && amount !== 0;
 
   const targets = useMemo(() => {
     switch (scope) {
@@ -50,12 +50,19 @@ export function BulkPriceChangeModal({
     }
   }, [scope, categorySlugs, brandSlugs, products, selectedIds]);
 
+  // Um valor fixo pesa de forma diferente consoante o preço de cada produto
+  // — a mesma regra usada no backend para decidir se pede confirmação extra.
+  const maxPercentImpact = targets.length
+    ? Math.max(...targets.map((p) => (Math.abs(amount) / p.price) * 100))
+    : 0;
+  const needsReauth = maxPercentImpact > REAUTH_THRESHOLD_PERCENT;
+
   async function apply(reauthToken?: string) {
     setBusy(true);
     setError(null);
     const result = await bulkPriceChangeAction(
       targets.map((p) => p.id),
-      percent,
+      amount,
       reauthToken,
     );
     setBusy(false);
@@ -68,7 +75,7 @@ export function BulkPriceChangeModal({
   }
 
   function handleApplyClick() {
-    if (Math.abs(percent) > REAUTH_THRESHOLD_PERCENT) {
+    if (needsReauth) {
       setReauthing(true);
       return;
     }
@@ -121,21 +128,20 @@ export function BulkPriceChangeModal({
             </div>
 
             <label className="flex flex-col gap-1 text-sm">
-              Percentagem (positiva para aumentar, negativa para reduzir)
+              Valor em euros (positivo para aumentar, negativo para reduzir)
               <input
                 type="number"
-                step="0.1"
-                value={percentInput}
-                onChange={(e) => setPercentInput(e.target.value)}
-                placeholder="ex.: 10 ou -5"
+                step="0.01"
+                value={amountInput}
+                onChange={(e) => setAmountInput(e.target.value)}
+                placeholder="ex.: 5 ou -5"
                 className="input-field"
               />
             </label>
 
             <p className="text-xs text-muted">
               {targets.length} produto(s) serão afetados.
-              {Math.abs(percent) > REAUTH_THRESHOLD_PERCENT &&
-                " Alterações superiores a 20% exigem confirmação adicional."}
+              {needsReauth && " Esta alteração exige confirmação adicional para pelo menos um dos produtos."}
             </p>
 
             <div className="flex justify-end gap-3">
@@ -144,7 +150,7 @@ export function BulkPriceChangeModal({
               </button>
               <button
                 type="button"
-                disabled={!validPercent || targets.length === 0}
+                disabled={!validAmount || targets.length === 0}
                 onClick={() => setStep("preview")}
                 className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-foreground hover:opacity-90 disabled:opacity-50"
               >
@@ -168,14 +174,14 @@ export function BulkPriceChangeModal({
                 </thead>
                 <tbody className="divide-y divide-border">
                   {targets.map((p) => {
-                    const newPrice = Math.round(p.price * (1 + percent / 100) * 100) / 100;
+                    const newPrice = Math.max(0, Math.round((p.price + amount) * 100) / 100);
                     return (
                       <tr key={p.id}>
                         <td className="px-3 py-2 text-foreground">{p.name}</td>
                         <td className="px-3 py-2 text-muted">{formatPrice(p.price)}</td>
                         <td className="px-3 py-2 font-medium text-foreground">{formatPrice(newPrice)}</td>
-                        <td className={`px-3 py-2 ${percent >= 0 ? "text-success" : "text-danger"}`}>
-                          {percent >= 0 ? "+" : ""}
+                        <td className={`px-3 py-2 ${amount >= 0 ? "text-success" : "text-danger"}`}>
+                          {amount >= 0 ? "+" : ""}
                           {formatPrice(newPrice - p.price)}
                         </td>
                       </tr>
@@ -210,7 +216,7 @@ export function BulkPriceChangeModal({
 
       {reauthing && (
         <ReauthModal
-          message="Alterações de preço superiores a 20% requerem confirmação adicional."
+          message="Este valor representa mais de 20% do preço de pelo menos um produto — requer confirmação adicional."
           onCancel={() => setReauthing(false)}
           onConfirmed={(reauthToken) => apply(reauthToken)}
         />

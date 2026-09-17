@@ -6,10 +6,11 @@ export class BulkPriceChangeDto {
   @IsString({ each: true })
   ids!: string[];
 
-  // Percentagem a aplicar ao preço atual — positiva para aumentar, negativa
-  // para reduzir (ex.: 10 = +10%, -5 = -5%).
+  // Valor fixo (em euros) a somar ao preço atual — positivo para aumentar,
+  // negativo para reduzir (ex.: 5 = +5€, -5 = -5€). Evita os cêntimos
+  // estranhos que um aumento em percentagem produzia.
   @IsNumber()
-  @Min(-90)
-  @Max(1000)
-  percent!: number;
+  @Min(-100000)
+  @Max(100000)
+  amount!: number;
 }

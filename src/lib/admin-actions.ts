@@ -185,12 +185,12 @@ export async function deleteProductsAction(ids: string[]): Promise<{ ok: true } 
 
 export async function bulkPriceChangeAction(
   ids: string[],
-  percent: number,
+  amount: number,
   reauthToken?: string,
 ): Promise<{ ok: true; updated: number } | { ok: false; error: string }> {
   try {
     const token = await requireToken();
-    const result = await bulkPriceChange(ids, percent, token, reauthToken);
+    const result = await bulkPriceChange(ids, amount, token, reauthToken);
     revalidatePath("/admin/produtos");
     revalidatePath("/catalogo");
     return { ok: true, updated: result.updated };

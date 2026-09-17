@@ -270,14 +270,14 @@ export function duplicateProduct(id: string, token: string): Promise<AdminProduc
 
 export function bulkPriceChange(
   ids: string[],
-  percent: number,
+  amount: number,
   token: string,
   reauthToken?: string,
 ): Promise<{ updated: number }> {
   return apiFetch("/products/bulk-price", {
     method: "PATCH",
     headers: authHeaders(token, reauthToken),
-    body: JSON.stringify({ ids, percent }),
+    body: JSON.stringify({ ids, amount }),
   });
 }
 
