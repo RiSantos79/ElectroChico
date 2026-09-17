@@ -434,3 +434,44 @@ model AuditLog {
 
   @@index([createdAt])
 }
+
+enum AiProvider {
+  OPENAI
+  AZURE_OPENAI
+  ANTHROPIC
+  GEMINI
+  OLLAMA
+  OPENROUTER
+  COPILOT
+}
+
+// Configuração da IA — singleton, tal como SiteSettings. A chave fica
+// cifrada (AES-256-GCM) e nunca sai da API: o frontend só recebe uma
+// versão mascarada e o estado da ligação.
+model AiSettings {
+  id              String     @id @default("singleton")
+  enabled         Boolean    @default(false)
+  provider        AiProvider @default(OPENAI)
+  apiKeyEncrypted String?
+  model           String?
+  baseUrl         String?
+  updatedAt       DateTime   @updatedAt
+}
+
+// Histórico de utilização, para o admin ver consumo por funcionalidade.
+model AiUsageLog {
+  id               String   @id @default(cuid())
+  feature          String
+  provider         String
+  model            String
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  estimatedCostUsd Decimal  @default(0) @db.Decimal(12, 6)
+  success          Boolean  @default(true)
+  errorMessage     String?
+  actor            String?
+  createdAt        DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([feature])
+}

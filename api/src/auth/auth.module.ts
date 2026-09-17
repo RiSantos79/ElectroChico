@@ -5,6 +5,7 @@ import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { PermissionsGuard } from './permissions.guard.js';
 import { StaffGuard } from './staff.guard.js';
+import { SuperAdminGuard } from './super-admin.guard.js';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { StaffGuard } from './staff.guard.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard, PermissionsGuard, StaffGuard],
-  exports: [JwtModule, JwtAuthGuard, PermissionsGuard, StaffGuard, AuthService],
+  providers: [AuthService, JwtAuthGuard, PermissionsGuard, StaffGuard, SuperAdminGuard],
+  exports: [JwtModule, JwtAuthGuard, PermissionsGuard, StaffGuard, SuperAdminGuard, AuthService],
 })
 export class AuthModule {}

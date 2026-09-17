@@ -21,6 +21,7 @@ import { SiteSettingsModule } from './site-settings/site-settings.module.js';
 import { ContentPagesModule } from './content-pages/content-pages.module.js';
 import { BannersModule } from './banners/banners.module.js';
 import { StaffModule } from './staff/staff.module.js';
+import { AiModule } from './ai/ai.module.js';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { StaffModule } from './staff/staff.module.js';
     ContentPagesModule,
     BannersModule,
     StaffModule,
+    AiModule,
   ],
 })
 export class AppModule {}
