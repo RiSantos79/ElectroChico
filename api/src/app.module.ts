@@ -17,6 +17,7 @@ import { BrandsModule } from './brands/brands.module.js';
 import { StockModule } from './stock/stock.module.js';
 import { CouponsModule } from './coupons/coupons.module.js';
 import { NewsletterModule } from './newsletter/newsletter.module.js';
+import { MarketingModule } from './marketing/marketing.module.js';
 import { SiteSettingsModule } from './site-settings/site-settings.module.js';
 import { ContentPagesModule } from './content-pages/content-pages.module.js';
 import { BannersModule } from './banners/banners.module.js';
@@ -44,6 +45,7 @@ import { RecommendationsModule } from './recommendations/recommendations.module.
     StockModule,
     CouponsModule,
     NewsletterModule,
+    MarketingModule,
     SiteSettingsModule,
     ContentPagesModule,
     BannersModule,

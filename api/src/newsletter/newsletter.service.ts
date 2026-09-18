@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EmailService } from '../email/email.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { MarketingService } from '../marketing/marketing.service.js';
 import { sanitizeRichText } from '../common/sanitize-html.js';
 import { CreateCampaignDto } from './dto/create-campaign.dto.js';
 import { UpdateCampaignDto } from './dto/update-campaign.dto.js';
@@ -12,6 +13,7 @@ export class NewsletterService {
     private readonly prisma: PrismaService,
     private readonly email: EmailService,
     private readonly audit: AuditService,
+    private readonly marketing: MarketingService,
   ) {}
 
   // Chamado a partir do checkout quando o cliente marca a caixa de
@@ -22,6 +24,10 @@ export class NewsletterService {
       update: { unsubscribedAt: null, name: name ?? undefined },
       create: { email, name },
     });
+    // O consentimento fica registado aqui primeiro; a plataforma de email
+    // marketing é uma cópia. Se a sincronização falhar, o "Sincronizar tudo"
+    // apanha-o depois — o checkout nunca pode falhar por causa disto.
+    await this.marketing.syncContact(email);
   }
 
   findSubscribers(includeUnsubscribed: boolean) {
@@ -34,7 +40,14 @@ export class NewsletterService {
   async unsubscribe(id: string) {
     const subscriber = await this.prisma.newsletterSubscriber.findUnique({ where: { id } });
     if (!subscriber) throw new NotFoundException(`Subscritor com id "${id}" não encontrado`);
-    return this.prisma.newsletterSubscriber.update({ where: { id }, data: { unsubscribedAt: new Date() } });
+    const updated = await this.prisma.newsletterSubscriber.update({
+      where: { id },
+      data: { unsubscribedAt: new Date() },
+    });
+    // Propaga o cancelamento: uma pessoa que se desinscreve aqui não pode
+    // continuar a receber campanhas enviadas do lado do Sender.
+    await this.marketing.syncContact(subscriber.email);
+    return updated;
   }
 
   findCampaigns() {

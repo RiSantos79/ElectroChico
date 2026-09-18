@@ -329,6 +329,9 @@ model NewsletterSubscriber {
   name           String?
   subscribedAt   DateTime  @default(now())
   unsubscribedAt DateTime?
+  // Última vez que este contacto foi empurrado para a plataforma de email
+  // marketing. Nulo = ainda não sincronizado (ou conta nova/vazia).
+  syncedAt       DateTime?
 }
 
 enum NewsletterCampaignStatus {
@@ -498,4 +501,19 @@ model RecommendationSettings {
   mlEndpoint        String?
   mlApiKeyEncrypted String?
   updatedAt         DateTime                   @updatedAt
+}
+
+// Integração com a plataforma de email marketing (Sender.net). Registo único.
+// A lista de subscritores e o consentimento continuam a ser nossos — isto
+// guarda só as credenciais e o estado da sincronização.
+model MarketingSettings {
+  id              String    @id @default("singleton")
+  enabled         Boolean   @default(false)
+  apiKeyEncrypted String?
+  // Grupo de destino no Sender. Muda quando se aponta para outra conta (ex.
+  // na entrega ao cliente), por isso é configurável e não fixo no código.
+  groupId         String?
+  lastSyncAt      DateTime?
+  lastSyncResult  String?
+  updatedAt       DateTime  @updatedAt
 }

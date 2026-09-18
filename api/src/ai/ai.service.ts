@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import type { AiProvider } from '../generated/prisma/client.js';
-import { decryptSecret, encryptSecret, maskSecret } from './ai-crypto.js';
+import { decryptSecret, encryptSecret, maskSecret } from '../common/secret-crypto.js';
 import { providerAdapter, providerCatalogue } from './providers/index.js';
 import { AI_FEATURE_LABELS, buildPrompt, type AiFeature } from './ai-features.js';
 import type { UpdateAiSettingsDto } from './dto/update-ai-settings.dto.js';

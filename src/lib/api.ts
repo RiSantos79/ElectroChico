@@ -1387,3 +1387,41 @@ export function updateRecommendationSettings(
     body: JSON.stringify(data),
   });
 }
+
+export type MarketingSettings = {
+  enabled: boolean;
+  groupId: string;
+  apiKeyMasked: string;
+  hasApiKey: boolean;
+  lastSyncAt: string | null;
+  lastSyncResult: string | null;
+};
+
+export type MarketingGroup = { id: string; title: string; activeSubscribers: number };
+
+export function getMarketingSettings(token: string): Promise<MarketingSettings> {
+  return apiFetch("/marketing/settings", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function updateMarketingSettings(
+  data: { enabled: boolean; groupId?: string; apiKey?: string },
+  token: string,
+): Promise<MarketingSettings> {
+  return apiFetch("/marketing/settings", { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(data) });
+}
+
+export function removeMarketingKey(token: string): Promise<MarketingSettings> {
+  return apiFetch("/marketing/settings/key", { method: "DELETE", headers: authHeaders(token) });
+}
+
+export function getMarketingGroups(
+  token: string,
+): Promise<{ ok: true; groups: MarketingGroup[] } | { ok: false; error: string }> {
+  return apiFetch("/marketing/groups", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export function syncMarketingContacts(
+  token: string,
+): Promise<{ ok: true; total: number; synced: number; failed: number } | { ok: false; error: string }> {
+  return apiFetch("/marketing/sync", { method: "POST", headers: authHeaders(token) });
+}

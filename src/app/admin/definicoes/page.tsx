@@ -32,6 +32,21 @@ export default async function AdminSiteSettingsPage() {
       </Link>
 
       <Link
+        href="/admin/definicoes/marketing"
+        className="flex items-center justify-between rounded-xl border border-border bg-surface-raised p-6 hover:bg-surface"
+      >
+        <span>
+          <span className="block text-lg font-semibold text-foreground">Email marketing (Sender.net)</span>
+          <span className="block text-xs text-muted">
+            Opcional — sincronizar subscritores e delegar o envio de campanhas a uma plataforma externa.
+          </span>
+        </span>
+        <span aria-hidden className="text-accent">
+          →
+        </span>
+      </Link>
+
+      <Link
         href="/admin/definicoes/recomendacoes"
         className="flex items-center justify-between rounded-xl border border-border bg-surface-raised p-6 hover:bg-surface"
       >

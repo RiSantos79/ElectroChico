@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
-import { encryptSecret, maskSecret, decryptSecret } from '../ai/ai-crypto.js';
+import { encryptSecret, maskSecret, decryptSecret } from '../common/secret-crypto.js';
 import { RulesRecommendationStrategy } from './strategies/rules.strategy.js';
 import type { RecommendationKind, RecommendationRules, RecommendationStrategy } from './strategies/types.js';
 import type { UpdateRecommendationSettingsDto } from './dto/update-recommendation-settings.dto.js';
