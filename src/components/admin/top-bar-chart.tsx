@@ -36,7 +36,7 @@ export function TopBarChart({
           {...CHART_AXIS}
         />
         <Tooltip {...CHART_TOOLTIP} formatter={(value) => format(Number(value))} labelFormatter={(label) => String(label)} />
-        <Bar dataKey="value" fill={GRAFANA_COLORS[5]} radius={[0, 2, 2, 0]} />
+        <Bar dataKey="value" fill={GRAFANA_COLORS[2]} radius={[0, 2, 2, 0]} barSize={16} />
       </BarChart>
     </ResponsiveContainer>
   );

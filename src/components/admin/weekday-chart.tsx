@@ -10,9 +10,9 @@ export function WeekdayChart({ data }: { data: { weekday: string; total: number 
       <BarChart data={data}>
         <CartesianGrid {...CHART_GRID} />
         <XAxis dataKey="weekday" {...CHART_AXIS} />
-        <YAxis {...CHART_AXIS} />
+        <YAxis {...CHART_AXIS} width={44} />
         <Tooltip {...CHART_TOOLTIP} formatter={(value) => formatPrice(Number(value))} />
-        <Bar dataKey="total" name="Vendas" fill={GRAFANA_COLORS[0]} radius={[2, 2, 0, 0]} />
+        <Bar dataKey="total" name="Vendas" fill={GRAFANA_COLORS[0]} radius={[2, 2, 0, 0]} maxBarSize={26} />
       </BarChart>
     </ResponsiveContainer>
   );

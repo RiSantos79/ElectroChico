@@ -1,7 +1,9 @@
 "use client";
 
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { CHART_AXIS, CHART_GRID, CHART_TOOLTIP, GRAFANA_COLORS } from "./chart-theme";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { AREA_GRADIENT_STOPS, CHART_AXIS, CHART_GRID, CHART_TOOLTIP, GRAFANA_COLORS } from "./chart-theme";
+
+const COLOR = GRAFANA_COLORS[0];
 
 export function NewCustomersChart({ data }: { data: { date: string; count: number }[] }) {
   const formatted = data.map((d) => ({
@@ -11,13 +13,29 @@ export function NewCustomersChart({ data }: { data: { date: string; count: numbe
 
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={formatted}>
+      <AreaChart data={formatted} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="grad-new-customers" x1="0" y1="0" x2="0" y2="1">
+            {AREA_GRADIENT_STOPS.map((s) => (
+              <stop key={s.offset} offset={s.offset} stopColor={COLOR} stopOpacity={s.opacity} />
+            ))}
+          </linearGradient>
+        </defs>
         <CartesianGrid {...CHART_GRID} />
         <XAxis dataKey="label" {...CHART_AXIS} interval={6} />
-        <YAxis {...CHART_AXIS} allowDecimals={false} />
+        <YAxis {...CHART_AXIS} allowDecimals={false} width={32} />
         <Tooltip {...CHART_TOOLTIP} />
-        <Line type="monotone" dataKey="count" name="Novos clientes" stroke={GRAFANA_COLORS[7]} strokeWidth={2} dot={false} />
-      </LineChart>
+        <Area
+          type="monotone"
+          dataKey="count"
+          name="Novos clientes"
+          stroke={COLOR}
+          strokeWidth={1.5}
+          fill="url(#grad-new-customers)"
+          dot={false}
+          activeDot={{ r: 3, strokeWidth: 0 }}
+        />
+      </AreaChart>
     </ResponsiveContainer>
   );
 }
