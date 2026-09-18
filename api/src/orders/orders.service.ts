@@ -75,6 +75,7 @@ export class OrdersService {
         floor: dto.floor,
         postalCode: dto.postalCode,
         city: dto.city,
+        concelho: dto.concelho,
         newsletterOptIn: dto.newsletterOptIn ?? false,
         subtotal,
         discountAmount: discountAmount > 0 ? discountAmount : undefined,

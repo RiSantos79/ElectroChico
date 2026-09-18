@@ -29,6 +29,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
             {order.floor ? `, ${order.floor}` : ""}
             <br />
             {order.postalCode} {order.city}
+            {order.concelho && order.concelho !== order.city ? ` (${order.concelho})` : ""}
           </p>
         )}
       </section>

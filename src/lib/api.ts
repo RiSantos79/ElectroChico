@@ -805,6 +805,7 @@ export type CreateOrderInput = {
   floor?: string;
   postalCode: string;
   city: string;
+  concelho?: string;
   newsletterOptIn?: boolean;
   couponCode?: string;
   items: { productId: string; quantity: number; recipientEmail?: string; giftMessage?: string }[];
@@ -850,6 +851,7 @@ export type Order = {
   floor?: string | null;
   postalCode?: string;
   city?: string;
+  concelho?: string;
   subtotal?: string;
   discountAmount?: string | null;
   couponCode?: string | null;
@@ -907,6 +909,7 @@ export type Address = {
   floor: string | null;
   postalCode: string;
   city: string;
+  concelho: string | null;
   phone: string | null;
   isDefault: boolean;
 };
@@ -918,6 +921,7 @@ export type AddressInput = {
   floor?: string;
   postalCode: string;
   city: string;
+  concelho?: string;
   phone?: string;
   isDefault?: boolean;
 };

@@ -46,6 +46,12 @@ export class CreateOrderDto {
   @IsString()
   city!: string;
 
+  // Escolhido de uma lista fechada no checkout, por isso texto livre chega —
+  // opcional para não invalidar integrações antigas.
+  @IsOptional()
+  @IsString()
+  concelho?: string;
+
   @IsOptional()
   @IsBoolean()
   newsletterOptIn?: boolean;

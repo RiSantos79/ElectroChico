@@ -445,16 +445,30 @@ export class DashboardService {
     return this.daysBetween(from, to).map((date) => ({ date, count: counts.get(date) ?? 0 }));
   }
 
+  // Agrupa por concelho, que é escolhido de uma lista fechada e por isso
+  // corresponde sempre a uma forma do mapa. Encomendas anteriores a esse campo
+  // não o têm, e para essas recorre-se à localidade — que pode ser uma aldeia
+  // e ficar sem correspondência, exatamente o problema que o campo veio
+  // resolver. O agrupamento final é feito aqui porque o Prisma não faz
+  // COALESCE dentro de um groupBy.
   private async topCities(where: Prisma.OrderWhereInput, limit: number) {
     const grouped = await this.prisma.order.groupBy({
-      by: ['city'],
+      by: ['concelho', 'city'],
       where,
       _count: { _all: true },
       _sum: { total: true },
-      orderBy: { _count: { city: 'desc' } },
-      take: limit,
     });
-    return grouped.map((g) => ({ city: g.city, orderCount: g._count._all, total: Number(g._sum.total ?? 0) }));
+
+    const porConcelho = new Map<string, { city: string; orderCount: number; total: number }>();
+    for (const row of grouped) {
+      const nome = row.concelho ?? row.city;
+      const atual = porConcelho.get(nome) ?? { city: nome, orderCount: 0, total: 0 };
+      atual.orderCount += row._count._all;
+      atual.total += Number(row._sum.total ?? 0);
+      porConcelho.set(nome, atual);
+    }
+
+    return [...porConcelho.values()].sort((a, b) => b.orderCount - a.orderCount).slice(0, limit);
   }
 
   private async giftCardStats() {

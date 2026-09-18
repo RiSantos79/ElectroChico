@@ -27,6 +27,10 @@ export class UpsertAddressDto {
 
   @IsOptional()
   @IsString()
+  concelho?: string;
+
+  @IsOptional()
+  @IsString()
   phone?: string;
 
   @IsOptional()

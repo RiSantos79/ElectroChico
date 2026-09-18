@@ -105,6 +105,7 @@ model Address {
   floor        String?
   postalCode   String
   city         String
+  concelho     String?
   phone        String?
   isDefault    Boolean  @default(false)
   createdAt    DateTime @default(now())
@@ -231,6 +232,9 @@ model Order {
   floor           String?
   postalCode      String
   city            String
+  // Concelho escolhido de uma lista fechada. A localidade acima é texto livre
+  // (pode ser uma aldeia); é por este campo que o mapa do dashboard agrupa.
+  concelho        String?
   newsletterOptIn Boolean     @default(false)
   subtotal        Decimal     @db.Decimal(10, 2)
   discountAmount  Decimal?    @db.Decimal(10, 2)

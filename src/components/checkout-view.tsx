@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type RefObject } from "react";
 import { useCart, type CartLine } from "@/lib/cart-context";
 import type { Product } from "@/data/catalog";
+import type { Address } from "@/lib/api";
+import { CONCELHOS } from "@/data/concelhos";
 import { Price } from "@/components/price";
 import { applyCouponAction, createOrderAction } from "@/lib/order-actions";
 import { GIFT_CARD_CATEGORY_SLUG } from "@/lib/gift-cards";
@@ -60,7 +62,90 @@ function FieldWithIcon({
   );
 }
 
-export function CheckoutView({ products }: { products: Product[] }) {
+// Salta para o campo seguinte quando este fica cheio. Só avança em digitação
+// "para a frente": se o cliente estiver a apagar, o cursor fica onde está, ou
+// corrigir o código postal tornava-se impossível.
+function advanceWhenFull(
+  event: ChangeEvent<HTMLInputElement>,
+  length: number,
+  nextName: string,
+) {
+  const input = event.currentTarget;
+  if (input.value.length < length) return;
+
+  const next = input.form?.elements.namedItem(nextName);
+  if (next instanceof HTMLInputElement) {
+    next.focus();
+    next.select();
+  }
+}
+
+function formatAddress(address: Address): string {
+  const floor = address.floor ? `, ${address.floor}` : "";
+  return `${address.street} ${address.streetNumber}${floor}, ${address.postalCode} ${address.city}`;
+}
+
+// Preenche o formulário a partir de uma morada guardada. Escreve nos campos e
+// dispara "input" porque alguns são controlados pelo React e, sem o evento, o
+// valor aparecia no ecrã mas não no estado.
+function SavedAddressPicker({
+  addresses,
+  formRef,
+}: {
+  addresses: Address[];
+  formRef: RefObject<HTMLFormElement | null>;
+}) {
+  const [selected, setSelected] = useState("");
+
+  function fill(id: string) {
+    setSelected(id);
+    const address = addresses.find((a) => a.id === id);
+    const form = formRef.current;
+    if (!address || !form) return;
+
+    const [code4 = "", code3 = ""] = address.postalCode.split("-");
+    const values: Record<string, string> = {
+      street: address.street,
+      streetNumber: address.streetNumber,
+      floor: address.floor ?? "",
+      postalCode4: code4,
+      postalCode3: code3,
+      city: address.city,
+      concelho: address.concelho ?? "",
+      customerPhone: address.phone ?? "",
+    };
+
+    for (const [name, value] of Object.entries(values)) {
+      const field = form.elements.namedItem(name);
+      if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) {
+        field.value = value;
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }
+  }
+
+  return (
+    <label className="mb-4 flex flex-col gap-1 text-xs text-muted">
+      Usar uma morada guardada
+      <select
+        value={selected}
+        onChange={(e) => fill(e.target.value)}
+        className="input-field w-full text-sm"
+      >
+        <option value="">Preencher à mão</option>
+        {addresses.map((address) => (
+          <option key={address.id} value={address.id}>
+            {address.label ? `${address.label} — ` : ""}
+            {formatAddress(address)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+export function CheckoutView({ products, addresses = [] }: { products: Product[]; addresses?: Address[] }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const { lines } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +208,7 @@ export function CheckoutView({ products }: { products: Product[] }) {
       floor: String(formData.get("floor") || "") || undefined,
       postalCode: `${formData.get("postalCode4") || ""}-${formData.get("postalCode3") || ""}`,
       city: String(formData.get("city") || ""),
+      concelho: String(formData.get("concelho") || ""),
       newsletterOptIn: formData.get("newsletterOptIn") === "on",
       couponCode: appliedCoupon?.code,
       items: items.map(({ line, product }) => ({
@@ -150,10 +236,13 @@ export function CheckoutView({ products }: { products: Product[] }) {
   return (
     <div className="px-6 py-8 lg:px-10">
       <h1 className="mb-6 text-2xl font-bold text-foreground">Checkout</h1>
-      <form onSubmit={handleSubmit} className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-[1fr_320px]">
+      <form ref={formRef} onSubmit={handleSubmit} className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6 lg:col-start-1 lg:row-start-1">
           <section className="rounded-xl border border-border bg-surface-raised p-6">
             <h2 className="mb-4 text-lg font-semibold text-foreground">Morada de entrega</h2>
+            {addresses.length > 0 && (
+              <SavedAddressPicker addresses={addresses} formRef={formRef} />
+            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <FieldWithIcon icon={<UserIcon />} className="sm:col-span-2">
                 <input required name="customerName" placeholder="Nome completo" className="input-field w-full pl-10" />
@@ -172,6 +261,7 @@ export function CheckoutView({ products }: { products: Product[] }) {
                     pattern="[0-9]{4}"
                     maxLength={4}
                     placeholder="0000"
+                    onChange={(e) => advanceWhenFull(e, 4, "postalCode3")}
                     className="input-field w-full pl-10"
                   />
                 </FieldWithIcon>
@@ -183,12 +273,26 @@ export function CheckoutView({ products }: { products: Product[] }) {
                   pattern="[0-9]{3}"
                   maxLength={3}
                   placeholder="000"
+                  onChange={(e) => advanceWhenFull(e, 3, "city")}
                   className="input-field w-16 shrink-0 text-center"
                 />
               </div>
               <FieldWithIcon icon={<MapPinIcon />}>
                 <input required name="city" placeholder="Localidade" className="input-field w-full pl-10" />
               </FieldWithIcon>
+              <label className="flex flex-col gap-1 text-xs text-muted sm:col-span-2">
+                Concelho
+                <select required name="concelho" defaultValue="" className="input-field w-full text-sm">
+                  <option value="" disabled>
+                    Selecione o concelho
+                  </option>
+                  {CONCELHOS.map((concelho) => (
+                    <option key={concelho} value={concelho}>
+                      {concelho}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <FieldWithIcon icon={<PhoneIcon />}>
                 <input required type="tel" name="customerPhone" placeholder="Telemóvel" className="input-field w-full pl-10" />
               </FieldWithIcon>
@@ -289,13 +393,13 @@ export function CheckoutView({ products }: { products: Product[] }) {
                   value={couponInput}
                   onChange={(e) => setCouponInput(e.target.value)}
                   placeholder="Código de desconto"
-                  className="input-field flex-1 text-sm"
+                  className="input-field w-full min-w-0 flex-1 text-sm"
                 />
                 <button
                   type="button"
                   onClick={handleApplyCoupon}
                   disabled={applyingCoupon || !couponInput.trim()}
-                  className="rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-50"
+                  className="shrink-0 rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {applyingCoupon ? "..." : "Aplicar"}
                 </button>
