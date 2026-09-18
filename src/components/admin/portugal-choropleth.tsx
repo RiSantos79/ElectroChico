@@ -44,19 +44,20 @@ export function PortugalChoropleth({ cities }: { cities: CityDatum[] }) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* min-h-0 é o que impede o mapa de ditar a altura da grelha: sendo
-          duas vezes mais alto do que largo, a largura da coluna dava-lhe uma
-          altura enorme e esticava as três linhas de gráficos ao lado. Assim
-          é o mapa que se ajusta ao espaço disponível, com preserveAspectRatio
-          a mantê-lo proporcional. A altura mínima só conta em ecrã estreito,
-          onde deixa de haver colunas para preencher. */}
-      <div className="min-h-[420px] flex-1 lg:min-h-0">
+      {/* O SVG é posicionado em absoluto de propósito: sendo duas vezes mais
+          alto do que largo, se ficasse no fluxo normal a largura da coluna
+          dava-lhe uma altura proporcional enorme, que esticava as três linhas
+          de gráficos ao lado — e tanto mais quanto mais largo fosse o ecrã.
+          Fora do fluxo, não contribui com altura nenhuma: as linhas passam a
+          ser medidas só pelos gráficos, e o mapa preenche o que sobrar,
+          mantendo a proporção via preserveAspectRatio. */}
+      <div className="relative min-h-[420px] flex-1 lg:min-h-0">
         <svg
           viewBox={`0 0 ${PT_MAP.width} ${PT_MAP.height}`}
           preserveAspectRatio="xMidYMid meet"
           role="img"
           aria-label="Mapa de encomendas por concelho"
-          className="h-full w-full"
+          className="absolute inset-0 h-full w-full"
         >
           {PT_MAP.shapes.map((shape) => {
             const data = byConcelho.get(shape.k);
