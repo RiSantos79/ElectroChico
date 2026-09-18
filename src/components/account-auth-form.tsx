@@ -46,6 +46,9 @@ export function AccountAuthForm() {
         <form action={loginFormAction} className="space-y-4">
           <input required type="email" name="email" placeholder="Email" className="input-field w-full" />
           <PasswordField name="password" placeholder="Palavra-passe" autoComplete="current-password" />
+          <a href="/recuperar-password" className="block text-right text-sm text-accent hover:underline">
+            Esqueceu-se da palavra-passe?
+          </a>
           {error && <p className="text-sm text-danger">{error}</p>}
           <button
             type="submit"

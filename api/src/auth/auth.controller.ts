@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post, Patch, Req, UseGu
 import type { Request } from 'express';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-password.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
@@ -25,6 +26,23 @@ export class AuthController {
   @UseGuards(RateLimit({ windowMs: 60_000, max: 5 }))
   login(@Body() dto: LoginDto, @Req() req: Request) {
     return this.authService.login(dto.email, dto.password, req.ip, req.headers['user-agent']);
+  }
+
+  // Limite apertado: este endpoint envia email para um endereço à escolha de
+  // quem chama, por isso sem travão seria uma forma de encher a caixa de
+  // correio de outra pessoa.
+  @Post('forgot-password')
+  @HttpCode(200)
+  @UseGuards(RateLimit({ windowMs: 15 * 60_000, max: 3 }))
+  forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
+    return this.authService.requestPasswordReset(dto.email, req.ip);
+  }
+
+  @Post('reset-password')
+  @HttpCode(200)
+  @UseGuards(RateLimit({ windowMs: 15 * 60_000, max: 10 }))
+  resetPassword(@Body() dto: ResetPasswordDto, @Req() req: Request) {
+    return this.authService.resetPassword(dto.token, dto.newPassword, req.ip);
   }
 
   @Post('mfa/verify')

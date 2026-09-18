@@ -106,6 +106,9 @@ export default function AdminLoginPage() {
         <form action={formAction} className="mt-6 space-y-4">
           <input name="email" type="email" required placeholder="Email" className="input-field w-full" />
           <input name="password" type="password" required placeholder="Palavra-passe" className="input-field w-full" />
+          <a href="/recuperar-password" className="block text-right text-sm text-accent hover:underline">
+            Esqueceu-se da palavra-passe?
+          </a>
           {state.error && <p className="text-sm text-danger">{state.error}</p>}
           <button
             type="submit"

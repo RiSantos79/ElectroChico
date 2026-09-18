@@ -26,7 +26,13 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-export function emailLayout(heading: string, bodyHtml: string): string {
+// O rodapé explica ao destinatário porque recebeu o email — varia conforme o
+// motivo, e dizer "fez uma compra" num email de recuperação seria falso.
+export function emailLayout(
+  heading: string,
+  bodyHtml: string,
+  footer = 'Recebeu este email porque fez uma compra na ElectroChico.',
+): string {
   return `
 <div style="background:#f3f4f6;padding:24px 0;font-family:Arial,Helvetica,sans-serif;color:${TEXT}">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -41,7 +47,7 @@ export function emailLayout(heading: string, bodyHtml: string): string {
           ${bodyHtml}
         </td></tr>
         <tr><td style="padding:20px 32px;border-top:1px solid ${BORDER};font-size:12px;color:${MUTED}">
-          Recebeu este email porque fez uma compra na ElectroChico.
+          ${escapeHtml(footer)}
         </td></tr>
       </table>
     </td></tr>
@@ -137,5 +143,30 @@ export function abandonedCartHtml(customerName: string, items: { productName: st
     <p style="margin:0 0 16px">Reparámos que deixou estes artigos por finalizar:</p>
     <ul style="margin:0 0 24px;padding-left:20px;font-size:14px">${list}</ul>
     <p style="margin:0">Volte à ElectroChico para concluir a sua compra.</p>`,
+  );
+}
+
+export function passwordResetHtml(name: string, resetUrl: string): string {
+  return emailLayout(
+    'Recuperação de palavra-passe',
+    `
+    <p style="margin:0 0 8px">Olá ${escapeHtml(name)},</p>
+    <p style="margin:0 0 24px">
+      Recebemos um pedido para definir uma nova palavra-passe na sua conta. O link abaixo é válido durante
+      uma hora e só pode ser usado uma vez.
+    </p>
+    <p style="margin:0 0 24px">
+      <a href="${escapeHtml(resetUrl)}"
+         style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;
+                padding:12px 24px;border-radius:6px;font-weight:bold">Definir nova palavra-passe</a>
+    </p>
+    <p style="margin:0 0 8px;font-size:13px;color:${MUTED}">
+      Se o botão não funcionar, copie este endereço para o navegador:<br>
+      <span style="word-break:break-all">${escapeHtml(resetUrl)}</span>
+    </p>
+    <p style="margin:24px 0 0;font-size:13px;color:${MUTED}">
+      Se não foi você que pediu, ignore este email — a palavra-passe atual continua válida.
+    </p>`,
+    'Recebeu este email porque foi pedida a recuperação da palavra-passe desta conta.',
   );
 }

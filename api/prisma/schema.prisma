@@ -64,6 +64,22 @@ model User {
   addresses           Address[]
   contactMessages     ContactMessage[]
   sessions            Session[]
+  passwordResets      PasswordResetToken[]
+}
+
+// Pedido de recuperação de password. O token nunca é guardado em claro: se a
+// base de dados vazar, os links já emitidos continuam inúteis. Cada pedido
+// apaga o anterior e o registo é apagado no uso, por isso o link serve uma
+// única vez.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Session {

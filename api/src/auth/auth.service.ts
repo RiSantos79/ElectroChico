@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { createHash, randomBytes } from 'node:crypto';
 import * as argon2 from 'argon2';
 import { authenticator } from 'otplib';
 import type { Role, User } from '../generated/prisma/client.js';
@@ -7,6 +8,8 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { encryptSecret, decryptSecret } from '../common/mfa-crypto.js';
 import { generateRecoveryCodes } from '../common/recovery-codes.js';
+import { EmailService } from '../email/email.service.js';
+import { passwordResetHtml } from '../email/email.templates.js';
 
 const MFA_TOKEN_TTL = '5m';
 const MFA_SETUP_TOKEN_TTL = '10m';
@@ -14,6 +17,8 @@ const REAUTH_TOKEN_TTL = '10m';
 const MFA_REQUIRED_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN'];
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+// Curto de propósito: o link fica no email da pessoa e vale enquanto não expirar.
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -21,6 +26,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly audit: AuditService,
+    private readonly email: EmailService,
   ) {}
 
   async login(email: string, password: string, ip?: string, userAgent?: string) {
@@ -331,6 +337,75 @@ export class AuthService {
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
   }
 
+
+  // --- Recuperação de password ---
+
+  // Devolve sempre o mesmo resultado, exista ou não a conta: caso contrário
+  // este endpoint torna-se uma forma de descobrir que emails estão registados.
+  async requestPasswordReset(email: string, ip?: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (user && user.status === 'ACTIVE') {
+      // Um pedido novo invalida os anteriores — senão ficavam vários links
+      // válidos a circular por caixas de correio.
+      await this.prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
+
+      const token = randomBytes(32).toString('base64url');
+      await this.prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: hashResetToken(token),
+          expiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS),
+        },
+      });
+
+      const webOrigin = process.env.WEB_ORIGIN ?? 'http://localhost:3001';
+      await this.email.send({
+        to: user.email,
+        subject: 'Recuperação de palavra-passe — ElectroChico',
+        html: passwordResetHtml(user.name ?? user.email, `${webOrigin}/recuperar-password?token=${token}`),
+      });
+
+      await this.audit.log('PASSWORD_RESET_REQUESTED', { actor: user.email, ip });
+    }
+
+    return { ok: true };
+  }
+
+  async resetPassword(token: string, newPassword: string, ip?: string) {
+    const record = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash: hashResetToken(token) },
+      include: { user: true },
+    });
+
+    // Token inválido e token expirado dão a mesma resposta: não vale a pena
+    // dizer a quem está a tentar adivinhar qual dos dois casos acertou.
+    if (!record || record.expiresAt < new Date()) {
+      throw new BadRequestException('Link inválido ou expirado. Peça uma nova recuperação.');
+    }
+
+    const passwordHash = await argon2.hash(newPassword);
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: record.userId },
+        // Quem recupera a password deixa de ser obrigado a trocá-la outra vez
+        // no próximo login, e a conta é desbloqueada.
+        data: { passwordHash, mustChangePassword: false, failedLoginAttempts: 0, lockedUntil: null },
+      }),
+      // Uso único.
+      this.prisma.passwordResetToken.deleteMany({ where: { userId: record.userId } }),
+      // Se a password foi recuperada, pode ter havido acesso indevido — todas
+      // as sessões abertas caem.
+      this.prisma.session.updateMany({
+        where: { userId: record.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+
+    await this.audit.log('PASSWORD_RESET_COMPLETED', { actor: record.user.email, ip });
+    return { ok: true };
+  }
+
   // --- Sessões ---
 
   async listSessions(userId: string, currentSessionId: string) {
@@ -396,3 +471,9 @@ export class AuthService {
 // se um email está ou não registado (não teria de fazer o cálculo do Argon2).
 const DUMMY_HASH =
   '$argon2id$v=19$m=65536,p=4,t=3$YfPNBv4gol2Yde1Xazq6YA$0OnBahQDid2LfgpJpTC5T8pMTuClXn0TjJkIe38raFE';
+
+// SHA-256 e não argon2 de propósito: o token tem 256 bits de entropia, por
+// isso não precisa de derivação lenta, e precisamos de o procurar pelo hash.
+function hashResetToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}

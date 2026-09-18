@@ -1425,3 +1425,19 @@ export function syncMarketingContacts(
 ): Promise<{ ok: true; total: number; synced: number; failed: number } | { ok: false; error: string }> {
   return apiFetch("/marketing/sync", { method: "POST", headers: authHeaders(token) });
 }
+
+export function requestPasswordReset(email: string): Promise<{ ok: true }> {
+  return apiFetch("/auth/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function resetPassword(token: string, newPassword: string): Promise<{ ok: true }> {
+  return apiFetch("/auth/reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, newPassword }),
+  });
+}
