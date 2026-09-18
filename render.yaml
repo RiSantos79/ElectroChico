@@ -11,8 +11,11 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      # Sem isto o Stripe devolve o cliente a http://localhost:3001 depois de
+      # pagar. Fica com valor literal (e não sync: false) para não depender de
+      # alguém se lembrar de o preencher no painel.
       - key: WEB_ORIGIN
-        sync: false
+        value: https://electro-chico.vercel.app
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD

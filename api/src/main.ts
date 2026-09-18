@@ -13,6 +13,17 @@ async function bootstrap() {
     throw new Error('JWT_SECRET não está definido — configure-o no .env antes de arrancar a API.');
   }
 
+  // O Stripe usa WEB_ORIGIN para construir o success_url. Se faltar, o cliente
+  // paga e é devolvido a http://localhost:3001 — uma página morta que ninguém
+  // repara em produção, por isso o aviso é gritado e não sussurrado.
+  if (!process.env.WEB_ORIGIN && process.env.NODE_ENV === 'production') {
+    console.error(
+      '[ERRO DE CONFIGURAÇÃO] WEB_ORIGIN não está definido. O Stripe vai redirecionar ' +
+        'os clientes para http://localhost:3001 depois do pagamento e o CORS só aceita ' +
+        'esse endereço. Defina WEB_ORIGIN com o URL público da loja.',
+    );
+  }
+
   mkdirSync(join(process.cwd(), 'uploads'), { recursive: true });
 
   // bodyParser: false porque o webhook do Stripe precisa do corpo em bruto
