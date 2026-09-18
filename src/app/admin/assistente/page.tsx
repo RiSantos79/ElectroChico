@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getAiStatus } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { AiAssistant } from "@/components/admin/ai-assistant";
+import { AiGeneratePanel } from "@/components/admin/ai-generate-panel";
 
 export const metadata = { title: "Assistente IA — Backoffice" };
 
@@ -20,6 +21,23 @@ export default async function AiAssistantPage() {
         </p>
       </div>
       <AiAssistant enabled={enabled} />
+
+      {enabled && (
+        <section className="rounded-xl border border-border bg-surface-raised p-6">
+          <h2 className="text-lg font-semibold text-foreground">Ideias de campanha</h2>
+          <p className="mb-4 mt-1 text-sm text-muted">
+            Propostas para ler e adaptar — nada é publicado automaticamente.
+          </p>
+          <AiGeneratePanel
+            source="topic"
+            placeholder="Tema (ex.: Black Friday, regresso às aulas, stock parado de máquinas de lavar)"
+            items={[
+              { feature: "MARKETING_CAMPAIGN", label: "Campanha promocional" },
+              { feature: "MARKETING_SEASONAL", label: "Campanha sazonal" },
+            ]}
+          />
+        </section>
+      )}
     </div>
   );
 }

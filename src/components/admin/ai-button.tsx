@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { aiGenerateAction } from "@/lib/ai-actions";
+import { splitLabelled } from "@/lib/ai-parse";
 import type { AiFeatureKey } from "@/lib/api";
 
 type FieldElement = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
@@ -33,6 +34,15 @@ export function readProductContext(form: HTMLFormElement): Record<string, string
     description: value("description"),
   };
   return Object.fromEntries(Object.entries(context).filter(([, v]) => v));
+}
+
+export function applyFields(form: HTMLFormElement, values: Record<string, string>) {
+  for (const [name, value] of Object.entries(values)) {
+    const target = field(form, name);
+    if (!target) continue;
+    target.value = value;
+    target.dispatchEvent(new Event("input", { bubbles: true }));
+  }
 }
 
 export function AiButton({
@@ -105,5 +115,72 @@ export function AiButton({
       </button>
       {error && <span className="text-xs text-danger">{error}</span>}
     </span>
+  );
+}
+
+// Variante para os prompts de marketing: o contexto não é um produto do
+// formulário, é um tema escrito pelo gestor ("saldos de verão"), e o resultado
+// chega rotulado, preenchendo vários campos de uma vez.
+export function AiTopicFillButton({
+  feature,
+  label,
+  placeholder,
+  fields,
+}: {
+  feature: AiFeatureKey;
+  label: string;
+  placeholder: string;
+  /** Rótulo devolvido pelo modelo → nome do campo do formulário. */
+  fields: Record<string, string>;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [topic, setTopic] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleClick() {
+    const form = ref.current?.closest("form");
+    if (!form) return;
+    if (!topic.trim()) {
+      setError("Escreva um tema primeiro.");
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    const result = await aiGenerateAction(feature, { topic: topic.trim() });
+    setBusy(false);
+
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    const { values } = splitLabelled(result.text, fields);
+    if (Object.keys(values).length === 0) {
+      setError("O modelo devolveu um formato inesperado. Tente outra vez.");
+      return;
+    }
+    applyFields(form, values);
+  }
+
+  return (
+    <div ref={ref} className="flex flex-wrap items-center gap-2">
+      <input
+        value={topic}
+        onChange={(e) => setTopic(e.target.value)}
+        placeholder={placeholder}
+        className="input-field h-8 flex-1 text-xs"
+      />
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={busy}
+        className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs font-medium text-accent hover:bg-accent/20 disabled:opacity-50"
+      >
+        {busy ? "A gerar..." : `✨ ${label}`}
+      </button>
+      {error && <span className="w-full text-xs text-danger">{error}</span>}
+    </div>
   );
 }

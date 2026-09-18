@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { getBannersAdmin } from "@/lib/api";
+import { getAiStatus, getBannersAdmin } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
+import { AiTopicFillButton } from "@/components/admin/ai-button";
 import {
   createBannerAction,
   deleteBannerAction,
@@ -15,7 +16,10 @@ export default async function AdminBannersPage() {
   const token = await getSessionToken();
   if (!token) redirect("/admin/login");
 
-  const banners = await getBannersAdmin(token);
+  const [banners, ai] = await Promise.all([
+    getBannersAdmin(token),
+    getAiStatus(token).catch(() => ({ enabled: false })),
+  ]);
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -27,6 +31,16 @@ export default async function AdminBannersPage() {
       <section className="mb-8 max-w-2xl rounded-xl border border-border bg-surface-raised p-6">
         <h2 className="mb-4 text-lg font-semibold text-foreground">Novo banner</h2>
         <form action={createBannerAction} className="grid gap-4 sm:grid-cols-2">
+          {ai.enabled && (
+            <div className="sm:col-span-2">
+              <AiTopicFillButton
+                feature="MARKETING_BANNER"
+                label="Gerar texto"
+                placeholder="Tema do banner (ex.: campanha de arcas congeladoras)"
+                fields={{ "Título": "title", "Subtítulo": "description", "Botão": "ctaLabel" }}
+              />
+            </div>
+          )}
           <label className="flex flex-col gap-1 text-sm">
             Tamanho
             <select name="size" defaultValue="LARGE" className="input-field">

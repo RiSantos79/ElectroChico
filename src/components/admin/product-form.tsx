@@ -3,6 +3,7 @@ import { PriceStockFields } from "@/components/admin/price-stock-fields";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import { NameSlugFields } from "@/components/admin/name-slug-fields";
 import { AiButton } from "@/components/admin/ai-button";
+import { AiGeneratePanel } from "@/components/admin/ai-generate-panel";
 
 function specsToText(specs: { label: string; value: string }[]) {
   return specs.map((s) => `${s.label}: ${s.value}`).join("\n");
@@ -206,6 +207,16 @@ export function ProductForm({
               className="input-field resize-none"
             />
           </label>
+          {/* Keywords e sugestões não têm campo próprio no produto: são para
+              o gestor ler e aplicar onde fizer sentido. */}
+          {aiEnabled && (
+            <AiGeneratePanel
+              items={[
+                { feature: "SEO_KEYWORDS", label: "Sugerir keywords" },
+                { feature: "SEO_SUGGESTIONS", label: "Analisar SEO" },
+              ]}
+            />
+          )}
         </div>
       </section>
 

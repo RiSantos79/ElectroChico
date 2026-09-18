@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getNewsletterCampaigns, getNewsletterSubscribers } from "@/lib/api";
+import { getAiStatus, getNewsletterCampaigns, getNewsletterSubscribers } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import { NewsletterSubscribersTable } from "@/components/admin/newsletter-subscribers-table";
@@ -17,9 +17,10 @@ export default async function AdminNewsletterPage({
   if (!token) redirect("/admin/login");
 
   const { resultado } = await searchParams;
-  const [subscribers, campaigns] = await Promise.all([
+  const [subscribers, campaigns, ai] = await Promise.all([
     getNewsletterSubscribers(token),
     getNewsletterCampaigns(token),
+    getAiStatus(token).catch(() => ({ enabled: false })),
   ]);
 
   return (
@@ -61,7 +62,18 @@ export default async function AdminNewsletterPage({
           </label>
           <div className="flex flex-col gap-1 text-sm">
             Conteúdo
-            <RichTextEditor name="body" />
+            <RichTextEditor
+              name="body"
+              ai={ai.enabled}
+              aiActions={[
+                {
+                  feature: "MARKETING_NEWSLETTER",
+                  label: "Gerar newsletter",
+                  placeholder: "Tema da newsletter (ex.: saldos de verão, novidades Bosch)",
+                  fields: { Assunto: "subject" },
+                },
+              ]}
+            />
           </div>
           <button
             type="submit"

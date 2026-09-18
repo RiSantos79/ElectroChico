@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getContentPage } from "@/lib/api";
+import { getAiStatus, getContentPage } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import { updateContentPageAction } from "@/lib/admin-actions";
@@ -11,7 +11,10 @@ export default async function EditContentPagePage({ params }: { params: Promise<
   if (!token) redirect("/admin/login");
 
   const { slug } = await params;
-  const page = await getContentPage(slug);
+  const [page, ai] = await Promise.all([
+    getContentPage(slug),
+    getAiStatus(token).catch(() => ({ enabled: false })),
+  ]);
   if (!page) notFound();
 
   return (
@@ -24,7 +27,20 @@ export default async function EditContentPagePage({ params }: { params: Promise<
         </label>
         <div className="flex flex-col gap-1 text-sm">
           Conteúdo
-          <RichTextEditor name="body" defaultValue={page.body} />
+          <RichTextEditor
+            name="body"
+            defaultValue={page.body}
+            ai={ai.enabled}
+            aiActions={[
+              {
+                feature: "MARKETING_LANDING_PAGE",
+                label: "Gerar landing page",
+                placeholder: "Tema da página (ex.: campanha de climatização de verão)",
+              },
+              { feature: "TEXT_IMPROVE", label: "Melhorar", needsText: true },
+              { feature: "TEXT_SPELLCHECK", label: "Corrigir ortografia", needsText: true },
+            ]}
+          />
         </div>
         <button
           type="submit"

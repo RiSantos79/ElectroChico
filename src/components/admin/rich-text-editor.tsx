@@ -6,7 +6,8 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import { aiGenerateAction } from "@/lib/ai-actions";
-import { readProductContext } from "./ai-button";
+import { splitLabelled } from "@/lib/ai-parse";
+import { applyFields, readProductContext } from "./ai-button";
 import type { AiFeatureKey } from "@/lib/api";
 
 function ToolbarButton({
@@ -107,6 +108,24 @@ function Toolbar({ editor }: { editor: Editor }) {
   );
 }
 
+export type AiAction = {
+  feature: AiFeatureKey;
+  label: string;
+  /** Usa o texto atual do editor como entrada (melhorar, corrigir, reescrever). */
+  needsText?: boolean;
+  /** Pede um tema livre em vez de ler o contexto do produto (marketing). */
+  placeholder?: string;
+  /** Rótulos devolvidos pelo modelo a encaminhar para outros campos do formulário. */
+  fields?: Record<string, string>;
+};
+
+const PRODUCT_ACTIONS: AiAction[] = [
+  { feature: "PRODUCT_LONG_DESCRIPTION", label: "Gerar descrição" },
+  { feature: "TEXT_IMPROVE", label: "Melhorar", needsText: true },
+  { feature: "TEXT_SPELLCHECK", label: "Corrigir ortografia", needsText: true },
+  { feature: "TEXT_REWRITE", label: "Reescrever", needsText: true },
+];
+
 // Cola texto de outros sites com a formatação (negrito, listas, links, etc.)
 // preservada — o TipTap interpreta o HTML da área de transferência por
 // omissão, não é preciso código extra para isso.
@@ -114,11 +133,13 @@ export function RichTextEditor({
   name,
   defaultValue = "",
   ai = false,
+  aiActions = PRODUCT_ACTIONS,
 }: {
   name: string;
   defaultValue?: string;
   /** Mostra as ações de IA por cima do editor (só quando a IA está ligada). */
   ai?: boolean;
+  aiActions?: AiAction[];
 }) {
   const [html, setHtml] = useState(defaultValue);
 
@@ -137,9 +158,10 @@ export function RichTextEditor({
 
   return (
     <div>
-      {ai && editor && (
+      {ai && editor && aiActions.length > 0 && (
         <AiEditorActions
           editor={editor}
+          actions={aiActions}
           onApply={(text) => {
             editor.commands.setContent(text);
             setHtml(editor.getHTML());
@@ -157,56 +179,83 @@ export function RichTextEditor({
 
 // As ações de IA vivem aqui dentro (e não no AiButton genérico) porque o
 // conteúdo do TipTap não se escreve num input — tem de passar pelo editor.
-function AiEditorActions({ editor, onApply }: { editor: Editor; onApply: (text: string) => void }) {
+function AiEditorActions({
+  editor,
+  actions,
+  onApply,
+}: {
+  editor: Editor;
+  actions: AiAction[];
+  onApply: (text: string) => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
+  const [topic, setTopic] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const actions: { feature: AiFeatureKey; label: string; needsText: boolean }[] = [
-    { feature: "PRODUCT_LONG_DESCRIPTION", label: "Gerar descrição", needsText: false },
-    { feature: "TEXT_IMPROVE", label: "Melhorar", needsText: true },
-    { feature: "TEXT_SPELLCHECK", label: "Corrigir ortografia", needsText: true },
-    { feature: "TEXT_REWRITE", label: "Reescrever", needsText: true },
-  ];
+  const needsTopic = actions.some((a) => a.placeholder);
 
-  async function run(feature: AiFeatureKey, needsText: boolean) {
+  async function run(action: AiAction) {
     const form = ref.current?.closest("form");
     if (!form) return;
 
     const currentText = editor.getText().trim();
-    if (needsText && !currentText) {
+    if (action.needsText && !currentText) {
       setError("Escreva algo primeiro.");
       return;
     }
+    if (action.placeholder && !topic.trim()) {
+      setError("Escreva um tema primeiro.");
+      return;
+    }
 
-    setBusy(feature);
+    setBusy(action.feature);
     setError(null);
-    const context = readProductContext(form);
-    if (needsText) context.text = editor.getHTML();
+    const context = action.placeholder ? { topic: topic.trim() } : readProductContext(form);
+    if (action.needsText) context.text = editor.getHTML();
 
-    const result = await aiGenerateAction(feature, context);
+    const result = await aiGenerateAction(action.feature, context);
     setBusy(null);
     if (!result.ok) {
       setError(result.error);
+      return;
+    }
+
+    // Quando o prompt devolve rótulos (ex. "Assunto:"), essas linhas vão para
+    // os campos indicados e só o restante entra no editor.
+    if (action.fields) {
+      const { values, rest } = splitLabelled(result.text, action.fields);
+      applyFields(form, values);
+      onApply(rest || result.text);
       return;
     }
     onApply(result.text);
   }
 
   return (
-    <div ref={ref} className="mb-2 flex flex-wrap items-center gap-2">
-      {actions.map((a) => (
-        <button
-          key={a.feature}
-          type="button"
-          onClick={() => run(a.feature, a.needsText)}
-          disabled={busy !== null}
-          className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs font-medium text-accent hover:bg-accent/20 disabled:opacity-50"
-        >
-          {busy === a.feature ? "A gerar..." : `✨ ${a.label}`}
-        </button>
-      ))}
-      {error && <span className="text-xs text-danger">{error}</span>}
+    <div ref={ref} className="mb-2 space-y-2">
+      {needsTopic && (
+        <input
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          placeholder={actions.find((a) => a.placeholder)?.placeholder}
+          className="input-field h-8 text-xs"
+        />
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        {actions.map((a) => (
+          <button
+            key={a.feature}
+            type="button"
+            onClick={() => run(a)}
+            disabled={busy !== null}
+            className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs font-medium text-accent hover:bg-accent/20 disabled:opacity-50"
+          >
+            {busy === a.feature ? "A gerar..." : `✨ ${a.label}`}
+          </button>
+        ))}
+        {error && <span className="text-xs text-danger">{error}</span>}
+      </div>
     </div>
   );
 }
