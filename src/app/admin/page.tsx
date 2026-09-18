@@ -35,6 +35,10 @@ const statusOptions: { value: OrderStatus; label: string }[] = [
 ];
 const statusLabel: Record<string, string> = Object.fromEntries(statusOptions.map((o) => [o.value, o.label]));
 
+// Duas linhas de donuts têm de encher a altura do mapa ao lado, que antes
+// era acompanhada por três linhas de gráficos.
+const DONUT_HEIGHT = 360;
+
 function formatResponseTime(hours: number | null): string {
   if (hours === null) return "—";
   if (hours < 1) return `${Math.round(hours * 60)} min`;
@@ -289,28 +293,28 @@ export default async function AdminDashboardPage({
         <SalesBarChart data={summary.dailyStats} />
       </Panel>
 
-      {/* Mapa numa coluna vertical própria, a acompanhar a altura das três
-          linhas de gráficos à direita — Portugal é duas vezes mais alto do
-          que largo, por isso desperdiça menos espaço assim. */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Panel title="Encomendas por concelho" className="lg:row-span-3">
-          <PortugalChoropleth cities={summary.topCities} />
-        </Panel>
-
+      <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Evolução dos clientes">
           <NewCustomersChart data={summary.newCustomersOverTime} />
         </Panel>
         <Panel title="Atividade por hora do dia">
           <HourlyActivityChart data={summary.hourlyActivity} />
         </Panel>
+      </div>
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Evolução das encomendas">
+          <OrdersCountChart data={summary.dailyStats} />
+        </Panel>
+        <Panel title="Evolução do ticket médio">
+          <AvgTicketChart data={summary.dailyStats} />
+        </Panel>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
         <Panel title="Vendas por dia da semana">
           <WeekdayChart data={summary.salesByWeekday} />
         </Panel>
-        <Panel title="Distribuição de estados das encomendas">
-          <DonutChart data={summary.ordersByStatus.map((s) => ({ name: statusLabel[s.status] ?? s.status, value: s.count }))} />
-        </Panel>
-
         <Panel title="Produtos mais vendidos (top 10)">
           <TopBarChart
             data={summary.topProducts.map((p) => ({ label: p.productName, value: p.quantity }))}
@@ -325,29 +329,40 @@ export default async function AdminDashboardPage({
         </Panel>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Evolução das encomendas">
-          <OrdersCountChart data={summary.dailyStats} />
-        </Panel>
-        <Panel title="Evolução do ticket médio">
-          <AvgTicketChart data={summary.dailyStats} />
-        </Panel>
-      </div>
-
+      {/* O mapa ocupa as duas linhas de donuts à direita — daí estes serem
+          mais altos do que os restantes gráficos. */}
       <div className="grid gap-6 lg:grid-cols-3">
+        <Panel title="Encomendas por concelho" className="lg:row-span-2">
+          <PortugalChoropleth cities={summary.topCities} />
+        </Panel>
+        <Panel title="Distribuição de estados das encomendas">
+          <DonutChart
+            data={summary.ordersByStatus.map((s) => ({ name: statusLabel[s.status] ?? s.status, value: s.count }))}
+            height={DONUT_HEIGHT}
+          />
+        </Panel>
         <Panel title="Método de pagamento">
           <DonutChart
             data={summary.paymentMethods.map((p) => ({
               name: paymentMethodLabels[p.method] ?? p.method,
               value: p.count,
             }))}
+            height={DONUT_HEIGHT}
           />
         </Panel>
         <Panel title="Categorias mais vendidas">
-          <DonutChart data={summary.revenueByCategory.map((c) => ({ name: c.category, value: c.total }))} variant="currency" />
+          <DonutChart
+            data={summary.revenueByCategory.map((c) => ({ name: c.category, value: c.total }))}
+            variant="currency"
+            height={DONUT_HEIGHT}
+          />
         </Panel>
         <Panel title="Marcas mais vendidas">
-          <DonutChart data={summary.revenueByBrand.map((b) => ({ name: b.brand, value: b.total }))} variant="currency" />
+          <DonutChart
+            data={summary.revenueByBrand.map((b) => ({ name: b.brand, value: b.total }))}
+            variant="currency"
+            height={DONUT_HEIGHT}
+          />
         </Panel>
       </div>
 

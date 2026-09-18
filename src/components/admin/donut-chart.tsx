@@ -9,20 +9,25 @@ import { CHART_LEGEND, CHART_TOOLTIP, GRAFANA_COLORS } from "./chart-theme";
 export function DonutChart({
   data,
   variant = "count",
+  height = 220,
 }: {
   data: { name: string; value: number }[];
   variant?: "currency" | "count";
+  height?: number;
 }) {
   if (data.length === 0 || data.every((d) => d.value === 0)) {
     return <p className="text-sm text-muted">Sem dados suficientes.</p>;
   }
 
   const format = (value: number) => (variant === "currency" ? formatPrice(value) : String(value));
+  // Deixa espaço para a legenda por baixo e escala o anel com o painel.
+  const ringOuter = Math.max(60, Math.min(140, (height - 70) / 2));
+  const ringInner = Math.round(ringOuter * 0.62);
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
+    <ResponsiveContainer width="100%" height={height}>
       <PieChart>
-        <Pie data={data} dataKey="value" nameKey="name" innerRadius={48} outerRadius={78} paddingAngle={2} stroke="none">
+        <Pie data={data} dataKey="value" nameKey="name" innerRadius={ringInner} outerRadius={ringOuter} paddingAngle={2} stroke="none">
           {data.map((entry, i) => (
             <Cell key={entry.name} fill={GRAFANA_COLORS[i % GRAFANA_COLORS.length]} />
           ))}
