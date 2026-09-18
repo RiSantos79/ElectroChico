@@ -325,13 +325,16 @@ export default async function AdminDashboardPage({
         </Panel>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Evolução das encomendas">
           <OrdersCountChart data={summary.dailyStats} />
         </Panel>
         <Panel title="Evolução do ticket médio">
           <AvgTicketChart data={summary.dailyStats} />
         </Panel>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
         <Panel title="Método de pagamento">
           <DonutChart
             data={summary.paymentMethods.map((p) => ({
@@ -340,9 +343,6 @@ export default async function AdminDashboardPage({
             }))}
           />
         </Panel>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Categorias mais vendidas">
           <DonutChart data={summary.revenueByCategory.map((c) => ({ name: c.category, value: c.total }))} variant="currency" />
         </Panel>
