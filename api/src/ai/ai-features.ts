@@ -4,6 +4,9 @@
 // em si — assim o custo e o comportamento do modelo ficam sob controlo.
 
 export const AI_FEATURES = [
+  // Sem botão no backoffice de propósito: o produto não tem campo de descrição
+  // curta e a meta descrição já cobre esse texto. Fica disponível para o dia em
+  // que o cartão de produto passar a mostrar um resumo.
   'PRODUCT_SHORT_DESCRIPTION',
   'PRODUCT_LONG_DESCRIPTION',
   'PRODUCT_SPECS',
