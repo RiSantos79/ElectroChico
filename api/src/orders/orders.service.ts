@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { StockService } from '../stock/stock.service.js';
 import { CouponsService } from '../coupons/coupons.service.js';
 import { EmailService } from '../email/email.service.js';
+import { abandonedCartHtml, orderConfirmationHtml } from '../email/email.templates.js';
 import { NewsletterService } from '../newsletter/newsletter.service.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
 import type { UpdateOrderDto } from './dto/update-order.dto.js';
@@ -213,6 +214,16 @@ export class OrdersService {
       }
     }
     await this.audit.log('ORDER_PAID', { entity: 'Order', entityId: orderId });
+
+    // Depois do stock e dos cartões-presente: se o email falhar, a encomenda
+    // já está correta. O EmailService nunca lança, por isso um fornecedor em
+    // baixo não faz o webhook do Stripe responder com erro (o que levaria o
+    // Stripe a repetir a entrega e a duplicar este trabalho todo).
+    await this.email.send({
+      to: order.customerEmail,
+      subject: `Encomenda ${order.id} confirmada — ElectroChico`,
+      html: orderConfirmationHtml(order),
+    });
   }
 
   // Cancelar/reembolsar uma encomenda já paga devolve o stock — mas só uma
@@ -329,16 +340,10 @@ export class OrdersService {
       throw new BadRequestException('Esta encomenda já não está pendente.');
     }
 
-    const itemsHtml = order.items.map((item) => `<li>${item.productName} × ${item.quantity}</li>`).join('');
     const result = await this.email.send({
       to: order.customerEmail,
       subject: 'Ainda tem artigos à sua espera na ElectroChico',
-      html: `
-        <p>Olá ${order.customerName},</p>
-        <p>Reparámos que deixou estes artigos por finalizar:</p>
-        <ul>${itemsHtml}</ul>
-        <p>Volte à ElectroChico para concluir a sua compra.</p>
-      `,
+      html: abandonedCartHtml(order.customerName, order.items),
     });
 
     if (result.sent) {
