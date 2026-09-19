@@ -63,7 +63,7 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
 
     const { accessToken } = await res.json();
     await setSessionCookie(accessToken);
-    redirect("/admin/produtos");
+    redirect("/admin");
   }
 
   if (prevState.step === "mfa-setup") {
@@ -90,7 +90,7 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
 
     const { accessToken } = await res.json();
     await setSessionCookie(accessToken);
-    redirect("/admin/produtos");
+    redirect("/admin");
   }
 
   if (prevState.step === "password-change") {
@@ -122,7 +122,7 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
     if (next) return next;
 
     await setSessionCookie(data.accessToken!);
-    redirect("/admin/produtos");
+    redirect("/admin");
   }
 
   const email = String(formData.get("email") ?? "");
@@ -145,7 +145,7 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
   if (next) return next;
 
   await setSessionCookie(data.accessToken!);
-  redirect("/admin/produtos");
+  redirect("/admin");
 }
 
 export async function logoutAction() {

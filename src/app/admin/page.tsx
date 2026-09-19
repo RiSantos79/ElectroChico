@@ -124,11 +124,27 @@ export default async function AdminDashboardPage({
   const brandId = sp.marca || undefined;
   const channel = (sp.canal as "online" | "pickup") || undefined;
 
+  // As permissões podem ser retiradas conta a conta. Como o login passou a
+  // aterrar aqui, uma conta sem acesso ao dashboard veria um erro em vez do
+  // backoffice — mostra-se antes uma mensagem e deixa-se a barra lateral
+  // levá-la ao que pode ver.
   const [summary, categories, brands] = await Promise.all([
-    getDashboardSummary(token, { from, to, status, categoryId, brandId, channel }),
-    getCategoriesAdmin(),
-    getBrands(),
+    getDashboardSummary(token, { from, to, status, categoryId, brandId, channel }).catch(() => null),
+    getCategoriesAdmin().catch(() => []),
+    getBrands().catch(() => []),
   ]);
+
+  if (!summary) {
+    return (
+      <div className="px-6 py-8 lg:px-10">
+        <h1 className="mb-2 text-2xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted">
+          Não tem permissão para ver os indicadores da loja. Use o menu lateral para aceder às áreas a que tem
+          acesso.
+        </p>
+      </div>
+    );
+  }
 
   // Dias anteriores ao início do tracking não tiveram "zero visitas" — não
   // há dados nenhuns, e convém dizê-lo em vez de deixar ler um zero.
