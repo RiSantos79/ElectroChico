@@ -1,4 +1,5 @@
 import { getSiteSettings } from "@/lib/api";
+import { FooterLinks } from "@/components/footer-links";
 
 export async function Footer() {
   const settings = await getSiteSettings().catch(() => ({}) as Awaited<ReturnType<typeof getSiteSettings>>);
@@ -22,6 +23,9 @@ export async function Footer() {
             <p className="mt-1 text-sm text-muted">{item.desc}</p>
           </div>
         ))}
+      </div>
+      <div className="border-t border-border px-6 py-6 lg:px-10">
+        <FooterLinks />
       </div>
       <div className="border-t border-border">
         <div className="flex flex-col gap-2 px-6 py-6 text-sm text-muted lg:flex-row lg:items-center lg:justify-between lg:px-10">
