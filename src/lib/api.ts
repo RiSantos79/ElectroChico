@@ -1114,7 +1114,21 @@ export type DashboardFilters = {
   channel?: "online" | "pickup";
 };
 
+// Que blocos o utilizador pode ver. Vem da API, calculado a partir das
+// permissões dele — o frontend limita-se a não desenhar o que não veio.
+export type DashboardVisibility = {
+  financeiro: boolean;
+  encomendas: boolean;
+  clientes: boolean;
+  trafego: boolean;
+  stock: boolean;
+  produtos: boolean;
+  cartoes: boolean;
+  suporte: boolean;
+};
+
 export type DashboardSummary = {
+  visible: DashboardVisibility;
   period: SalesMetric;
   previousPeriod: SalesMetric;
   newCustomers: number;

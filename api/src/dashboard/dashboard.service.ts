@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import type { Role } from '../generated/prisma/client.js';
+import { hasPermission, type Module } from '../common/permissions.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PAID_LIKE_STATUSES } from '../common/order-status.js';
 import { ABANDONED_CART_AFTER_MS } from '../common/abandoned-cart.js';
@@ -21,11 +23,46 @@ type ResolvedFilters = {
   brandId?: string;
 };
 
+// Que permissões abrem cada bloco do dashboard. O `dashboard.view` só decide
+// se a página existe; é isto que decide o que lá aparece — senão um operador
+// de encomendas via a faturação da loja e a lista dos melhores clientes.
+//
+// O cálculo é feito aqui e não no frontend de propósito: esconder painéis no
+// browser deixava os números no payload da página, ao alcance de quem abrisse
+// as ferramentas de programador.
+const BLOCK_MODULES = {
+  // Receita, ticket médio, evolução de vendas, receita por categoria/marca.
+  financeiro: ['relatorios'],
+  encomendas: ['encomendas'],
+  clientes: ['clientes'],
+  // Visitas, conversão e novos clientes: o Marketing entra por "promocoes",
+  // para poder avaliar campanhas sem ver faturação nem a lista de clientes.
+  trafego: ['relatorios', 'clientes', 'promocoes'],
+  stock: ['stock'],
+  produtos: ['produtos'],
+  cartoes: ['cupoes'],
+  suporte: ['mensagens'],
+} as const satisfies Record<string, readonly Module[]>;
+
+export type DashboardBlock = keyof typeof BLOCK_MODULES;
+export type DashboardViewer = { role: Role; permissionOverrides: unknown };
+
+function visibleBlocks(viewer: DashboardViewer): Record<DashboardBlock, boolean> {
+  const entries = Object.entries(BLOCK_MODULES).map(([bloco, modulos]) => [
+    bloco,
+    modulos.some((modulo) => hasPermission(viewer, modulo, 'view')),
+  ]);
+  return Object.fromEntries(entries) as Record<DashboardBlock, boolean>;
+}
+
+const SEM_VENDAS = { total: 0, count: 0, averageTicket: 0 };
+
 @Injectable()
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getSummary(filters: DashboardFiltersDto) {
+  async getSummary(filters: DashboardFiltersDto, viewer: DashboardViewer) {
+    const pode = visibleBlocks(viewer);
     const resolved = await this.resolveFilters(filters);
     const { from, to, orderWhere, itemProductFilter, dateField } = resolved;
     const periodLengthMs = to.getTime() - from.getTime();
@@ -58,47 +95,54 @@ export class DashboardService {
       support,
       firstPageView,
     ] = await Promise.all([
-      this.salesFor(orderWhere),
-      this.salesFor(prevOrderWhere),
-      this.prisma.user.count({ where: { role: 'CUSTOMER', createdAt: { gte: from, lte: to } } }),
-      this.distinctCustomers(orderWhere),
-      this.productsSold(orderWhere, itemProductFilter),
-      this.prisma.pageView.count({ where: { createdAt: { gte: from, lte: to } } }),
-      this.customerLoyalty(orderWhere),
-      this.abandonedCartsCount(from, to),
-      this.stockAlerts(resolved.categoryId, resolved.brandId),
-      this.topProducts(orderWhere, itemProductFilter, 10),
-      this.topCustomers(orderWhere, 10),
+      pode.financeiro ? this.salesFor(orderWhere) : SEM_VENDAS,
+      pode.financeiro ? this.salesFor(prevOrderWhere) : SEM_VENDAS,
+      pode.trafego ? this.prisma.user.count({ where: { role: 'CUSTOMER', createdAt: { gte: from, lte: to } } }) : 0,
+      pode.clientes ? this.distinctCustomers(orderWhere) : 0,
+      pode.produtos ? this.productsSold(orderWhere, itemProductFilter) : 0,
+      pode.trafego ? this.prisma.pageView.count({ where: { createdAt: { gte: from, lte: to } } }) : 0,
+      pode.clientes ? this.customerLoyalty(orderWhere) : { recurring: 0, oneTime: 0 },
+      pode.encomendas ? this.abandonedCartsCount(from, to) : 0,
+      pode.stock ? this.stockAlerts(resolved.categoryId, resolved.brandId) : { outOfStock: 0, critical: 0, criticalList: [] },
+      pode.produtos ? this.topProducts(orderWhere, itemProductFilter, 10) : [],
+      pode.clientes ? this.topCustomers(orderWhere, 10) : [],
       this.dailyStats(orderWhere, from, to, dateField),
-      this.hourlyActivity(orderWhere, from, to, dateField),
-      this.salesByWeekday(orderWhere, dateField),
-      this.revenueByCategory(orderWhere, itemProductFilter),
-      this.revenueByBrand(orderWhere, itemProductFilter),
-      this.ordersByStatus(orderWhere),
-      this.newCustomersOverTime(from, to),
-      this.topCities(orderWhere, 20),
-      this.giftCardStats(),
-      this.paymentMethodBreakdown(orderWhere),
-      this.supportStats(),
+      pode.trafego ? this.hourlyActivity(orderWhere, from, to, dateField) : [],
+      pode.financeiro ? this.salesByWeekday(orderWhere, dateField) : [],
+      pode.financeiro ? this.revenueByCategory(orderWhere, itemProductFilter) : [],
+      pode.financeiro ? this.revenueByBrand(orderWhere, itemProductFilter) : [],
+      pode.encomendas ? this.ordersByStatus(orderWhere) : [],
+      pode.trafego ? this.newCustomersOverTime(from, to) : [],
+      pode.encomendas ? this.topCities(orderWhere, 20) : [],
+      pode.cartoes ? this.giftCardStats() : { activeCount: 0, activeValue: 0, redeemedCount: 0, redeemedValue: 0 },
+      pode.financeiro ? this.paymentMethodBreakdown(orderWhere) : [],
+      pode.suporte ? this.supportStats() : { total: 0, responded: 0, avgResponseHours: null },
       // Para o dashboard poder avisar que os dias anteriores ao início do
       // registo de tráfego não têm visitas (e não que tiveram zero).
       this.prisma.pageView.findFirst({ orderBy: { createdAt: 'asc' }, select: { createdAt: true } }),
     ]);
 
+    // dailyStats traz vendas e contagem de encomendas na mesma linha; quem não
+    // pode ver receita recebe as contagens com os valores a zero.
+    const dailyVisivel = pode.financeiro
+      ? dailyStats
+      : dailyStats.map((d) => ({ ...d, total: 0, averageTicket: 0, visits: pode.trafego ? d.visits : 0 }));
+
     return {
+      visible: pode,
       period,
       previousPeriod,
       newCustomers,
       distinctCustomers,
       productsSold,
-      conversionRate: visits > 0 ? (period.count / visits) * 100 : null,
+      conversionRate: pode.trafego && visits > 0 ? (period.count / visits) * 100 : null,
       recurringCustomers: loyalty.recurring,
       loyalty,
       abandonedCarts,
       stock,
       topProducts,
       topCustomers,
-      dailyStats,
+      dailyStats: dailyVisivel,
       hourlyActivity,
       salesByWeekday,
       revenueByCategory,

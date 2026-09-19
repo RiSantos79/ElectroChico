@@ -4,6 +4,7 @@ import { DashboardFiltersDto } from './dto/dashboard-filters.dto.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermission } from '../auth/require-permission.decorator.js';
+import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator.js';
 
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -12,7 +13,9 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('summary')
-  getSummary(@Query() filters: DashboardFiltersDto) {
-    return this.dashboardService.getSummary(filters);
+  // O utilizador segue para o serviço porque o conteúdo do dashboard depende
+  // das permissões de quem o pede, não apenas de poder abrir a página.
+  getSummary(@Query() filters: DashboardFiltersDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.dashboardService.getSummary(filters, user);
   }
 }

@@ -148,6 +148,10 @@ export default async function AdminDashboardPage({
 
   // Dias anteriores ao início do tracking não tiveram "zero visitas" — não
   // há dados nenhuns, e convém dizê-lo em vez de deixar ler um zero.
+  // A API já só devolve o que este utilizador pode ver; isto apenas evita
+  // desenhar painéis vazios.
+  const v = summary.visible;
+
   const visitsIncomplete =
     summary.meta.firstPageViewAt !== null && new Date(from) < new Date(summary.meta.firstPageViewAt);
 
@@ -248,8 +252,9 @@ export default async function AdminDashboardPage({
           <span className="font-medium text-foreground">
             {summary.meta.dateField === "paidAt" ? "data de pagamento" : "data da encomenda"}
           </span>
-          . Encomendas por pagar não contam como receita — por isso o total aqui é menor do que a lista de
-          Encomendas.
+          {v.financeiro
+            ? ". Encomendas por pagar não contam como receita — por isso o total aqui é menor do que a lista de Encomendas."
+            : "."}
         </p>
         {visitsIncomplete && (
           <p className="mt-1 text-amber-500">
@@ -263,172 +268,222 @@ export default async function AdminDashboardPage({
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Indicadores do período</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            title="Receita total"
-            value={formatPrice(summary.period.total)}
-            current={summary.period.total}
-            previous={summary.previousPeriod.total}
-          />
-          <MetricCard
-            title="Nº de encomendas"
-            value={String(summary.period.count)}
-            current={summary.period.count}
-            previous={summary.previousPeriod.count}
-          />
-          <MetricCard
-            title="Ticket médio"
-            value={formatPrice(summary.period.averageTicket)}
-            current={summary.period.averageTicket}
-            previous={summary.previousPeriod.averageTicket}
-          />
-          <MetricCard title="Nº de clientes" value={String(summary.distinctCustomers)} />
-          <MetricCard title="Novos clientes" value={String(summary.newCustomers)} />
-          <MetricCard title="Produtos vendidos" value={String(summary.productsSold)} />
-          <MetricCard
-            title="Taxa de conversão"
-            value={summary.conversionRate !== null ? `${summary.conversionRate.toFixed(1)}%` : "—"}
-          />
-          <MetricCard title="Carrinhos abandonados" value={String(summary.abandonedCarts)} />
-          <MetricCard
-            title="Produtos sem stock"
-            value={String(summary.stock.outOfStock)}
-            danger={summary.stock.outOfStock > 0}
-          />
-          <MetricCard title="Produtos com stock crítico" value={String(summary.stock.critical)} />
+          {v.financeiro && (
+            <MetricCard
+              title="Receita total"
+              value={formatPrice(summary.period.total)}
+              current={summary.period.total}
+              previous={summary.previousPeriod.total}
+            />
+          )}
+          {v.encomendas && (
+            <MetricCard
+              title="Nº de encomendas"
+              value={String(summary.period.count)}
+              current={summary.period.count}
+              previous={summary.previousPeriod.count}
+            />
+          )}
+          {v.financeiro && (
+            <MetricCard
+              title="Ticket médio"
+              value={formatPrice(summary.period.averageTicket)}
+              current={summary.period.averageTicket}
+              previous={summary.previousPeriod.averageTicket}
+            />
+          )}
+          {v.clientes && (
+            <MetricCard title="Nº de clientes" value={String(summary.distinctCustomers)} />
+          )}
+          {v.trafego && (
+            <MetricCard title="Novos clientes" value={String(summary.newCustomers)} />
+          )}
+          {v.produtos && (
+            <MetricCard title="Produtos vendidos" value={String(summary.productsSold)} />
+          )}
+          {v.trafego && (
+            <MetricCard
+              title="Taxa de conversão"
+              value={summary.conversionRate !== null ? `${summary.conversionRate.toFixed(1)}%` : "—"}
+            />
+          )}
+          {v.encomendas && (
+            <MetricCard title="Carrinhos abandonados" value={String(summary.abandonedCarts)} />
+          )}
+          {v.stock && (
+            <MetricCard
+              title="Produtos sem stock"
+              value={String(summary.stock.outOfStock)}
+              danger={summary.stock.outOfStock > 0}
+            />
+          )}
+          {v.stock && (
+            <MetricCard title="Produtos com stock crítico" value={String(summary.stock.critical)} />
+          )}
         </div>
       </section>
 
-      <Panel title="Evolução das vendas">
-        <SalesBarChart data={summary.dailyStats} />
-      </Panel>
+      {(v.financeiro) && (
+        <Panel title="Evolução das vendas">
+          <SalesBarChart data={summary.dailyStats} />
+        </Panel>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Evolução dos clientes">
-          <NewCustomersChart data={summary.newCustomersOverTime} />
-        </Panel>
-        <Panel title="Atividade por hora do dia">
-          <HourlyActivityChart data={summary.hourlyActivity} />
-        </Panel>
+        {(v.trafego) && (
+          <Panel title="Evolução dos clientes">
+            <NewCustomersChart data={summary.newCustomersOverTime} />
+          </Panel>
+        )}
+        {(v.trafego) && (
+          <Panel title="Atividade por hora do dia">
+            <HourlyActivityChart data={summary.hourlyActivity} />
+          </Panel>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Evolução das encomendas">
-          <OrdersCountChart data={summary.dailyStats} />
-        </Panel>
-        <Panel title="Evolução do ticket médio">
-          <AvgTicketChart data={summary.dailyStats} />
-        </Panel>
+        {(v.encomendas) && (
+          <Panel title="Evolução das encomendas">
+            <OrdersCountChart data={summary.dailyStats} />
+          </Panel>
+        )}
+        {(v.financeiro) && (
+          <Panel title="Evolução do ticket médio">
+            <AvgTicketChart data={summary.dailyStats} />
+          </Panel>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Panel title="Vendas por dia da semana">
-          <WeekdayChart data={summary.salesByWeekday} />
-        </Panel>
-        <Panel title="Produtos mais vendidos (top 10)">
-          <TopBarChart
-            data={summary.topProducts.map((p) => ({ label: p.productName, value: p.quantity }))}
-            variant="quantity"
-          />
-        </Panel>
-        <Panel title="Clientes com mais compras (top 10)">
-          <TopBarChart
-            data={summary.topCustomers.map((c) => ({ label: c.name || c.email, value: c.total }))}
-            variant="currency"
-          />
-        </Panel>
+        {(v.financeiro) && (
+          <Panel title="Vendas por dia da semana">
+            <WeekdayChart data={summary.salesByWeekday} />
+          </Panel>
+        )}
+        {(v.produtos) && (
+          <Panel title="Produtos mais vendidos (top 10)">
+            <TopBarChart
+              data={summary.topProducts.map((p) => ({ label: p.productName, value: p.quantity }))}
+              variant="quantity"
+            />
+          </Panel>
+        )}
+        {(v.clientes) && (
+          <Panel title="Clientes com mais compras (top 10)">
+            <TopBarChart
+              data={summary.topCustomers.map((c) => ({ label: c.name || c.email, value: c.total }))}
+              variant="currency"
+            />
+          </Panel>
+        )}
       </div>
 
       {/* O mapa ocupa as duas linhas de donuts à direita — daí estes serem
           mais altos do que os restantes gráficos. */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <Panel title="Encomendas por concelho" className="lg:row-span-2">
-          <PortugalChoropleth cities={summary.topCities} />
-        </Panel>
-        <Panel title="Distribuição de estados das encomendas">
-          <DonutChart
-            data={summary.ordersByStatus.map((s) => ({ name: statusLabel[s.status] ?? s.status, value: s.count }))}
-            height={DONUT_HEIGHT}
-          />
-        </Panel>
-        <Panel title="Método de pagamento">
-          <DonutChart
-            data={summary.paymentMethods.map((p) => ({
-              name: formatPaymentMethod(p.method),
-              value: p.count,
-            }))}
-            height={DONUT_HEIGHT}
-          />
-        </Panel>
-        <Panel title="Categorias mais vendidas">
-          <DonutChart
-            data={summary.revenueByCategory.map((c) => ({ name: c.category, value: c.total }))}
-            variant="currency"
-            height={DONUT_HEIGHT}
-          />
-        </Panel>
-        <Panel title="Marcas mais vendidas">
-          <DonutChart
-            data={summary.revenueByBrand.map((b) => ({ name: b.brand, value: b.total }))}
-            variant="currency"
-            height={DONUT_HEIGHT}
-          />
-        </Panel>
+        {(v.encomendas) && (
+          <Panel title="Encomendas por concelho" className="lg:row-span-2">
+            <PortugalChoropleth cities={summary.topCities} />
+          </Panel>
+        )}
+        {(v.encomendas) && (
+          <Panel title="Distribuição de estados das encomendas">
+            <DonutChart
+              data={summary.ordersByStatus.map((s) => ({ name: statusLabel[s.status] ?? s.status, value: s.count }))}
+              height={DONUT_HEIGHT}
+            />
+          </Panel>
+        )}
+        {(v.financeiro) && (
+          <Panel title="Método de pagamento">
+            <DonutChart
+              data={summary.paymentMethods.map((p) => ({
+                name: formatPaymentMethod(p.method),
+                value: p.count,
+              }))}
+              height={DONUT_HEIGHT}
+            />
+          </Panel>
+        )}
+        {(v.financeiro) && (
+          <Panel title="Categorias mais vendidas">
+            <DonutChart
+              data={summary.revenueByCategory.map((c) => ({ name: c.category, value: c.total }))}
+              variant="currency"
+              height={DONUT_HEIGHT}
+            />
+          </Panel>
+        )}
+        {(v.financeiro) && (
+          <Panel title="Marcas mais vendidas">
+            <DonutChart
+              data={summary.revenueByBrand.map((b) => ({ name: b.brand, value: b.total }))}
+              variant="currency"
+              height={DONUT_HEIGHT}
+            />
+          </Panel>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Outros indicadores">
-          <ul className="space-y-2 text-sm">
-            <li className="flex justify-between">
-              <span className="text-muted">Clientes recorrentes (2+ compras)</span>
-              <span className="font-medium text-foreground">{summary.recurringCustomers}</span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-muted">Clientes de compra única</span>
-              <span className="font-medium text-foreground">{summary.loyalty.oneTime}</span>
-            </li>
-          </ul>
-          {summary.stock.criticalList.length > 0 && (
-            <ul className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
-              {summary.stock.criticalList.map((p) => (
-                <li key={p.id} className="flex justify-between">
-                  <Link href={`/admin/produtos/${p.id}/editar`} className="text-accent hover:underline">
-                    {p.name}
-                  </Link>
-                  <span className="text-muted">{p.stockQuantity} un.</span>
-                </li>
-              ))}
+        {(v.clientes || v.stock) && (
+          <Panel title="Outros indicadores">
+            <ul className="space-y-2 text-sm">
+              <li className="flex justify-between">
+                <span className="text-muted">Clientes recorrentes (2+ compras)</span>
+                <span className="font-medium text-foreground">{summary.recurringCustomers}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-muted">Clientes de compra única</span>
+                <span className="font-medium text-foreground">{summary.loyalty.oneTime}</span>
+              </li>
             </ul>
-          )}
-        </Panel>
+            {summary.stock.criticalList.length > 0 && (
+              <ul className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
+                {summary.stock.criticalList.map((p) => (
+                  <li key={p.id} className="flex justify-between">
+                    <Link href={`/admin/produtos/${p.id}/editar`} className="text-accent hover:underline">
+                      {p.name}
+                    </Link>
+                    <span className="text-muted">{p.stockQuantity} un.</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        )}
 
-        <Panel title="Cartões-presente e suporte">
-          <ul className="space-y-2 text-sm">
-            <li className="flex justify-between">
-              <span className="text-muted">Cartões-presente ativos</span>
-              <span className="font-medium text-foreground">
-                {summary.giftCardStats.activeCount} ({formatPrice(summary.giftCardStats.activeValue)})
-              </span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-muted">Cartões-presente resgatados</span>
-              <span className="font-medium text-foreground">
-                {summary.giftCardStats.redeemedCount} ({formatPrice(summary.giftCardStats.redeemedValue)})
-              </span>
-            </li>
-            <li className="flex justify-between border-t border-border pt-2">
-              <span className="text-muted">Mensagens de suporte</span>
-              <span className="font-medium text-foreground">{summary.support.total}</span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-muted">Respondidas</span>
-              <span className="font-medium text-foreground">{summary.support.responded}</span>
-            </li>
-            <li className="flex justify-between">
-              <span className="text-muted">Tempo médio de resposta</span>
-              <span className="font-medium text-foreground">{formatResponseTime(summary.support.avgResponseHours)}</span>
-            </li>
-          </ul>
-        </Panel>
+        {(v.cartoes || v.suporte) && (
+          <Panel title="Cartões-presente e suporte">
+            <ul className="space-y-2 text-sm">
+              <li className="flex justify-between">
+                <span className="text-muted">Cartões-presente ativos</span>
+                <span className="font-medium text-foreground">
+                  {summary.giftCardStats.activeCount} ({formatPrice(summary.giftCardStats.activeValue)})
+                </span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-muted">Cartões-presente resgatados</span>
+                <span className="font-medium text-foreground">
+                  {summary.giftCardStats.redeemedCount} ({formatPrice(summary.giftCardStats.redeemedValue)})
+                </span>
+              </li>
+              <li className="flex justify-between border-t border-border pt-2">
+                <span className="text-muted">Mensagens de suporte</span>
+                <span className="font-medium text-foreground">{summary.support.total}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-muted">Respondidas</span>
+                <span className="font-medium text-foreground">{summary.support.responded}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-muted">Tempo médio de resposta</span>
+                <span className="font-medium text-foreground">{formatResponseTime(summary.support.avgResponseHours)}</span>
+              </li>
+            </ul>
+          </Panel>
+        )}
       </div>
     </div>
   );
