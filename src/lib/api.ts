@@ -856,6 +856,7 @@ export type Order = {
   discountAmount?: string | null;
   couponCode?: string | null;
   total: string;
+  paymentMethod?: string | null;
   createdAt: string;
   trackingCarrier?: string | null;
   trackingCode?: string | null;

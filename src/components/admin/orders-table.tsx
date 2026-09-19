@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { Order } from "@/lib/api";
-import { formatPrice } from "@/lib/format";
+import { formatPaymentMethod, formatPrice } from "@/lib/format";
 import { SortableHeader } from "./sortable-header";
 import { useSortable } from "@/lib/use-sortable";
 import { SearchBox } from "./search-box";
@@ -40,6 +40,10 @@ function sortValue(order: Order, key: string): string | number {
       return Number(order.total);
     case "status":
       return statusLabel[order.status] ?? order.status;
+    case "paymentMethod":
+      // Ordena pela etiqueta visível, não pelo código do Stripe: senão
+      // "mb_way" e "MB WAY" ficavam em sítios diferentes da lista.
+      return formatPaymentMethod(order.paymentMethod).toLowerCase();
     case "trackingCarrier":
       return order.trackingCarrier ?? "";
     case "trackingCode":
@@ -52,7 +56,7 @@ function sortValue(order: Order, key: string): string | number {
 export function OrdersTable({ orders }: { orders: Order[] }) {
   const { query, setQuery, filtered } = useAdminSearch(
     orders,
-    (o) => `${o.id} ${o.customerName} ${o.customerEmail} ${statusLabel[o.status] ?? o.status}`,
+    (o) => `${o.id} ${o.customerName} ${o.customerEmail} ${statusLabel[o.status] ?? o.status} ${formatPaymentMethod(o.paymentMethod)}`,
   );
   const { sorted, sortKey, ascending, toggleSort } = useSortable(filtered, sortValue);
 
@@ -61,7 +65,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
       <SearchBox
         value={query}
         onChange={setQuery}
-        placeholder="Pesquisar por nº, cliente, email ou estado..."
+        placeholder="Pesquisar por nº, cliente, email, estado ou pagamento..."
         className="mb-3 max-w-sm"
       />
       <div className="overflow-x-auto rounded-xl border border-border">
@@ -79,6 +83,13 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
             <th className="px-4 py-3 font-medium">Artigos</th>
             <SortableHeader label="Total" sortKey="total" activeKey={sortKey} ascending={ascending} onSort={toggleSort} />
             <SortableHeader label="Estado" sortKey="status" activeKey={sortKey} ascending={ascending} onSort={toggleSort} />
+            <SortableHeader
+              label="Pagamento"
+              sortKey="paymentMethod"
+              activeKey={sortKey}
+              ascending={ascending}
+              onSort={toggleSort}
+            />
             <SortableHeader
               label="Transportadora"
               sortKey="trackingCarrier"
@@ -111,6 +122,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
               <td className={`px-4 py-3 font-medium ${statusColor[order.status] ?? "text-muted"}`}>
                 {statusLabel[order.status] ?? order.status}
               </td>
+              <td className="px-4 py-3 text-muted">{formatPaymentMethod(order.paymentMethod)}</td>
               <td className="px-4 py-3 text-muted">{order.trackingCarrier ?? "—"}</td>
               <td className="px-4 py-3 text-muted">{order.trackingCode ?? "—"}</td>
               <td className="px-4 py-3 text-right">
@@ -122,7 +134,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
           ))}
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={8} className="px-4 py-8 text-center text-muted">
+              <td colSpan={9} className="px-4 py-8 text-center text-muted">
                 {query.trim() ? `Nenhuma encomenda encontrada para "${query}".` : "Ainda não há encomendas."}
               </td>
             </tr>

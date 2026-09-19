@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getBrands, getCategoriesAdmin, getDashboardSummary, type OrderStatus } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
-import { formatPrice } from "@/lib/format";
+import { formatPaymentMethod, formatPrice } from "@/lib/format";
 import { PERIOD_OPTIONS, resolvePeriod, type PeriodPreset } from "@/lib/dashboard-periods";
 import { SalesBarChart } from "@/components/admin/sales-bar-chart";
 import { AvgTicketChart } from "@/components/admin/avg-ticket-chart";
@@ -15,13 +15,6 @@ import { NewCustomersChart } from "@/components/admin/new-customers-chart";
 import { PortugalChoropleth } from "@/components/admin/portugal-choropleth";
 
 export const metadata = { title: "Dashboard — Backoffice" };
-
-const paymentMethodLabels: Record<string, string> = {
-  card: "Cartão",
-  multibanco: "Multibanco",
-  mb_way: "MB WAY",
-  paypal: "PayPal",
-};
 
 const statusOptions: { value: OrderStatus; label: string }[] = [
   { value: "PENDING", label: "Pendente" },
@@ -344,7 +337,7 @@ export default async function AdminDashboardPage({
         <Panel title="Método de pagamento">
           <DonutChart
             data={summary.paymentMethods.map((p) => ({
-              name: paymentMethodLabels[p.method] ?? p.method,
+              name: formatPaymentMethod(p.method),
               value: p.count,
             }))}
             height={DONUT_HEIGHT}
