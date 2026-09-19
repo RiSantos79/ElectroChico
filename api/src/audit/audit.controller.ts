@@ -30,6 +30,14 @@ export class AuditController {
     });
   }
 
+  // Quem gere utilizadores tem de ver isto — é na página deles que aparece.
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('utilizadores', 'view')
+  @Get('auth-threats')
+  authThreats() {
+    return this.auditService.authThreats();
+  }
+
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('auditoria', 'view')
   @Get('actions')

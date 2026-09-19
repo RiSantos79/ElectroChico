@@ -1,6 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
+// Limiares da deteção. Ficam aqui, no servidor, e não numa definição editável:
+// baixá-los pela interface seria uma forma silenciosa de cegar o alarme.
+const JANELA_MINUTOS = 30;
+// Password spraying: poucas tentativas em muitas contas, para não disparar o
+// bloqueio de nenhuma. É o padrão oposto ao do brute force.
+const SPRAY_MIN_FALHAS = 6;
+const SPRAY_MIN_CONTAS = 3;
+// Brute force: insistência numa só conta.
+const BRUTE_FORCE_MIN_FALHAS = 5;
+
+const ACOES_DE_FALHA = ['LOGIN_FAILED', 'LOGIN_BLOCKED_LOCKOUT'];
+
+export type AuthThreatReport = {
+  janelaMinutos: number;
+  nivel: 'OK' | 'AVISO' | 'ALERTA';
+  totalFalhas: number;
+  contasAfetadas: number;
+  porConta: { email: string; falhas: number; bloqueada: boolean }[];
+  ipsDistintos: number;
+  topIps: { ip: string; falhas: number }[];
+  // Tentativas contra emails que não existem: não se conseguem atribuir ao
+  // backoffice, mas é a assinatura típica de quem experimenta admin@, root@...
+  falhasContaDesconhecida: number;
+  limiares: { sprayFalhas: number; sprayContas: number; bruteForceFalhas: number };
+};
+
 export type AuditSearchParams = {
   actor?: string;
   action?: string;
@@ -46,6 +72,78 @@ export class AuditService {
       orderBy: { createdAt: 'desc' },
       take: params.limit ?? 100,
     });
+  }
+
+  // Olha para as falhas de autenticação recentes e diz se o padrão parece um
+  // ataque. Só conta contas de backoffice: falhas de clientes na loja são
+  // ruído para quem vigia o acesso administrativo.
+  async authThreats(): Promise<AuthThreatReport> {
+    const desde = new Date(Date.now() - JANELA_MINUTOS * 60_000);
+
+    const falhas = await this.prisma.auditLog.findMany({
+      where: { action: { in: ACOES_DE_FALHA }, createdAt: { gte: desde }, actor: { not: null } },
+      select: { actor: true, ip: true },
+    });
+
+    const emails = [...new Set(falhas.map((f) => f.actor).filter((a): a is string => Boolean(a)))];
+    const staff = await this.prisma.user.findMany({
+      where: { email: { in: emails }, role: { not: 'CUSTOMER' } },
+      select: { email: true, lockedUntil: true },
+    });
+    const staffPorEmail = new Map(staff.map((u) => [u.email, u]));
+
+    // Um email que não pertence a ninguém não é um cliente nem é staff — é
+    // alguém a adivinhar nomes de conta.
+    const conhecidos = await this.prisma.user.findMany({
+      where: { email: { in: emails } },
+      select: { email: true },
+    });
+    const existentes = new Set(conhecidos.map((u) => u.email));
+
+    const porConta = new Map<string, number>();
+    const porIp = new Map<string, number>();
+    let falhasContaDesconhecida = 0;
+
+    for (const falha of falhas) {
+      const email = falha.actor!;
+      if (staffPorEmail.has(email)) {
+        porConta.set(email, (porConta.get(email) ?? 0) + 1);
+        if (falha.ip) porIp.set(falha.ip, (porIp.get(falha.ip) ?? 0) + 1);
+      } else if (!existentes.has(email)) {
+        falhasContaDesconhecida += 1;
+      }
+    }
+
+    const contas = [...porConta.entries()]
+      .map(([email, falhas]) => ({
+        email,
+        falhas,
+        bloqueada: Boolean(staffPorEmail.get(email)?.lockedUntil && staffPorEmail.get(email)!.lockedUntil! > new Date()),
+      }))
+      .sort((a, b) => b.falhas - a.falhas);
+
+    const totalFalhas = contas.reduce((soma, c) => soma + c.falhas, 0);
+    const spraying = totalFalhas >= SPRAY_MIN_FALHAS && contas.length >= SPRAY_MIN_CONTAS;
+    const bruteForce = contas.some((c) => c.falhas >= BRUTE_FORCE_MIN_FALHAS);
+
+    return {
+      janelaMinutos: JANELA_MINUTOS,
+      nivel: spraying || bruteForce ? 'ALERTA' : totalFalhas > 0 ? 'AVISO' : 'OK',
+      totalFalhas,
+      contasAfetadas: contas.length,
+      porConta: contas.slice(0, 10),
+      ipsDistintos: porIp.size,
+      topIps: [...porIp.entries()]
+        .map(([ip, falhas]) => ({ ip, falhas }))
+        .sort((a, b) => b.falhas - a.falhas)
+        .slice(0, 5),
+      falhasContaDesconhecida,
+      limiares: {
+        sprayFalhas: SPRAY_MIN_FALHAS,
+        sprayContas: SPRAY_MIN_CONTAS,
+        bruteForceFalhas: BRUTE_FORCE_MIN_FALHAS,
+      },
+    };
   }
 
   async listActions(): Promise<string[]> {

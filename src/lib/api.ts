@@ -1446,3 +1446,19 @@ export function resetPassword(token: string, newPassword: string): Promise<{ ok:
     body: JSON.stringify({ token, newPassword }),
   });
 }
+
+export type AuthThreatReport = {
+  janelaMinutos: number;
+  nivel: "OK" | "AVISO" | "ALERTA";
+  totalFalhas: number;
+  contasAfetadas: number;
+  porConta: { email: string; falhas: number; bloqueada: boolean }[];
+  ipsDistintos: number;
+  topIps: { ip: string; falhas: number }[];
+  falhasContaDesconhecida: number;
+  limiares: { sprayFalhas: number; sprayContas: number; bruteForceFalhas: number };
+};
+
+export function getAuthThreats(token: string): Promise<AuthThreatReport> {
+  return apiFetch("/audit-logs/auth-threats", { headers: { Authorization: `Bearer ${token}` } });
+}
