@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { decodeJwt } from "jose";
 import { getAuthThreats, getStaff } from "@/lib/api";
 import { getSessionToken } from "@/lib/session";
-import { CreateStaffForm } from "@/components/admin/create-staff-form";
 import { StaffTable } from "@/components/admin/staff-table";
 import { AuthThreatPanel } from "@/components/admin/auth-threat-panel";
 
@@ -35,11 +34,6 @@ export default async function AdminStaffPage() {
       </p>
 
       {threats && <AuthThreatPanel report={threats} />}
-
-      <section className="mb-8 max-w-2xl rounded-xl border border-border bg-surface-raised p-6">
-        <h2 className="mb-4 text-lg font-semibold text-foreground">Novo funcionário</h2>
-        <CreateStaffForm />
-      </section>
 
       <StaffTable staff={staff} currentUserId={currentUserId} />
     </div>

@@ -7,7 +7,7 @@ import { ReauthModal } from "./reauth-modal";
 
 const ADMIN_TIER_ROLES: Role[] = ["SUPER_ADMIN", "ADMIN"];
 
-export function CreateStaffForm() {
+export function CreateStaffForm({ onCreated }: { onCreated?: () => void } = {}) {
   const formRef = useRef<HTMLFormElement>(null);
   const [role, setRole] = useState<Role>("OPERATOR");
   const [showConfirm, setShowConfirm] = useState(false);
@@ -31,6 +31,7 @@ export function CreateStaffForm() {
     setRole("OPERATOR");
     setPassword("");
     setConfirmPassword("");
+    onCreated?.();
   }
 
   function handleSubmit(e: React.FormEvent) {

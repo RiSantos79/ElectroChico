@@ -13,6 +13,7 @@ import { ConfirmDialog } from "./confirm-dialog";
 import { SortableHeader } from "./sortable-header";
 import { useSortable } from "@/lib/use-sortable";
 import { SearchBox } from "./search-box";
+import { CreateStaffModal } from "./create-staff-modal";
 import { useAdminSearch } from "@/lib/use-admin-search";
 
 const statusLabel: Record<string, string> = { ACTIVE: "Ativo", SUSPENDED: "Suspenso", DISABLED: "Desativado" };
@@ -82,12 +83,15 @@ export function StaffTable({ staff, currentUserId }: { staff: Staff[]; currentUs
 
   return (
     <div>
-      <SearchBox
-        value={query}
-        onChange={setQuery}
-        placeholder="Pesquisar por nome, email ou role..."
-        className="mb-3 max-w-sm"
-      />
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <SearchBox
+          value={query}
+          onChange={setQuery}
+          placeholder="Pesquisar por nome, email ou role..."
+          className="max-w-sm flex-1"
+        />
+        <CreateStaffModal />
+      </div>
       {selected.size > 0 && (
         <div className="mb-3 flex items-center justify-between rounded-xl border border-danger/40 bg-danger/10 px-4 py-2.5">
           <span className="text-sm text-foreground">{selected.size} selecionado(s)</span>
