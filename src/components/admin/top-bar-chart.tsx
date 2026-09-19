@@ -2,7 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatPrice } from "@/lib/format";
-import { CHART_AXIS, CHART_GRID, CHART_TOOLTIP, GRAFANA_COLORS } from "./chart-theme";
+import { CHART_AXIS, CHART_GRID, CHART_TOOLTIP, SERIES } from "./chart-theme";
 
 // `variant` em vez de receber uma função de formatação por prop — Server
 // Components não podem passar funções a Client Components.
@@ -36,7 +36,7 @@ export function TopBarChart({
           {...CHART_AXIS}
         />
         <Tooltip {...CHART_TOOLTIP} formatter={(value) => format(Number(value))} labelFormatter={(label) => String(label)} />
-        <Bar dataKey="value" fill={GRAFANA_COLORS[2]} radius={[0, 2, 2, 0]} barSize={16} />
+        <Bar dataKey="value" fill={SERIES.vendas} radius={[0, 2, 2, 0]} barSize={16} />
       </BarChart>
     </ResponsiveContainer>
   );

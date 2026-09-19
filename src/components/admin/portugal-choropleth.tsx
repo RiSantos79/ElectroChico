@@ -11,10 +11,10 @@ function normalize(value: string): string {
     .trim();
 }
 
-// Escala sequencial (verde), do mais claro ao mais escuro. Concelhos sem
-// encomendas ficam neutros — como num mapa de calor, o branco é "sem dados",
-// não "zero vendas mal feitas".
-const SCALE = ["#d7f0e0", "#a8ddb9", "#74c791", "#43a96a", "#248549", "#12602f"];
+// Escala sequencial no azul da Vercel, do mais claro ao mais escuro, para o
+// mapa falar a mesma língua dos gráficos. Concelhos sem encomendas ficam
+// neutros — como num mapa de calor, o vazio é "sem dados", não "zero vendas".
+const SCALE = ["#d3e5ff", "#a6caff", "#6ba5f7", "#3291ff", "#0070f3", "#0056b8"];
 const EMPTY_FILL = "var(--surface)";
 
 function shadeFor(value: number, max: number): string {

@@ -2,9 +2,9 @@
 
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatPrice } from "@/lib/format";
-import { AREA_GRADIENT_STOPS, CHART_AXIS, CHART_GRID, CHART_TOOLTIP, GRAFANA_COLORS } from "./chart-theme";
+import { AREA_GRADIENT_STOPS, CHART_AXIS, CHART_GRID, CHART_TOOLTIP, SERIES } from "./chart-theme";
 
-const COLOR = GRAFANA_COLORS[3];
+const COLOR = SERIES.ticket;
 
 export function AvgTicketChart({ data }: { data: { date: string; averageTicket: number }[] }) {
   const formatted = data.map((d) => ({

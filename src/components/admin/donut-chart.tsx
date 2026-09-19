@@ -2,7 +2,7 @@
 
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { formatPrice } from "@/lib/format";
-import { CHART_LEGEND, CHART_TOOLTIP, GRAFANA_COLORS } from "./chart-theme";
+import { CHART_LEGEND, CHART_TOOLTIP, CHART_COLORS } from "./chart-theme";
 
 // `variant` em vez de receber uma função de formatação por prop — Server
 // Components não podem passar funções a Client Components.
@@ -29,7 +29,7 @@ export function DonutChart({
       <PieChart>
         <Pie data={data} dataKey="value" nameKey="name" innerRadius={ringInner} outerRadius={ringOuter} paddingAngle={2} stroke="none">
           {data.map((entry, i) => (
-            <Cell key={entry.name} fill={GRAFANA_COLORS[i % GRAFANA_COLORS.length]} />
+            <Cell key={entry.name} fill={CHART_COLORS[i % CHART_COLORS.length]} />
           ))}
         </Pie>
         <Tooltip {...CHART_TOOLTIP} formatter={(value) => format(Number(value))} />

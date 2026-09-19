@@ -1,10 +1,10 @@
 "use client";
 
 import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { AREA_GRADIENT_STOPS, CHART_AXIS, CHART_GRID, CHART_LEGEND, CHART_TOOLTIP, GRAFANA_COLORS } from "./chart-theme";
+import { AREA_GRADIENT_STOPS, CHART_AXIS, CHART_GRID, CHART_LEGEND, CHART_TOOLTIP, SERIES } from "./chart-theme";
 
-const VISITS = GRAFANA_COLORS[1];
-const ORDERS = GRAFANA_COLORS[2];
+const VISITS = SERIES.visitas;
+const ORDERS = SERIES.encomendas;
 
 export function HourlyActivityChart({ data }: { data: { hour: number; visits: number; salesCount: number }[] }) {
   const formatted = data.map((d) => ({ ...d, label: `${String(d.hour).padStart(2, "0")}h` }));

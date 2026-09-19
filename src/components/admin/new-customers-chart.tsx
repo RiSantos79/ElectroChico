@@ -1,9 +1,9 @@
 "use client";
 
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { AREA_GRADIENT_STOPS, CHART_AXIS, CHART_GRID, CHART_TOOLTIP, GRAFANA_COLORS } from "./chart-theme";
+import { AREA_GRADIENT_STOPS, CHART_AXIS, CHART_GRID, CHART_TOOLTIP, SERIES } from "./chart-theme";
 
-const COLOR = GRAFANA_COLORS[0];
+const COLOR = SERIES.clientes;
 
 export function NewCustomersChart({ data }: { data: { date: string; count: number }[] }) {
   const formatted = data.map((d) => ({
